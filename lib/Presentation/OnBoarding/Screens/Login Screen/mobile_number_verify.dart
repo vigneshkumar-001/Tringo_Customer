@@ -2337,7 +2337,7 @@ Slot Index      : $slot
       if (numberMatch) {
         Future.delayed(const Duration(milliseconds: 800), () {
           if (!mounted) return;
-          context.go(AppGoRoutes.privacyPolicyPath);
+          context.go(AppRoutes.privacyPolicyPath);
         });
       }
     } catch (e, st) {
@@ -2505,7 +2505,7 @@ Slot Index      : $slot
                                   : () {
                                       // Go to OTP screen with same mobile number
                                       context.pushNamed(
-                                        AppGoRoutes.otp,
+                                        AppRoutes.otp,
                                         extra: widget.loginNumber,
                                       );
                                     },

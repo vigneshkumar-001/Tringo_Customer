@@ -34,14 +34,15 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 5));
 
     if (!mounted) return;
+    context.go(AppRoutes.loginPath);
 
-    if (!isLoggedIn) {
-      context.go(AppGoRoutes.loginPath);
-    } else if (!isProfileCompleted) {
-      context.go(AppGoRoutes.fillProfilePath);
-    } else {
-      context.go(AppGoRoutes.homePath);
-    }
+    // if (!isLoggedIn) {
+    //   context.go(AppGoRoutes.loginPath);
+    // } else if (!isProfileCompleted) {
+    //   context.go(AppGoRoutes.fillProfilePath);
+    // } else {
+    //   context.go(AppGoRoutes.homePath);
+    // }
   }
 
   // Future<void> checkNavigation() async {

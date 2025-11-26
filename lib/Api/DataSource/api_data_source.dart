@@ -21,29 +21,25 @@ abstract class BaseApiDataSource {
 class ApiDataSource extends BaseApiDataSource {
   @override
   Future<Either<Failure, LoginResponse>> mobileNumberLogin(
-    String phone,
-    String page,
-  ) async {
+      String phone,
+      String page,
+      ) async
+  {
     try {
-      final String url = page == "resendOtp"
-          ? ApiUrl.resendOtp
-          : ApiUrl.register;
+      String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
+      AppLogger.log.i(url);
 
-      AppLogger.log.i('🔐 mobileNumberLogin → $url');
-      AppLogger.log.i('📲 payload: { contact: +91$phone, purpose: customer }');
-
-      final response = await Request.sendRequest(
+      dynamic response = await Request.sendRequest(
         url,
         {"contact": "+91$phone", "purpose": "customer"},
-        'POST',
+        'Post',
         false,
       );
 
-      if (response is! DioException) {
-        AppLogger.log.i(
-          ' RESPONSE statusCode=${response.statusCode}, data=${response.data}',
-        );
+      AppLogger.log.i(response);
 
+      if (response is! DioException) {
+        // If status code is success
         if (response.statusCode == 200 || response.statusCode == 201) {
           if (response.data['status'] == true) {
             return Right(LoginResponse.fromJson(response.data));
@@ -53,25 +49,19 @@ class ApiDataSource extends BaseApiDataSource {
             );
           }
         } else {
+          // ❗ API returned non-success code but has JSON error message
           return Left(
-            ServerFailure(
-              response.data['message'] ??
-                  "Something went wrong (code: ${response.statusCode})",
-            ),
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
           );
         }
       } else {
-        // DioException branch
         final errorData = response.response?.data;
-        AppLogger.log.e('❌ DioException: ${response.message}, data=$errorData');
-
         if (errorData is Map && errorData.containsKey('message')) {
           return Left(ServerFailure(errorData['message']));
         }
         return Left(ServerFailure(response.message ?? "Unknown Dio error"));
       }
-    } catch (e, st) {
-      AppLogger.log.e('❌ mobileNumberLogin exception: $e\n$st');
+    } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -86,7 +76,7 @@ class ApiDataSource extends BaseApiDataSource {
       final response = await Request.sendRequest(
         url,
         {"contact": "+91$contact", "code": otp, "purpose": "customer"},
-        'POST', // 👈 use uppercase
+        'POST',
         false,
       );
 
