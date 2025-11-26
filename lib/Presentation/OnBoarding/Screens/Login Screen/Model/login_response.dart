@@ -1,17 +1,15 @@
 class LoginResponse {
   final bool status;
   final int code;
-  final OtpInitData? data;
+  final LoginData? data;
 
   LoginResponse({required this.status, required this.code, this.data});
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      status: json['status'] as bool,
-      code: json['code'] as int,
-      data: json['data'] != null
-          ? OtpInitData.fromJson(json['data'] as Map<String, dynamic>)
-          : null,
+      status: json['status'] ?? false,
+      code: json['code'] ?? 0,
+      data: json['data'] != null ? LoginData.fromJson(json['data']) : null,
     );
   }
 
@@ -20,16 +18,16 @@ class LoginResponse {
   }
 }
 
-class OtpInitData {
+class LoginData {
   final String maskedContact;
   final int waitSeconds;
 
-  OtpInitData({required this.maskedContact, required this.waitSeconds});
+  LoginData({required this.maskedContact, required this.waitSeconds});
 
-  factory OtpInitData.fromJson(Map<String, dynamic> json) {
-    return OtpInitData(
-      maskedContact: json['maskedContact'] as String,
-      waitSeconds: json['waitSeconds'] as int,
+  factory LoginData.fromJson(Map<String, dynamic> json) {
+    return LoginData(
+      maskedContact: json['maskedContact'] ?? '',
+      waitSeconds: json['waitSeconds'] ?? 0,
     );
   }
 

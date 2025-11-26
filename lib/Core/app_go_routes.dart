@@ -10,7 +10,7 @@ import '../Presentation/OnBoarding/Screens/OTP Screen/otp_screen.dart';
 import '../Presentation/OnBoarding/Screens/fill_profile/fill_profile.dart';
 
 
-class AppGoRoutes {
+class AppRoutes {
   static const String splashScreen = 'splashScreen';
   static const String login = 'login';
   static const String mobileNumberVerify = 'mobileNumberVerify';
@@ -29,47 +29,47 @@ class AppGoRoutes {
 }
 
 final goRouter = GoRouter(
-  initialLocation: AppGoRoutes.splashScreenPath,
+  initialLocation: AppRoutes.splashScreenPath,
   routes: [
     GoRoute(
-      path: AppGoRoutes.splashScreenPath,
-      name: AppGoRoutes.splashScreen,
+      path: AppRoutes.splashScreenPath,
+      name: AppRoutes.splashScreen,
       builder: (context, state) => const SplashScreen(),
     ),
     GoRoute(
-      path: AppGoRoutes.loginPath,
-      name: AppGoRoutes.login,
+      path: AppRoutes.loginPath,
+      name: AppRoutes.login,
       builder: (context, state) => const LoginMobileNumber(),
     ),
     GoRoute(
-      path: AppGoRoutes.mobileNumberVerifyPath,
-      name: AppGoRoutes.mobileNumberVerify,
+      path: AppRoutes.mobileNumberVerifyPath,
+      name: AppRoutes.mobileNumberVerify,
       builder: (context, state) {
         final phone = state.extra as String?;
         return MobileNumberVerify(loginNumber: phone ?? '');
       },
     ),
     GoRoute(
-      path: AppGoRoutes.otpPath,
-      name: AppGoRoutes.otp,
+      path: AppRoutes.otpPath,
+      name: AppRoutes.otp,
       builder: (context, state) {
         final phone = state.extra as String?;
-        return OtpScreen(mobileNumber: phone ?? '');
+        return OtpScreen( phoneNumber : phone ?? '');
       },
     ),
     GoRoute(
-      path: AppGoRoutes.homePath,
-      name: AppGoRoutes.home,
+      path: AppRoutes.homePath,
+      name: AppRoutes.home,
       builder: (context, state) => const HomeScreen(),
     ),
     GoRoute(
-      path: AppGoRoutes.fillProfilePath,
-      name: AppGoRoutes.fillProfile,
+      path: AppRoutes.fillProfilePath,
+      name: AppRoutes.fillProfile,
       builder: (context, state) => const FillProfile(),
     ),
     GoRoute(
-      path: AppGoRoutes.privacyPolicyPath,
-      name: AppGoRoutes.privacyPolicy,
+      path: AppRoutes.privacyPolicyPath,
+      name: AppRoutes.privacyPolicy,
       builder: (context, state) => const PrivacyPolicy(),
     ),
   ],
