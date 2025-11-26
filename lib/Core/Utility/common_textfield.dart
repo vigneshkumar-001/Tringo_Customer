@@ -1,0 +1,111 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'app_color.dart';
+import 'google_font.dart';
+
+class CustomTextField {
+  static commonTexts({
+    required String text,
+    double fontSize = 22,
+    Color? color = AppColor.black,
+    FontWeight? fontWeight = FontWeight.w800,
+  }) {
+    return Text(
+      text,
+      style: GoogleFont.Mulish(
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        color: color,
+      ),
+    );
+  }
+
+  static textWith600({
+    required String text,
+    double fontSize = 18,
+    double hight = 1.5,
+    Color? color = AppColor.lightGray,
+  }) {
+    return Text(
+      text,
+      style: GoogleFont.ibmPlexSans(
+        fontSize: fontSize,
+        color: color,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  static quizQuestion({required String sno, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(sno, style: GoogleFont.ibmPlexSans(fontSize: 16)),
+        SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: GoogleFont.ibmPlexSans(fontSize: 16)),
+        ),
+      ],
+    );
+  }
+
+  static textWithSmall({
+    required String text,
+    Color? color = AppColor.lightGray,
+    FontWeight? fontWeight = FontWeight.w500,
+    TextAlign? textAlign,
+    double? fontSize = 16,
+  }) {
+    return Text(
+      textAlign: textAlign,
+      text,
+      style: GoogleFont.ibmPlexSans(
+        fontSize: fontSize!,
+        color: color,
+        fontWeight: fontWeight,
+      ),
+    );
+  }
+
+  static Widget richText({
+    required String text,
+    required String text2,
+    bool isBold = false,
+    Color text1Color = AppColor.lightGray,
+    Color text2Color = AppColor.lightGray,
+    double secondFontSize = 15,
+    double firstFontSize = 15,
+    FontWeight fontWeight1 = FontWeight.normal,
+    FontWeight fontWeight2 = FontWeight.normal,
+    String hintText = 'Enter Aadhaar Number',
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: text,
+            style: GoogleFont.ibmPlexSans(
+              fontSize: firstFontSize,
+              color: text1Color,
+              fontWeight: fontWeight1,
+            ),
+            children: [
+              if (text2.isNotEmpty)
+                TextSpan(
+                  text: isBold ? text2 : ' ( $text2 )',
+                  style: GoogleFont.ibmPlexSans(
+                    fontWeight: fontWeight2,
+                    fontSize: secondFontSize,
+                    color: text2Color,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
