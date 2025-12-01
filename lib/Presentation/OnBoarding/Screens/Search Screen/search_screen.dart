@@ -7,8 +7,8 @@ import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigatebar.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/Widgets/current_location_widget.dart';
-import '../Products/product_listing.dart';
-import '../Services Screen/service_listing.dart';
+import '../Products/Screens/product_listing.dart';
+import '../Services Screen/Screens/service_listing.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});

@@ -1,22 +1,31 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/fill_profile/Controller/profile_notifier.dart';
 
-import '../../../../Core/Utility/app_Images.dart';
-import '../../../../Core/Utility/app_color.dart';
-import '../../../../Core/Utility/google_font.dart';
-import '../Home Screen/home_screen.dart';
+import '../../../../../Core/Utility/app_Images.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_loader.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../Home Screen/Screens/home_screen.dart';
 
-class FillProfile extends StatefulWidget {
+class FillProfile extends ConsumerStatefulWidget {
   const FillProfile({super.key});
 
   @override
-  State<FillProfile> createState() => _FillProfileState();
+  ConsumerState<FillProfile> createState() => _FillProfileState();
 }
 
-class _FillProfileState extends State<FillProfile> {
+class _FillProfileState extends ConsumerState<FillProfile> {
   TextEditingController nameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController genderController = TextEditingController();
@@ -27,6 +36,7 @@ class _FillProfileState extends State<FillProfile> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(profileNotifierProvider);
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -178,6 +188,7 @@ class _FillProfileState extends State<FillProfile> {
                             selectedImage: selectedPhoto?.path,
                             onTap: () async {
                               final ImagePicker picker = ImagePicker();
+
                               final XFile? image = await picker.pickImage(
                                 source: ImageSource.gallery,
                               );
@@ -238,42 +249,57 @@ class _FillProfileState extends State<FillProfile> {
                           InkWell(
                             borderRadius: BorderRadius.circular(15),
                             onTap: () async {
-                              // VALIDATION
                               if (nameController.text.isEmpty ||
                                   emailController.text.isEmpty ||
                                   genderController.text.isEmpty ||
                                   dateOfBirthController.text.isEmpty ||
                                   selectedPhoto == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text("Please fill all fields"),
-                                  ),
+                                AppSnackBar.info(
+                                  context,
+                                  'Please fill all fields',
                                 );
+
                                 return;
                               }
 
-                              // SAVE COMPLETED STATUS
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setBool("isProfileCompleted", true);
 
-                              // NAVIGATE TO HOME
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => HomeScreen(),
-                                ),
+                              String dobForApi = '';
+                              try {
+                                final parsedDate = DateFormat('dd-MM-yyyy')
+                                    .parseStrict(
+                                      dateOfBirthController.text.trim(),
+                                    );
+                                dobForApi = DateFormat(
+                                  'yyyy-MM-dd',
+                                ).format(parsedDate);
+                              } catch (e) {
+                                AppSnackBar.error(context, "Invalid DOB");
+                                return;
+                              }
+
+
+                              final response = await ref
+                                  .read(profileNotifierProvider.notifier).fetchProfile(
+                                displayName: nameController.text.trim(),
+                                email: emailController.text.trim(),
+                                gender: genderController.text.trim(),
+                                dateOfBirth: dobForApi,
+                                ownerImageFile: File(selectedPhoto!.path),
                               );
+                              final notifier = ref.read(
+                                profileNotifierProvider.notifier,
+                              );
+                              if (response != null) {
+                                context.go(AppRoutes.homePath);
+                                final prefs =
+                                await SharedPreferences.getInstance();
+                                await prefs.setBool("isProfileCompleted", true);
+
+                              } else if (state.error != null) {
+                                AppSnackBar.error(context, state.error ?? '');
+                              }
                             },
 
-                            // onTap: () {
-                            //   Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(
-                            //       builder: (context) => HomeScreen(),
-                            //     ),
-                            //   );
-                            // },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: AppColor.blue,
@@ -284,14 +310,16 @@ class _FillProfileState extends State<FillProfile> {
                                   horizontal: 65,
                                   vertical: 20,
                                 ),
-                                child: Text(
-                                  'Continue',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColor.white,
-                                  ),
-                                ),
+                                child: state.isLoading
+                                    ? ThreeDotsLoader()
+                                    : Text(
+                                        'Continue',
+                                        style: GoogleFont.Mulish(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColor.white,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),

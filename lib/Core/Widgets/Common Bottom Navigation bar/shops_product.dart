@@ -3,13 +3,13 @@ import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/searc
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Products/product_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_single_company_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Home Screen/home_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_product_list.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_single_company_list.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_product_list.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';
@@ -17,7 +17,20 @@ import '../filter_popup_screen.dart';
 
 class ShopsProduct extends StatefulWidget {
   final int initialIndex;
-  const ShopsProduct({super.key, this.initialIndex = 0});
+  final String? shopId;
+  final String? shopImageUrl;
+  final String? category;
+  final String? englishName;
+  final bool? isTrusted;
+  const ShopsProduct({
+    super.key,
+    this.initialIndex = 0,
+    this.shopId,
+    this.shopImageUrl,
+    this.category,
+    this.englishName,
+    this.isTrusted,
+  });
 
   @override
   State<ShopsProduct> createState() => _ShopsProductState();
@@ -40,7 +53,13 @@ class _ShopsProductState extends State<ShopsProduct> {
     _pages = [
       HomeScreen(), // 0
       SearchScreen(), // 1
-      ShopsProductList(), // 2
+      ShopsProductList(
+        shopId: widget.shopId,
+        shopImgUrl: widget.shopImageUrl,
+        isTrusted: widget.isTrusted,
+        englishName: widget.englishName,
+        category: widget.category,
+      ), // 2
       ServiceSingleCompanyList(), // 3
     ];
   }
@@ -354,10 +373,10 @@ class FigmaBottomNavBar extends StatelessWidget {
                           style: GoogleFont.Mulish(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color:AppColor.lightGray,
+                            color: AppColor.lightGray,
                           ),
                         ),
-                        SizedBox(width: 4,),
+                        SizedBox(width: 4),
                         Text(
                           'Low to High',
                           style: GoogleFont.Mulish(
@@ -394,7 +413,7 @@ class FigmaBottomNavBar extends StatelessWidget {
                             color: AppColor.lightGray,
                           ),
                         ),
-                        SizedBox(width: 4,),
+                        SizedBox(width: 4),
                         Text(
                           'High to Low',
                           style: GoogleFont.Mulish(

@@ -8,7 +8,7 @@ import 'Core/Utility/app_color.dart';
 import 'Core/app_go_routes.dart';
 import 'Presentation/OnBoarding/Screens/Login Screen/login_mobile_number.dart';
 import 'Presentation/OnBoarding/Screens/Splash_screen.dart';
-import 'Presentation/OnBoarding/Screens/fill_profile/fill_profile.dart';
+import 'Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
 
 void main() {
   FlutterError.onError = (FlutterErrorDetails details) {
