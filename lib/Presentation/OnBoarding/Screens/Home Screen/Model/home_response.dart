@@ -2,10 +2,7 @@ class HomeResponse {
   final bool status;
   final HomeData data;
 
-  const HomeResponse({
-    required this.status,
-    required this.data,
-  });
+  const HomeResponse({required this.status, required this.data});
 
   factory HomeResponse.fromJson(Map<String, dynamic> json) {
     return HomeResponse(
@@ -15,10 +12,7 @@ class HomeResponse {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'status': status,
-      'data': data.toJson(),
-    };
+    return {'status': status, 'data': data.toJson()};
   }
 }
 
@@ -142,10 +136,7 @@ class GeoPoint {
   final double latitude;
   final double longitude;
 
-  const GeoPoint({
-    required this.latitude,
-    required this.longitude,
-  });
+  const GeoPoint({required this.latitude, required this.longitude});
 
   factory GeoPoint.fromJson(Map<String, dynamic> json) {
     return GeoPoint(
@@ -155,10 +146,7 @@ class GeoPoint {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'latitude': latitude,
-      'longitude': longitude,
-    };
+    return {'latitude': latitude, 'longitude': longitude};
   }
 }
 
@@ -185,12 +173,7 @@ class ShopCategory {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'slug': slug,
-      'name': name,
-      'count': count,
-      'type': type,
-    };
+    return {'slug': slug, 'name': name, 'count': count, 'type': type};
   }
 }
 
@@ -251,6 +234,7 @@ class ListingItem {
   final String? openLabel;
   final bool isOpen;
   final String? primaryImageUrl;
+  final String ownershipType;
 
   const ListingItem({
     required this.id,
@@ -272,6 +256,7 @@ class ListingItem {
     required this.openLabel,
     required this.isOpen,
     required this.primaryImageUrl,
+    required this.ownershipType,
   });
 
   factory ListingItem.fromJson(Map<String, dynamic> json) {
@@ -295,6 +280,7 @@ class ListingItem {
       openLabel: json['openLabel'],
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
+      ownershipType: json['ownershipType'] as String? ?? '',
     );
   }
 
@@ -319,6 +305,12 @@ class ListingItem {
       'openLabel': openLabel,
       'isOpen': isOpen,
       'primaryImageUrl': primaryImageUrl,
+      'ownershipType': ownershipType,
     };
+  }
+  String get ownershipTypeLabel {
+    if (ownershipType == 'COMPANY') return 'Company';
+    if (ownershipType == 'INDIVIDUAL') return 'Individual';
+    return ownershipType;
   }
 }
