@@ -15,6 +15,7 @@ import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../Core/Utility/map_urls.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigatebar.dart';
@@ -35,6 +36,7 @@ const _avatarHeroTag = 'profileAvatarHero';
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int selectedIndex = 0;
+  int selectedServiceIndex = 0;
   late final TextEditingController textController;
   final _homeScrollCtrl = ScrollController();
   String? currentAddress;
@@ -263,19 +265,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     final categories = home.data.shopCategories;
+    final serviceCategories = home.data.categories;
     final trendingShops = home.data.trendingShops;
     final servicesList = home.data.services; // 👈 ADD THIS
 
     final safeIndex = (selectedIndex >= 0 && selectedIndex < categories.length)
         ? selectedIndex
         : 0;
+    final safeServiceIndex =
+        (selectedServiceIndex >= 0 &&
+            selectedServiceIndex < serviceCategories.length)
+        ? selectedServiceIndex
+        : 0;
     final selectedCategory = categories[safeIndex];
+    final selectedServiceCategory = serviceCategories[safeServiceIndex];
     final selectedSlug =
         selectedCategory.slug; // "all", "shop-electronics", etc.
+
+    final selectedServiceSlug =
+        selectedServiceCategory.slug; // "all", "shop-electronics", etc.
 
     final filteredShops = selectedSlug == 'all'
         ? trendingShops
         : trendingShops.where((s) => s.category == selectedSlug).toList();
+
+    final filteredServiceShops = selectedServiceSlug == 'all'
+        ? servicesList
+        : servicesList.where((s) => s.category == selectedServiceSlug).toList();
+
     return WillPopScope(
       onWillPop: () async {
         return false;
@@ -417,7 +434,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ProfileScreen(),
+                                  builder: (context) => ProfileScreen(
+                                    url:
+                                        state.homeResponse?.data.user.avatarUrl
+                                            .toString() ??
+                                        '',
+                                    name:
+                                        state.homeResponse?.data.user.name
+                                            .toString() ??
+                                        '',
+                                    phnNumber:
+                                        state
+                                            .homeResponse
+                                            ?.data
+                                            .user
+                                            .phoneNumber
+                                            .toString() ??
+                                        '',
+                                  ),
                                 ),
                               );
                             },
@@ -816,7 +850,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   children: List.generate(
                                     home.data.categories.length,
                                     (index) {
-                                      final isSelected = selectedIndex == index;
+                                      final isSelected =
+                                          selectedServiceIndex == index;
                                       return Padding(
                                         padding: const EdgeInsets.only(
                                           right: 8,
@@ -835,7 +870,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           isSelected: isSelected,
                                           onTap: () {
                                             setState(
-                                              () => selectedIndex = index,
+                                              () =>
+                                                  selectedServiceIndex = index,
                                             );
                                           },
                                         ),
@@ -848,9 +884,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ListView.builder(
                               shrinkWrap: true,
                               physics: NeverScrollableScrollPhysics(),
-                              itemCount: servicesList.length,
+                              itemCount: filteredServiceShops.length,
                               itemBuilder: (context, index) {
-                                final services = servicesList[index];
+                                final services = filteredServiceShops[index];
                                 final isThisCardLoading =
                                     state.isEnquiryLoading &&
                                     state.activeEnquiryId == services.id;
@@ -943,7 +979,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     );
                                                   },
                                                   whatsAppOnTap: () {
-                                                    print(services.primaryPhone);
+                                                    print(
+                                                      services.primaryPhone,
+                                                    );
                                                     MapUrls.openWhatsapp(
                                                       message: 'hi',
                                                       context: context,
@@ -1229,12 +1267,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             child: Column(
                                               children: [
                                                 CommonContainer.servicesContainer(
-                                                  whatsAppOnTap: (){
+                                                  whatsAppOnTap: () {
                                                     MapUrls.openWhatsapp(
                                                       message: 'hi',
                                                       context: context,
-                                                      phone:
-                                                      shops.primaryPhone,
+                                                      phone: shops.primaryPhone,
                                                     );
                                                   },
                                                   isMessageLoading:
@@ -1285,7 +1322,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       shops.englishName,
                                                   location:
                                                       '${shops.city}, ${shops.state}, ${shops.country}',
-                                                  fieldName: '5Kms',
+                                                  fieldName: shops.distanceKm.toString()?? '',
                                                   ratingStar: shops.rating
                                                       .toString(),
                                                   ratingCount: shops.ratingCount

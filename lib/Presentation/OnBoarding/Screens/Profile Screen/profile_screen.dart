@@ -9,7 +9,10 @@ import '../../../../Core/Widgets/common_container.dart';
 import '../Login Screen/login_mobile_number.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? url;
+  final String? name;
+  final String? phnNumber;
+  const ProfileScreen({super.key, this.url, this.name, this.phnNumber});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -151,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Siva',
+                              widget.name.toString()?? '',
                               style: GoogleFont.Mulish(
                                 fontSize: 25,
                                 fontWeight: FontWeight.w700,
@@ -159,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             Text(
-                              '900 000 0000',
+                              widget.phnNumber.toString()?? '',
                               style: GoogleFont.Mulish(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -192,7 +195,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
-                      Image.asset(AppImages.avatarImage1, height: 170),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: widget.url == null
+                              ? Image.asset(
+                            AppImages.avatarImage1,
+                            height: 170,
+                            width: 170,
+                            fit: BoxFit.cover,
+                          )
+                              : Image.network(
+                            widget.url.toString(),
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      )
+                      ,
+
+
                       // CommonContainer.glowAvatarUniversal(
                       //   image: AssetImage(AppImages.avatarImage1),
                       //   size: 103,

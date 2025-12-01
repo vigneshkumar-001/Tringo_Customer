@@ -766,10 +766,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   TextColor: isSelected
                                       ? AppColor.lightGray2
                                       : AppColor.lightGray2,
-                                  shopsData
-                                          .data
-                                          ?.serviceTags?[index]
-                                          .label ??
+                                  shopsData.data?.serviceTags?[index].label ??
                                       '',
                                   isSelected: isSelected,
                                   onTap: () {
@@ -1016,8 +1013,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       image: data?.imageUrl.toString() ?? '',
                                       foodName:
                                           data?.englishName.toString() ?? '',
-                                      ratingStar: '4.5',
-                                      ratingCount: '16',
+                                      ratingStar: data?.rating.toString() ?? '',
+                                      ratingCount:
+                                          data?.ratingCount.toString() ?? '',
                                       offAmound:
                                           '₹${data?.price.toString() ?? ''}',
                                       oldAmound:

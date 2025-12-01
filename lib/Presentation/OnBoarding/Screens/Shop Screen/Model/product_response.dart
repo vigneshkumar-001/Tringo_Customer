@@ -99,7 +99,7 @@ class ProductItem {
   final List<ProductFeature> features;
   final bool hasVariants;
 
-  /// 🔹 Added from JSON
+
   final int rating;
   final int ratingCount;
 
