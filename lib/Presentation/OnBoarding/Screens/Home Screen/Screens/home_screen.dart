@@ -942,6 +942,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       ),
                                                     );
                                                   },
+                                                  whatsAppOnTap: () {
+                                                    print(services.primaryPhone);
+                                                    MapUrls.openWhatsapp(
+                                                      message: 'hi',
+                                                      context: context,
+                                                      phone:
+                                                          services.primaryPhone,
+                                                    );
+                                                  },
                                                   Verify: services.isTrusted,
                                                   image: services
                                                       .primaryImageUrl
@@ -1220,6 +1229,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             child: Column(
                                               children: [
                                                 CommonContainer.servicesContainer(
+                                                  whatsAppOnTap: (){
+                                                    MapUrls.openWhatsapp(
+                                                      message: 'hi',
+                                                      context: context,
+                                                      phone:
+                                                      shops.primaryPhone,
+                                                    );
+                                                  },
                                                   isMessageLoading:
                                                       isThisCardLoading,
                                                   messageOnTap: () {

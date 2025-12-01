@@ -353,9 +353,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                         loader: state.isLoading
                             ? ThreeDotsLoader(dotColor: AppColor.black)
                             : null,
-                        onTap: state.isLoading
-                            ? null
-                            : () async {
+                        onTap:() async {
                                 final formatted = mobileNumberController.text
                                     .trim();
                                 final rawPhone = formatted.replaceAll(' ', '');

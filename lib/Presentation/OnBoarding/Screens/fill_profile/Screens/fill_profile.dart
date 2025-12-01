@@ -215,12 +215,13 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                           InkWell(
                             borderRadius: BorderRadius.circular(15),
                             onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => HomeScreen(),
-                                ),
-                              );
+                              context.go(AppRoutes.homePath);
+                              // Navigator.pushReplacement(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => HomeScreen(),
+                              //   ),
+                              // );
                             },
                             child: Container(
                               decoration: BoxDecoration(
@@ -262,7 +263,6 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                                 return;
                               }
 
-
                               String dobForApi = '';
                               try {
                                 final parsedDate = DateFormat('dd-MM-yyyy')
@@ -277,24 +277,23 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                                 return;
                               }
 
-
                               final response = await ref
-                                  .read(profileNotifierProvider.notifier).fetchProfile(
-                                displayName: nameController.text.trim(),
-                                email: emailController.text.trim(),
-                                gender: genderController.text.trim(),
-                                dateOfBirth: dobForApi,
-                                ownerImageFile: File(selectedPhoto!.path),
-                              );
+                                  .read(profileNotifierProvider.notifier)
+                                  .fetchProfile(
+                                    displayName: nameController.text.trim(),
+                                    email: emailController.text.trim(),
+                                    gender: genderController.text.trim(),
+                                    dateOfBirth: dobForApi,
+                                    ownerImageFile: File(selectedPhoto!.path),
+                                  );
                               final notifier = ref.read(
                                 profileNotifierProvider.notifier,
                               );
                               if (response != null) {
                                 context.go(AppRoutes.homePath);
                                 final prefs =
-                                await SharedPreferences.getInstance();
+                                    await SharedPreferences.getInstance();
                                 await prefs.setBool("isProfileCompleted", true);
-
                               } else if (state.error != null) {
                                 AppSnackBar.error(context, state.error ?? '');
                               }

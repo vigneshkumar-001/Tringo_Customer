@@ -451,7 +451,7 @@ class ApiDataSource extends BaseApiDataSource {
 
       final response = await Request.formData(url, formData, 'POST', true);
       Map<String, dynamic> responseData =
-      jsonDecode(response.data) as Map<String, dynamic>;
+          jsonDecode(response.data) as Map<String, dynamic>;
       if (response.statusCode == 200) {
         if (responseData['status'] == true) {
           return Right(UserImageResponse.fromJson(responseData));
@@ -480,10 +480,7 @@ class ApiDataSource extends BaseApiDataSource {
   }) async {
     try {
       final String url = ApiUrl.putEnquiry(shopId: shopId);
-      final Map<String, dynamic> body = {
-        'message': message,
-      };
-
+      final Map<String, dynamic> body = {'message': message};
 
       if (serviceId.trim().isNotEmpty) {
         body['serviceId'] = serviceId;
@@ -492,13 +489,7 @@ class ApiDataSource extends BaseApiDataSource {
         body['productId'] = productId;
       }
 
-
-      final response = await Request.sendRequest(
-        url,
-        body,
-        'POST',
-        true,
-      );
+      final response = await Request.sendRequest(url, body, 'POST', true);
 
       AppLogger.log.i(response);
 
@@ -529,13 +520,12 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, ProductDetailResponse>> viewDetailProducts({
     required String productId,
   }) async {
     try {
       AppLogger.log.i(productId);
-      final url = ApiUrl.viewAllDetailedProducts( productId : productId);
+      final url = ApiUrl.viewAllDetailedProducts(productId: productId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -563,14 +553,12 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
-
   Future<Either<Failure, ServiceDataResponse>> viewDetailServices({
     required String serviceId,
   }) async {
     try {
       AppLogger.log.i(serviceId);
-      final url = ApiUrl.viewAllDetailedServices(  serviceId:   serviceId);
+      final url = ApiUrl.viewAllDetailedServices(serviceId: serviceId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -598,12 +586,15 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, SearchSuggestionResponse>> searchSuggestions({
     required String searchWords,
   }) async {
     try {
-      final url = ApiUrl.searchSuggestions( lat: 0.0,lng: 0.0,searchWords: searchWords);
+      final url = ApiUrl.searchSuggestions(
+        lat: 0.0,
+        lng: 0.0,
+        searchWords: searchWords,
+      );
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -631,13 +622,16 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, ProductListResponse>> productList({
     required String searchWords,
   }) async {
     try {
       AppLogger.log.i(searchWords);
-      final url = ApiUrl.productList(  searchWords: searchWords,lng: 0.0,lat: 0.0);
+      final url = ApiUrl.productList(
+        searchWords: searchWords,
+        lng: 0.0,
+        lat: 0.0,
+      );
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -664,6 +658,4 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
-
-
 }

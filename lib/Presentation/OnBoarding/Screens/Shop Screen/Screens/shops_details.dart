@@ -219,7 +219,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                     ),
                     child: Column(
                       children: [
-                        // Header
                         _staggerFromTop(
                           aHeader,
                           Padding(
@@ -342,6 +341,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   },
                                   callImage: AppImages.callImage,
                                   callText: 'Call Now',
+
                                   mapOnTap: () {
                                     MapUrls.openMap(
                                       context: context,
@@ -369,7 +369,16 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         );
                                   },
                                   whatsAppIcon: true,
-                                  whatsAppOnTap: () {},
+                                  whatsAppOnTap: () {
+                                    MapUrls.openWhatsapp(
+                                      message: 'hi',
+                                      context: context,
+                                      phone:
+                                          shopsData.data?.primaryPhone
+                                              .toString() ??
+                                          '',
+                                    );
+                                  },
                                   messageLoading: stateS.isEnquiryLoading,
                                   MessageIcon: true,
                                   mapText: 'Map',
@@ -740,29 +749,36 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                           vertical: 20,
                         ),
                         child: Row(
-                          children: List.generate(categoryTabs.length, (index) {
-                            final isSelected = selectedIndex == index;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: CommonContainer.categoryChip(
-                                rightSideArrow: true,
-                                ContainerColor: isSelected
-                                    ? AppColor.white
-                                    : Colors.transparent,
-                                BorderColor: isSelected
-                                    ? AppColor.brightGray
-                                    : AppColor.brightGray,
-                                TextColor: isSelected
-                                    ? AppColor.lightGray2
-                                    : AppColor.lightGray2,
-                                categoryTabs[index]["label"],
-                                isSelected: isSelected,
-                                onTap: () {
-                                  setState(() => selectedIndex = index);
-                                },
-                              ),
-                            );
-                          }),
+                          children: List.generate(
+                            shopsData.data?.serviceTags?.length ?? 0,
+                            (index) {
+                              final isSelected = selectedIndex == index;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: CommonContainer.categoryChip(
+                                  rightSideArrow: true,
+                                  ContainerColor: isSelected
+                                      ? AppColor.white
+                                      : Colors.transparent,
+                                  BorderColor: isSelected
+                                      ? AppColor.brightGray
+                                      : AppColor.brightGray,
+                                  TextColor: isSelected
+                                      ? AppColor.lightGray2
+                                      : AppColor.lightGray2,
+                                  shopsData
+                                          .data
+                                          ?.serviceTags?[index]
+                                          .label ??
+                                      '',
+                                  isSelected: isSelected,
+                                  onTap: () {
+                                    setState(() => selectedIndex = index);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -798,8 +814,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           '',
                                       foodName:
                                           data?.englishName.toString() ?? '',
-                                      ratingStar: '4.5',
-                                      ratingCount: '16',
+                                      ratingStar: data?.rating.toString() ?? '',
+                                      ratingCount:
+                                          data?.reviewCount.toString() ?? '',
                                       offAmound:
                                           '₹${data?.startsAt.toString() ?? ''}',
                                       oldAmound:
@@ -989,7 +1006,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                ProductDetails(productId:  data?.id),
+                                                ProductDetails(
+                                                  productId: data?.id,
+                                                ),
                                           ),
                                         );
                                       },
@@ -1063,15 +1082,16 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => ShopsProduct(
-                                            category: shopsData. data?.category
+                                            category: shopsData.data?.category
                                                 .toString(),
-                                            englishName:  shopsData. data
+                                            englishName: shopsData
+                                                .data
                                                 ?.englishName
                                                 .toString(),
                                             isTrusted:
-                                            shopsData. data?.isTrusted,
+                                                shopsData.data?.isTrusted,
                                             shopImageUrl:
-                                            shopsData. data?.media?[0].url,
+                                                shopsData.data?.media?[0].url,
                                             initialIndex: 2,
                                             shopId: widget.shopId,
                                           ),

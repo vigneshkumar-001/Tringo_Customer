@@ -1,18 +1,16 @@
-class   ShopDetailsResponse   {
+class ShopDetailsResponse {
   final bool status;
   final ShopData? data;
 
   ShopDetailsResponse({required this.status, this.data});
 
-  factory ShopDetailsResponse.fromJson(Map<String, dynamic> json) => ShopDetailsResponse(
-    status: json['status'] ?? false,
-    data: json['data'] != null ? ShopData.fromJson(json['data']) : null,
-  );
+  factory ShopDetailsResponse.fromJson(Map<String, dynamic> json) =>
+      ShopDetailsResponse(
+        status: json['status'] ?? false,
+        data: json['data'] != null ? ShopData.fromJson(json['data']) : null,
+      );
 
-  Map<String, dynamic> toJson() => {
-    'status': status,
-    'data': data?.toJson(),
-  };
+  Map<String, dynamic> toJson() => {'status': status, 'data': data?.toJson()};
 }
 
 class ShopData {
@@ -40,7 +38,7 @@ class ShopData {
   final String? state;
   final String? country;
   final String? postalCode;
-  final List<String>? serviceTags;
+  final List<serviceCategories>? serviceTags;
   final Map<String, dynamic>? weeklyHours;
   final String? averageRating;
   final int? reviewCount;
@@ -123,9 +121,14 @@ class ShopData {
     state: json['state'],
     country: json['country'],
     postalCode: json['postalCode'],
-    serviceTags: json['serviceTags'] != null
-        ? List<String>.from(json['serviceTags'])
+    serviceTags: json['serviceCategories'] != null
+        ? List<serviceCategories>.from(
+      json['serviceCategories'].map((x) => serviceCategories.fromJson(x)),
+    )
         : null,
+    // serviceTags: json['serviceTags'] != null
+    //     ? List<String>.from(json['serviceTags'])
+    //     : null,
     weeklyHours: json['weeklyHours'],
     averageRating: json['averageRating'],
     reviewCount: json['reviewCount'],
@@ -142,14 +145,17 @@ class ShopData {
     services: json['services'] != null
         ? List<Service>.from(json['services'].map((x) => Service.fromJson(x)))
         : null,
-    reviews: json['reviews'] != null ? List<dynamic>.from(json['reviews']) : null,
+    reviews: json['reviews'] != null
+        ? List<dynamic>.from(json['reviews'])
+        : null,
     offers: json['offers'] != null ? List<dynamic>.from(json['offers']) : null,
     productSummary: json['productSummary'] != null
         ? ProductSummary.fromJson(json['productSummary'])
         : null,
     productCategories: json['productCategories'] != null
         ? List<ProductCategory>.from(
-        json['productCategories'].map((x) => ProductCategory.fromJson(x)))
+            json['productCategories'].map((x) => ProductCategory.fromJson(x)),
+          )
         : null,
     serviceSummary: json['serviceSummary'] != null
         ? ServiceSummary.fromJson(json['serviceSummary'])
@@ -208,7 +214,14 @@ class Media {
   final String? url;
   final int? displayOrder;
 
-  Media({this.id, this.createdAt, this.updatedAt, this.type, this.url, this.displayOrder});
+  Media({
+    this.id,
+    this.createdAt,
+    this.updatedAt,
+    this.type,
+    this.url,
+    this.displayOrder,
+  });
 
   factory Media.fromJson(Map<String, dynamic> json) => Media(
     id: json['id'],
@@ -287,7 +300,9 @@ class Product {
     subCategory: json['subCategory'],
     subCategoryLabel: json['subCategoryLabel'],
     price: json['price'] != null ? (json['price'] as num).toDouble() : null,
-    offerPrice: json['offerPrice'] != null ? (json['offerPrice'] as num).toDouble() : null,
+    offerPrice: json['offerPrice'] != null
+        ? (json['offerPrice'] as num).toDouble()
+        : null,
     imageUrl: json['imageUrl'],
     unitLabel: json['unitLabel'],
     stockCount: json['stockCount'],
@@ -295,12 +310,16 @@ class Product {
     offerLabel: json['offerLabel'],
     offerValue: json['offerValue'],
     description: json['description'],
-    keywords: json['keywords'] != null ? List<String>.from(json['keywords']) : null,
+    keywords: json['keywords'] != null
+        ? List<String>.from(json['keywords'])
+        : null,
     readyTimeMinutes: json['readyTimeMinutes'],
     doorDelivery: json['doorDelivery'],
     status: json['status'],
     features: json['features'] != null
-        ? List<ProductFeature>.from(json['features'].map((x) => ProductFeature.fromJson(x)))
+        ? List<ProductFeature>.from(
+            json['features'].map((x) => ProductFeature.fromJson(x)),
+          )
         : null,
     hasVariants: json['hasVariants'],
   );
@@ -361,7 +380,13 @@ class Keyword {
   final String? keyword;
   final String? category;
 
-  Keyword({this.id, this.createdAt, this.updatedAt, this.keyword, this.category});
+  Keyword({
+    this.id,
+    this.createdAt,
+    this.updatedAt,
+    this.keyword,
+    this.category,
+  });
 
   factory Keyword.fromJson(Map<String, dynamic> json) => Keyword(
     id: json['id'],
@@ -393,6 +418,8 @@ class Service {
   final String? status;
   final String? primaryImageUrl;
   final String? category;
+  final int? rating;
+  final int? reviewCount;
   final String? subCategory;
 
   Service({
@@ -409,6 +436,8 @@ class Service {
     this.primaryImageUrl,
     this.category,
     this.subCategory,
+    this.rating,
+    this.reviewCount,
   });
 
   factory Service.fromJson(Map<String, dynamic> json) => Service(
@@ -416,7 +445,9 @@ class Service {
     englishName: json['englishName'],
     tamilName: json['tamilName'],
     startsAt: (json['startsAt'] != null) ? json['startsAt'].toDouble() : null,
-    offerPrice: (json['offerPrice'] != null) ? json['offerPrice'].toDouble() : null,
+    offerPrice: (json['offerPrice'] != null)
+        ? json['offerPrice'].toDouble()
+        : null,
     durationMinutes: json['durationMinutes'],
     offerLabel: json['offerLabel'],
     offerValue: json['offerValue'],
@@ -425,6 +456,8 @@ class Service {
     primaryImageUrl: json['primaryImageUrl'],
     category: json['category'],
     subCategory: json['subCategory'],
+    rating: json['rating'] ?? 0,
+    reviewCount: json['reviewCount'] ?? 0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -441,6 +474,8 @@ class Service {
     'primaryImageUrl': primaryImageUrl,
     'category': category,
     'subCategory': subCategory,
+    'rating': rating,
+    'reviewCount': reviewCount,
   };
 }
 
@@ -452,14 +487,35 @@ class ProductSummary {
 
   factory ProductSummary.fromJson(Map<String, dynamic> json) => ProductSummary(
     total: json['total'],
-    featured: json['featured'] != null ? List<dynamic>.from(json['featured']) : null,
+    featured: json['featured'] != null
+        ? List<dynamic>.from(json['featured'])
+        : null,
   );
 
+  Map<String, dynamic> toJson() => {'total': total, 'featured': featured};
+}
+
+class serviceCategories {
+  final String? slug;
+  final String? label;
+  final int? count;
+
+  serviceCategories({this.slug, this.label, this.count});
+
+  factory serviceCategories.fromJson(Map<String, dynamic> json) =>
+      serviceCategories(
+        slug: json['slug'],
+        label: json['label'],
+        count: json['count'],
+      );
+
   Map<String, dynamic> toJson() => {
-    'total': total,
-    'featured': featured,
+    'slug': slug,
+    'label': label,
+    'count': count,
   };
 }
+
 
 class ProductCategory {
   final String? slug;
@@ -468,11 +524,12 @@ class ProductCategory {
 
   ProductCategory({this.slug, this.label, this.count});
 
-  factory ProductCategory.fromJson(Map<String, dynamic> json) => ProductCategory(
-    slug: json['slug'],
-    label: json['label'],
-    count: json['count'],
-  );
+  factory ProductCategory.fromJson(Map<String, dynamic> json) =>
+      ProductCategory(
+        slug: json['slug'],
+        label: json['label'],
+        count: json['count'],
+      );
 
   Map<String, dynamic> toJson() => {
     'slug': slug,
