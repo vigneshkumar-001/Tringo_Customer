@@ -246,6 +246,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                         SizedBox(height: 10),
 
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Chips
                             _staggerFromTop(
@@ -608,7 +609,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               aOffer,
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 0,
+                                  horizontal: 16,
                                 ),
                                 child: Stack(
                                   clipBehavior:
@@ -685,7 +686,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       right: 0,
                                       top:
                                           -giftSize *
-                                          0.22, // slight lift above pill
+                                          0.23, // slight lift above pill
                                       child: SizedBox(
                                         height: 120,
                                         width: 110,

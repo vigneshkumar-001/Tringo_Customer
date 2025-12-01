@@ -33,6 +33,7 @@ class _FillProfileState extends ConsumerState<FillProfile> {
   TextEditingController profilePhotoController = TextEditingController();
 
   XFile? selectedPhoto;
+  bool _navigated = false;
 
   @override
   Widget build(BuildContext context) {
@@ -212,39 +213,65 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                       padding: const EdgeInsets.symmetric(horizontal: 35),
                       child: Row(
                         children: [
+                          // InkWell(
+                          //   borderRadius: BorderRadius.circular(15),
+                          //   onTap: () {
+                          //     if (_navigated) return;
+                          //     Navigator.pushReplacement(
+                          //       context,
+                          //       MaterialPageRoute(
+                          //         builder: (context) => HomeScreen(),
+                          //       ),
+                          //     );
+                          //   },
+                          //   child: Container(
+                          //     decoration: BoxDecoration(
+                          //       color: AppColor.textWhite,
+                          //       borderRadius: BorderRadius.circular(15),
+                          //     ),
+                          //     child: Padding(
+                          //       padding: const EdgeInsets.symmetric(
+                          //         horizontal: 34,
+                          //         vertical: 20,
+                          //       ),
+                          //       child: Text(
+                          //         'Skip',
+                          //         style: GoogleFont.Mulish(
+                          //           fontSize: 16,
+                          //           fontWeight: FontWeight.w800,
+                          //           color: AppColor.darkBlue,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
                           InkWell(
                             borderRadius: BorderRadius.circular(15),
                             onTap: () {
+                              if (_navigated) return;
+                              _navigated = true;
+
                               context.go(AppRoutes.homePath);
-                              // Navigator.pushReplacement(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) => HomeScreen(),
-                              //   ),
-                              // );
                             },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: AppColor.textWhite,
                                 borderRadius: BorderRadius.circular(15),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 34,
-                                  vertical: 20,
-                                ),
-                                child: Text(
-                                  'Skip',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColor.darkBlue,
-                                  ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 34,
+                                vertical: 20,
+                              ),
+                              child: Text(
+                                'Skip',
+                                style: GoogleFont.Mulish(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColor.darkBlue,
                                 ),
                               ),
                             ),
                           ),
-
                           SizedBox(width: 15),
 
                           InkWell(

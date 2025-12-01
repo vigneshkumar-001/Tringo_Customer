@@ -3015,12 +3015,6 @@ class CommonContainer {
     return heroTag == null ? tappable : Hero(tag: heroTag!, child: tappable);
   }*/
 
-  /// Figma-accurate glow avatar that keeps the same *visual size* for ANY image.
-  /// - Square box (size x size)
-  /// - Center-crop (cover) so portrait/landscape fill evenly
-  /// - Thin outside stroke (doesn't eat into the photo)
-  /// - Soft outer glow
-  // CommonContainer.glowAvatarUniversal (no Hero)
   static Widget glowAvatarUniversal({
     required ImageProvider
     image, // AssetImage / NetworkImage / FileImage / MemoryImage
