@@ -12,6 +12,8 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/lo
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/otp_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/whatsapp_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_detail_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_list_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Search%20Screen/Model/search_suggestion_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/service_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/service_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/services_list_response.dart';
@@ -595,5 +597,73 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+
+  Future<Either<Failure, SearchSuggestionResponse>> searchSuggestions({
+    required String searchWords,
+  }) async {
+    try {
+      final url = ApiUrl.searchSuggestions( lat: 0.0,lng: 0.0,searchWords: searchWords);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SearchSuggestionResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+
+  Future<Either<Failure, ProductListResponse>> productList({
+    required String searchWords,
+  }) async {
+    try {
+      AppLogger.log.i(searchWords);
+      final url = ApiUrl.productList(  searchWords: searchWords,lng: 0.0,lat: 0.0);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(ProductListResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
 
 }

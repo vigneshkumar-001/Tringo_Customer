@@ -3,7 +3,7 @@ import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/searc
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
 import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Search Screen/Screens/search_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
@@ -14,7 +14,8 @@ import '../filter_popup_screen.dart';
 
 class ButtomNavigatebar extends StatefulWidget {
   final int initialIndex;
-  const ButtomNavigatebar({super.key, this.initialIndex = 0});
+  final String? tittle;
+  const ButtomNavigatebar({super.key, this.initialIndex = 0, this.tittle});
 
   @override
   State<ButtomNavigatebar> createState() => _ButtomNavigatebarState();
@@ -41,7 +42,7 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
       ShopsListing(), // 3
       ServiceListing(), // 4
       FoodList(), // 5
-      ProductListing(), // 6
+      ProductListing(title: widget.tittle,), // 6
     ];
   }
 

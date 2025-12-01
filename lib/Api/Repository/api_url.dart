@@ -25,7 +25,6 @@ class ApiUrl {
     return "${base}api/v1/public/shops/$shopId/services?page=1&limit=20";
   }
 
-
   static String putEnquiry({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/enquiries";
   }
@@ -36,5 +35,21 @@ class ApiUrl {
 
   static String viewAllDetailedServices({required String serviceId}) {
     return "${base}api/v1/public/services/$serviceId";
+  }
+
+  static String searchSuggestions({
+    required String searchWords,
+    required double lat,
+    required lng,
+  }) {
+    return "${base}api/v1/public/search?lat=$lat&lng=$lng&q=$searchWords";
+  }
+
+  static String productList({
+    required double lng,
+    required double lat,
+    required String searchWords,
+  }) {
+    return "${base}api/v1/public/products?page=1&limit=20&q=$searchWords&lat=$lat&lng=$lng";
   }
 }

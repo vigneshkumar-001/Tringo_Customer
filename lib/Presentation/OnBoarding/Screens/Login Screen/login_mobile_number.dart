@@ -379,7 +379,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
 
                                 await notifier.verifyWhatsappNumber(
                                   contact: rawPhone,
-                                  purpose: 'Customer', //  important
+                                  purpose: 'customer', //  important
                                 );
                               },
                         text: Text('Verify Now'),

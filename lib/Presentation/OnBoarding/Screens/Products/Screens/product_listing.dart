@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/product_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Screens/product_details.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
@@ -9,17 +12,39 @@ import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/current_location_widget.dart';
 import '../../Food Screen/food_details.dart';
 
-class ProductListing extends StatefulWidget {
+class ProductListing extends ConsumerStatefulWidget {
   final String? title;
   const ProductListing({super.key, this.title});
 
   @override
-  State<ProductListing> createState() => _ProductListingState();
+  ConsumerState<ProductListing> createState() => _ProductListingState();
 }
 
-class _ProductListingState extends State<ProductListing> {
+class _ProductListingState extends ConsumerState<ProductListing> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(productNotifierProvider.notifier).productList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(productNotifierProvider);
+
+    if (state.isLoading) {
+      return Scaffold(
+        body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
+      );
+    }
+
+    final productListData = state.productListResponse;
+    if (productListData == null) {
+      return const Scaffold(body: Center(child: Text('No data')));
+    }
     return Scaffold(
       backgroundColor: AppColor.white,
       body: SafeArea(
@@ -38,7 +63,7 @@ class _ProductListingState extends State<ProductListing> {
                     ),
                     SizedBox(width: 15),
                     Text(
-                      'BLDC Fan',
+                      widget.title ?? '',
                       style: GoogleFont.Mulish(
                         fontWeight: FontWeight.w800,
                         fontSize: 22,
@@ -64,39 +89,51 @@ class _ProductListingState extends State<ProductListing> {
                 ),
                 SizedBox(height: 17),
                 Text(
-                  '100+ Results',
+                  '${productListData.data.items.length}+ Results',
                   style: GoogleFont.Mulish(
                     fontSize: 14,
                     color: AppColor.lightGray2,
                   ),
                 ),
-                CommonContainer.foodList(
-                  titleWeight: FontWeight.w400,
-                  locations: true,
-                  fontSize: 12,
-                  imageWidth: 130,
-                  imageHeight: 150,
-                  Ad: true,
-                  horizontalDivider: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ProductDetails()),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: productListData.data.items.length,
+                  itemBuilder: (context, index) {
+                    final data = productListData.data.items[index];
+                    return CommonContainer.foodList(
+                      titleWeight: FontWeight.w400,
+                      locations: true,
+                      fontSize: 12,
+                      imageWidth: 130,
+                      imageHeight: 150,
+                      Ad: false,
+                      horizontalDivider: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProductDetails(productId: data.id),
+                          ),
+                        );
+                      },
+                      Verify: data.shop.isTrusted,
+                      image: data.imageUrl.toString(),
+                      foodName: data.englishName.toString(),
+                      ratingStar: data.shop.rating.toString(),
+                      ratingCount: data.shop.ratingCount.toString(),
+                      offAmound: '₹${data.price}',
+                      oldAmound: '₹3,999',
+                      km: data.shop.distanceKm.toString(),
+                      location:
+                          '${data.shop.englishName} & ${data.shop.category}',
                     );
                   },
-                  Verify: true,
-                  image: AppImages.fanImage1,
-                  foodName:
-                      'Orient Electric Zeno 1200mm 32W BLDC Energy Saving Ceiling Fan with Remote',
-                  ratingStar: '4.5',
-                  ratingCount: '16',
-                  offAmound: '₹2,999',
-                  oldAmound: '₹3,999',
-                  km: '5Kms',
-                  location: 'Veaan Electricals & Applicances',
                 ),
+
                 SizedBox(height: 10),
-                CommonContainer.foodList(
+                /*      CommonContainer.foodList(
                   titleWeight: FontWeight.w400,
                   locations: true,
                   fontSize: 12,
@@ -154,7 +191,66 @@ class _ProductListingState extends State<ProductListing> {
                   oldAmound: '₹3,999',
                   km: '100Mtrs',
                   location: 'Lkh Electricals & Applicances',
+                ),*/
+                /*      CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: true,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage2,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
                 ),
+                SizedBox(height: 10),
+                CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: true,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage3,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),
+                SizedBox(height: 10),
+                CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: false,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage4,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),*/
               ],
             ),
           ),
