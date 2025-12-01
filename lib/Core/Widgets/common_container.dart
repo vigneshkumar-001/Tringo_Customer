@@ -3428,6 +3428,70 @@ class CommonContainer {
     );
   }
 
+  static button2({
+    BuildContext? context,
+    VoidCallback? onTap,
+    required String text,
+    Widget? loader,
+    double fontSize = 16,
+    Color? textColor = Colors.white,
+    bool isBorder = false,
+    FontWeight fontWeight = FontWeight.w700,
+    double? width = 200,
+    double? height = 60,
+    String? image,
+    Color? backgroundColor,
+  }) {
+    return Center(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+            backgroundColor ??
+                (isBorder ? AppColor.white : AppColor.skyBlue),
+            border: isBorder
+                ? Border.all(color: const Color(0xff3F5FF2), width: 2)
+                : null,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: ElevatedButton(
+            style: ButtonStyle(
+              padding: MaterialStateProperty.all(EdgeInsets.zero),
+              shape: MaterialStateProperty.all(
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              elevation: MaterialStateProperty.all(0),
+              backgroundColor: MaterialStateProperty.all(Colors.transparent),
+            ),
+            onPressed: onTap,
+            child: loader != null
+                ? loader
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  text,
+                  style: TextStyle(
+                    fontFamily: "Roboto-normal",
+                    fontSize: fontSize,
+                    color: textColor,
+                    fontWeight: fontWeight,
+                  ),
+                ),
+                if (image != null) ...[
+                  const SizedBox(width: 15),
+                  Image.asset(image, height: 20),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   static reviewBox() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
