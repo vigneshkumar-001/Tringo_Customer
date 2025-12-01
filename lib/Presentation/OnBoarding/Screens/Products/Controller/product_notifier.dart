@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tringo_app/Api/DataSource/api_data_source.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_detail_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_list_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 
@@ -28,11 +29,13 @@ class ProductState {
   final bool isLoading;
   final String? error;
   final ProductDetailResponse? productDetailsResponse;
+  final ProductListResponse? productListResponse;
 
   const ProductState({
     this.isLoading = false,
     this.error,
     this.productDetailsResponse,
+    this.productListResponse,
   });
 
   factory ProductState.initial() => const ProductState();
@@ -41,12 +44,14 @@ class ProductState {
     bool? isLoading,
     String? error,
     ProductDetailResponse? productDetailsResponse,
+    ProductListResponse? productListResponse,
   }) {
     return ProductState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
       productDetailsResponse:
           productDetailsResponse ?? this.productDetailsResponse,
+      productListResponse: productListResponse ?? this.productListResponse,
     );
   }
 }
@@ -77,6 +82,21 @@ class ProductNotifier extends Notifier<ProductState> {
           isLoading: false,
           productDetailsResponse: response,
         );
+      },
+    );
+  }
+
+  Future<void> productList() async {
+    state = state.copyWith(isLoading: true, productListResponse: null);
+
+    final result = await api.productList(searchWords: '');
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, productListResponse: null);
+      },
+      (response) {
+        state = state.copyWith(isLoading: false, productListResponse: response);
       },
     );
   }

@@ -3,7 +3,7 @@ import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/searc
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
 import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Search Screen/Screens/search_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/Service_details.dart';
 import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_details.dart';
