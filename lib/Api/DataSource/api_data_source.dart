@@ -21,6 +21,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/p
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
 
+import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
     show UserProfileResponse;
@@ -40,46 +41,38 @@ class ApiDataSource extends BaseApiDataSource {
   @override
   Future<Either<Failure, LoginResponse>> mobileNumberLogin(
     String phone,
-    String page,
-  ) async {
-    try {
-      String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
-      AppLogger.log.i(url);
+    String simToken, {
+    String page = "",
+  }) async {
+    String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
 
-      dynamic response = await Request.sendRequest(
-        url,
-        {"contact": "+91$phone", "purpose": "customer"},
-        'Post',
-        false,
-      );
+    final response = await Request.sendRequest(
+      url,
+      {"contact": "+91$phone", "purpose": "customer"},
+      'Post',
+      false,
+    );
 
-      AppLogger.log.i(response);
-
-      if (response is! DioException) {
-        // If status code is success
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          if (response.data['status'] == true) {
-            return Right(LoginResponse.fromJson(response.data));
-          } else {
-            return Left(
-              ServerFailure(response.data['message'] ?? "Login failed"),
-            );
-          }
+    if (response is! DioException) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(LoginResponse.fromJson(response.data));
         } else {
-          // ❗ API returned non-success code but has JSON error message
           return Left(
-            ServerFailure(response.data['message'] ?? "Something went wrong"),
+            ServerFailure(response.data['message'] ?? "Login failed"),
           );
         }
       } else {
-        final errorData = response.response?.data;
-        if (errorData is Map && errorData.containsKey('message')) {
-          return Left(ServerFailure(errorData['message']));
-        }
-        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
       }
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    } else {
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
     }
   }
 
@@ -655,6 +648,53 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SimVerifyResponse>> mobileVerify({
+    required String contact,
+    required String simToken,
+    required String purpose,
+  }) async {
+    try {
+      final url = ApiUrl.mobileVerify;
+
+      final payload = {
+        'contact': "+91$contact",
+        'simToken': simToken,
+        'purpose': 'owner',
+      };
+
+      // Use your normal POST helper
+      dynamic response = await Request.sendRequest(url, payload, 'Post', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            // ✅ API returns the same JSON you showed
+            return Right(SimVerifyResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
