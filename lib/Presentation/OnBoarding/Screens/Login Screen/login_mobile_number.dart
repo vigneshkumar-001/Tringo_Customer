@@ -7,12 +7,10 @@ import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Controller/login_notifier.dart';
- 
 
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_snackbar.dart';
- 
 
 class LoginMobileNumber extends ConsumerStatefulWidget {
   const LoginMobileNumber({super.key});
@@ -32,7 +30,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
   @override
   void initState() {
     super.initState();
-
   }
 
   void _formatPhoneNumber(String value) {
@@ -247,24 +244,24 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                                   ),
                                   border: InputBorder.none,
                                   suffixIcon:
-                                  mobileNumberController.text.isNotEmpty
+                                      mobileNumberController.text.isNotEmpty
                                       ? GestureDetector(
-                                    onTap: () {
-                                      mobileNumberController.clear();
-                                      setState(() {});
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 17,
-                                      ),
-                                      child: Image.asset(
-                                        AppImages.closeImage,
-                                        width: 10,
-                                        height: 10,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  )
+                                          onTap: () {
+                                            mobileNumberController.clear();
+                                            setState(() {});
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 17,
+                                            ),
+                                            child: Image.asset(
+                                              AppImages.closeImage,
+                                              width: 10,
+                                              height: 10,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                        )
                                       : null,
                                 ),
                               ),
@@ -336,10 +333,10 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                               padding: const EdgeInsets.all(8.0),
                               child: isWhatsappChecked
                                   ? Image.asset(
-                                AppImages.tickImage,
-                                height: 12,
-                                color: AppColor.green,
-                              )
+                                      AppImages.tickImage,
+                                      height: 12,
+                                      color: AppColor.green,
+                                    )
                                   : SizedBox(width: 12, height: 12),
                             ),
                           ),
@@ -353,37 +350,38 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 35),
                       child: CommonContainer.button(
-                       
-                        loader: state.isLoading ? ThreeDotsLoader(dotColor: AppColor.black,) : null,
+                        loader: state.isLoading
+                            ? ThreeDotsLoader(dotColor: AppColor.black)
+                            : null,
                         onTap: state.isLoading
                             ? null
                             : () async {
-                          final formatted = mobileNumberController.text
-                              .trim();
-                          final rawPhone = formatted.replaceAll(' ', '');
+                                final formatted = mobileNumberController.text
+                                    .trim();
+                                final rawPhone = formatted.replaceAll(' ', '');
 
-                          if (rawPhone.isEmpty) {
-                            AppSnackBar.info(
-                              context,
-                              'Please enter phone number',
-                            );
-                            return;
-                          }
-                          if (rawPhone.length != 10) {
-                            AppSnackBar.info(
-                              context,
-                              'Please enter a valid 10-digit number',
-                            );
-                            return;
-                          }
+                                if (rawPhone.isEmpty) {
+                                  AppSnackBar.info(
+                                    context,
+                                    'Please enter phone number',
+                                  );
+                                  return;
+                                }
+                                if (rawPhone.length != 10) {
+                                  AppSnackBar.info(
+                                    context,
+                                    'Please enter a valid 10-digit number',
+                                  );
+                                  return;
+                                }
 
-                          _lastRawPhone = rawPhone;
+                                _lastRawPhone = rawPhone;
 
-                          await notifier.verifyWhatsappNumber(
-                            contact: rawPhone,
-                            purpose: 'owner', //  important
-                          );
-                        },
+                                await notifier.verifyWhatsappNumber(
+                                  contact: rawPhone,
+                                  purpose: 'Customer', //  important
+                                );
+                              },
                         text: Text('Verify Now'),
                       ),
                     ),
@@ -410,8 +408,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
     );
   }
 }
-
-
 
 // // lib/Presentation/OnBoarding/Screens/Login Screen/login_mobile_number.dart
 // import 'package:flutter/material.dart';
