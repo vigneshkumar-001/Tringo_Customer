@@ -123,8 +123,8 @@ class ShopData {
     postalCode: json['postalCode'],
     serviceTags: json['serviceCategories'] != null
         ? List<serviceCategories>.from(
-      json['serviceCategories'].map((x) => serviceCategories.fromJson(x)),
-    )
+            json['serviceCategories'].map((x) => serviceCategories.fromJson(x)),
+          )
         : null,
     // serviceTags: json['serviceTags'] != null
     //     ? List<String>.from(json['serviceTags'])
@@ -261,6 +261,8 @@ class Product {
   final String? description;
   final List<String>? keywords;
   final int? readyTimeMinutes;
+  final int? rating;
+  final int? ratingCount;
   final bool? doorDelivery;
   final String? status;
   final List<ProductFeature>? features;
@@ -287,6 +289,8 @@ class Product {
     this.readyTimeMinutes,
     this.doorDelivery,
     this.status,
+    this.rating,
+    this.ratingCount,
     this.features,
     this.hasVariants,
   });
@@ -309,6 +313,8 @@ class Product {
     isFeatured: json['isFeatured'],
     offerLabel: json['offerLabel'],
     offerValue: json['offerValue'],
+    ratingCount: json['ratingCount'],
+    rating: json['rating'],
     description: json['description'],
     keywords: json['keywords'] != null
         ? List<String>.from(json['keywords'])
@@ -339,6 +345,8 @@ class Product {
     'stockCount': stockCount,
     'isFeatured': isFeatured,
     'offerLabel': offerLabel,
+    'rating': rating,
+    'ratingCount': ratingCount,
     'offerValue': offerValue,
     'description': description,
     'keywords': keywords,
@@ -515,7 +523,6 @@ class serviceCategories {
     'count': count,
   };
 }
-
 
 class ProductCategory {
   final String? slug;

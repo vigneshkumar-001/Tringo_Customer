@@ -111,6 +111,7 @@ class HomeNotifier extends Notifier<homeState> {
           error: failure.message,
           // homeResponse is preserved
         );
+        AppSnackBar.error(context, failure.message);
       },
       (response) {
         state = state.copyWith(

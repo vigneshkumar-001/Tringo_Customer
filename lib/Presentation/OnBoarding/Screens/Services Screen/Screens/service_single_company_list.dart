@@ -307,12 +307,10 @@ class _ServiceSingleCompanyListState
                   ),
                 ),
 
-                // 3️⃣ SUCCESS
                 data: (response) {
-                  final categories = response.data.categories ?? [];
-                  final allServices = response.data.items ?? [];
+                  final categories = response.data?.categories ?? [];
+                  final allServices = response.data?.items ?? [];
 
-                  // ---- decide which category is selected ----
                   String? selectedSlug;
                   if (categories.isNotEmpty) {
                     final safeIndex = selectedIndex.clamp(
@@ -394,6 +392,8 @@ class _ServiceSingleCompanyListState
                           final service = filteredServices[index];
 
                           final title = service.englishName ?? 'Service';
+                          final rating = service.rating ?? 'Service';
+                          final ratingCount = service.ratingCount ?? 'Service';
                           final image =
                               service.primaryImageUrl?.toString() ?? '';
                           final startsAt = service.startsAt;
@@ -411,8 +411,8 @@ class _ServiceSingleCompanyListState
                             filedName: title,
                             imageWidth: 130,
                             image: image,
-                            ratingStar: '4.5',
-                            ratingCount: '16',
+                            ratingStar: rating.toString() ?? '',
+                            ratingCount: ratingCount.toString() ?? '',
                             offAmound: startsAt != null ? '₹$startsAt' : '',
                             horizontalDivider:
                                 index != filteredServices.length - 1,

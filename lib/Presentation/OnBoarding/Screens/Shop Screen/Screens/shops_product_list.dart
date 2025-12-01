@@ -434,7 +434,7 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                           ),
                         ),
 
-                      // FILTERED SERVICES LIST
+
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -444,6 +444,9 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
 
                           final title = service.englishName ?? 'Service';
                           final image = service.imageUrl?.toString() ?? '';
+                          final rating = service.rating?.toString() ?? '';
+                          final ratingCount =
+                              service.ratingCount?.toString() ?? '';
                           final startsAt = service.price;
 
                           return CommonContainer.serviceDetails(
@@ -452,15 +455,15 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      ProductDetails(productId:  service?.id),
+                                      ProductDetails(productId: service?.id),
                                 ),
                               );
                             },
                             filedName: title,
                             imageWidth: 130,
                             image: image,
-                            ratingStar: '4.5',
-                            ratingCount: '16',
+                            ratingStar: rating,
+                            ratingCount: ratingCount,
                             offAmound: startsAt != null ? '₹$startsAt' : '',
                             horizontalDivider:
                                 index != filteredServices.length - 1,
