@@ -33,6 +33,7 @@ class _FillProfileState extends ConsumerState<FillProfile> {
   TextEditingController profilePhotoController = TextEditingController();
 
   XFile? selectedPhoto;
+  bool _navigated = false;
 
   @override
   Widget build(BuildContext context) {
@@ -212,38 +213,65 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                       padding: const EdgeInsets.symmetric(horizontal: 35),
                       child: Row(
                         children: [
+                          // InkWell(
+                          //   borderRadius: BorderRadius.circular(15),
+                          //   onTap: () {
+                          //     if (_navigated) return;
+                          //     Navigator.pushReplacement(
+                          //       context,
+                          //       MaterialPageRoute(
+                          //         builder: (context) => HomeScreen(),
+                          //       ),
+                          //     );
+                          //   },
+                          //   child: Container(
+                          //     decoration: BoxDecoration(
+                          //       color: AppColor.textWhite,
+                          //       borderRadius: BorderRadius.circular(15),
+                          //     ),
+                          //     child: Padding(
+                          //       padding: const EdgeInsets.symmetric(
+                          //         horizontal: 34,
+                          //         vertical: 20,
+                          //       ),
+                          //       child: Text(
+                          //         'Skip',
+                          //         style: GoogleFont.Mulish(
+                          //           fontSize: 16,
+                          //           fontWeight: FontWeight.w800,
+                          //           color: AppColor.darkBlue,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
                           InkWell(
                             borderRadius: BorderRadius.circular(15),
                             onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => HomeScreen(),
-                                ),
-                              );
+                              if (_navigated) return;
+                              _navigated = true;
+
+                              context.go(AppRoutes.homePath);
                             },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: AppColor.textWhite,
                                 borderRadius: BorderRadius.circular(15),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 34,
-                                  vertical: 20,
-                                ),
-                                child: Text(
-                                  'Skip',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColor.darkBlue,
-                                  ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 34,
+                                vertical: 20,
+                              ),
+                              child: Text(
+                                'Skip',
+                                style: GoogleFont.Mulish(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColor.darkBlue,
                                 ),
                               ),
                             ),
                           ),
-
                           SizedBox(width: 15),
 
                           InkWell(
@@ -262,7 +290,6 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                                 return;
                               }
 
-
                               String dobForApi = '';
                               try {
                                 final parsedDate = DateFormat('dd-MM-yyyy')
@@ -277,24 +304,23 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                                 return;
                               }
 
-
                               final response = await ref
-                                  .read(profileNotifierProvider.notifier).fetchProfile(
-                                displayName: nameController.text.trim(),
-                                email: emailController.text.trim(),
-                                gender: genderController.text.trim(),
-                                dateOfBirth: dobForApi,
-                                ownerImageFile: File(selectedPhoto!.path),
-                              );
+                                  .read(profileNotifierProvider.notifier)
+                                  .fetchProfile(
+                                    displayName: nameController.text.trim(),
+                                    email: emailController.text.trim(),
+                                    gender: genderController.text.trim(),
+                                    dateOfBirth: dobForApi,
+                                    ownerImageFile: File(selectedPhoto!.path),
+                                  );
                               final notifier = ref.read(
                                 profileNotifierProvider.notifier,
                               );
                               if (response != null) {
                                 context.go(AppRoutes.homePath);
                                 final prefs =
-                                await SharedPreferences.getInstance();
+                                    await SharedPreferences.getInstance();
                                 await prefs.setBool("isProfileCompleted", true);
-
                               } else if (state.error != null) {
                                 AppSnackBar.error(context, state.error ?? '');
                               }

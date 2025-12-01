@@ -192,13 +192,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
-                      Image.asset(AppImages.avatarImage1, height: 170),
-                      // CommonContainer.glowAvatarUniversal(
-                      //   image: AssetImage(AppImages.avatarImage1),
-                      //   size: 103,
-                      //   radius: 24,
-                      //   borderWidth: 2,
-                      //   borderColor: AppColor.yellow,
+                      SizedBox(
+                        width: 170,
+                        height: 170,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.asset(
+                            AppImages.avatarImage1,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+
+                      // Padding(
+                      //   padding: const EdgeInsets.all(22),
+                      //   child: CommonContainer.glowAvatarUniversal(
+                      //     image: AssetImage(AppImages.avatarImage1),
+                      //     size: 103,
+                      //     radius: 24,
+                      //     borderWidth: 2,
+                      //     borderColor: AppColor.yellow,
+                      //   ),
                       // ),
                     ],
                   ),

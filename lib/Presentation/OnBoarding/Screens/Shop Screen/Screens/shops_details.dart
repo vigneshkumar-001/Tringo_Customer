@@ -247,6 +247,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                         SizedBox(height: 10),
 
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Chips
                             _staggerFromTop(
@@ -599,7 +600,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               aOffer,
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 0,
+                                  horizontal: 16,
                                 ),
                                 child: Stack(
                                   clipBehavior:
@@ -676,7 +677,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       right: 0,
                                       top:
                                           -giftSize *
-                                          0.22, // slight lift above pill
+                                          0.23, // slight lift above pill
                                       child: SizedBox(
                                         height: 120,
                                         width: 110,
@@ -989,7 +990,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                ProductDetails(productId:  data?.id),
+                                                ProductDetails(
+                                                  productId: data?.id,
+                                                ),
                                           ),
                                         );
                                       },
@@ -1063,15 +1066,16 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => ShopsProduct(
-                                            category: shopsData. data?.category
+                                            category: shopsData.data?.category
                                                 .toString(),
-                                            englishName:  shopsData. data
+                                            englishName: shopsData
+                                                .data
                                                 ?.englishName
                                                 .toString(),
                                             isTrusted:
-                                            shopsData. data?.isTrusted,
+                                                shopsData.data?.isTrusted,
                                             shopImageUrl:
-                                            shopsData. data?.media?[0].url,
+                                                shopsData.data?.media?[0].url,
                                             initialIndex: 2,
                                             shopId: widget.shopId,
                                           ),

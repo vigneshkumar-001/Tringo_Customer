@@ -950,7 +950,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
                                                   location:
                                                       '${services.city},${services.state},${services.country} ',
-                                                  fieldName: 'Company',
+                                                  fieldName: services
+                                                      .ownershipTypeLabel,
                                                   ratingStar: services.rating
                                                       .toString(),
                                                   ratingCount: services
@@ -1048,7 +1049,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                                     children: [
                                       Text(
-                                        'Shops',
+                                        'Products',
                                         style: GoogleFont.Mulish(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 22,
@@ -1289,7 +1290,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
-                                        'View All Shops',
+                                        'View All Products',
                                         style: GoogleFont.Mulish(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
