@@ -350,35 +350,39 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 35),
                       child: CommonContainer.button(
-                        onTap: () async {
-                          final formatted = mobileNumberController.text.trim();
-                          final rawPhone = formatted.replaceAll(' ', '');
+                        loader: state.isLoading
+                            ? ThreeDotsLoader(dotColor: AppColor.black)
+                            : null,
+                        onTap: state.isLoading
+                            ? null
+                            : () async {
+                                final formatted = mobileNumberController.text
+                                    .trim();
+                                final rawPhone = formatted.replaceAll(' ', '');
 
-                          if (rawPhone.isEmpty) {
-                            AppSnackBar.info(
-                              context,
-                              'Please enter phone number',
-                            );
-                            return;
-                          }
-                          if (rawPhone.length != 10) {
-                            AppSnackBar.info(
-                              context,
-                              'Please enter a valid 10-digit number',
-                            );
-                            return;
-                          }
+                                if (rawPhone.isEmpty) {
+                                  AppSnackBar.info(
+                                    context,
+                                    'Please enter phone number',
+                                  );
+                                  return;
+                                }
+                                if (rawPhone.length != 10) {
+                                  AppSnackBar.info(
+                                    context,
+                                    'Please enter a valid 10-digit number',
+                                  );
+                                  return;
+                                }
 
-                          _lastRawPhone = rawPhone;
+                                _lastRawPhone = rawPhone;
 
-                          await notifier.verifyWhatsappNumber(
-                            contact: rawPhone,
-                            purpose: 'customer', //  important
-                          );
-                        },
-                        text: state.isLoading
-                            ? const ThreeDotsLoader()
-                            : const Text('Verify Now'),
+                                await notifier.verifyWhatsappNumber(
+                                  contact: rawPhone,
+                                  purpose: 'Customer', //  important
+                                );
+                              },
+                        text: Text('Verify Now'),
                       ),
                     ),
 
