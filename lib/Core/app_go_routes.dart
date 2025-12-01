@@ -2,13 +2,13 @@
 import 'package:go_router/go_router.dart';
 
 import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
+import '../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Screen/mobile_number_verify.dart';
 import '../Presentation/OnBoarding/Screens/Privacy Policy/privacy_policy.dart';
 import '../Presentation/OnBoarding/Screens/Splash_screen.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/login_mobile_number.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/mobile_number_verify.dart';
 import '../Presentation/OnBoarding/Screens/OTP Screen/otp_screen.dart';
 import '../Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
-
 
 class AppRoutes {
   static const String splashScreen = 'splashScreen';
@@ -45,16 +45,29 @@ final goRouter = GoRouter(
       path: AppRoutes.mobileNumberVerifyPath,
       name: AppRoutes.mobileNumberVerify,
       builder: (context, state) {
-        final phone = state.extra as String?;
-        return MobileNumberVerify(loginNumber: phone ?? '');
+        final args = state.extra as Map<String, dynamic>? ?? {};
+        final phone = args['phone'] as String? ?? '';
+        final simToken = args['simToken'] as String? ?? '';
+
+        return MobileNumberVerify(loginNumber: phone, simToken: simToken);
       },
     ),
     GoRoute(
       path: AppRoutes.otpPath,
       name: AppRoutes.otp,
       builder: (context, state) {
-        final phone = state.extra as String?;
-        return OtpScreen( phoneNumber : phone ?? '');
+        String phone = '';
+
+        final extra = state.extra;
+
+        if (extra is String) {
+          phone = extra;
+        } else if (extra is Map) {
+          final dynamic maybePhone = extra['phone'];
+          if (maybePhone is String) phone = maybePhone;
+        }
+
+        return OtpScreen(phoneNumber: phone);
       },
     ),
     GoRoute(

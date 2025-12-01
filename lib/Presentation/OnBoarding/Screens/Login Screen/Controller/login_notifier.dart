@@ -47,7 +47,7 @@ class LoginState {
 class LoginNotifier extends Notifier<LoginState> {
   late final ApiDataSource api;
 
-  // 🔒 guard to prevent multiple OTP requests
+  // guard to prevent multiple OTP requests
   bool _isRequestingOtp = false;
 
   @override
@@ -61,25 +61,24 @@ class LoginNotifier extends Notifier<LoginState> {
     state = LoginState.initial();
   }
 
-  Future<void> loginUser({required String phoneNumber, String? page}) async {
-    // 🔐 HARD GUARD: block duplicate calls
-    if (_isRequestingOtp) {
-      AppLogger.log.w('loginUser blocked: already requesting OTP');
-      return;
-    }
-
-    _isRequestingOtp = true;
+  Future<void> loginUser({
+    required String phoneNumber,
+    String? simToken,
+    String? page,
+  }) async {
     state = const LoginState(isLoading: true);
 
-    final result = await api.mobileNumberLogin(phoneNumber, page ?? '');
+    final result = await api.mobileNumberLogin(
+      phoneNumber,
+      simToken!,
+      page: page ?? '',
+    );
 
     result.fold(
-          (Failure failure) {
-        _isRequestingOtp = false; // ✅ release lock
+      (failure) {
         state = LoginState(isLoading: false, error: failure.message);
       },
-          (LoginResponse response) {
-        _isRequestingOtp = false; // ✅ release lock
+      (response) {
         state = LoginState(isLoading: false, loginResponse: response);
       },
     );
@@ -91,10 +90,10 @@ class LoginNotifier extends Notifier<LoginState> {
     final result = await api.otp(contact: contact, otp: otp);
 
     await result.fold<Future<void>>(
-          (Failure failure) async {
+      (Failure failure) async {
         state = LoginState(isLoading: false, error: failure.message);
       },
-          (OtpResponse response) async {
+      (OtpResponse response) async {
         final data = response.data;
 
         final prefs = await SharedPreferences.getInstance();
@@ -133,14 +132,11 @@ class LoginNotifier extends Notifier<LoginState> {
       );
 
       result.fold(
-            (Failure failure) {
+        (Failure failure) {
           state = LoginState(isLoading: false, error: failure.message);
         },
-            (WhatsappResponse response) {
-          state = LoginState(
-            isLoading: false,
-            whatsappResponse: response,
-          );
+        (WhatsappResponse response) {
+          state = LoginState(isLoading: false, whatsappResponse: response);
         },
       );
     } catch (e) {
@@ -155,8 +151,7 @@ final apiDataSourceProvider = Provider<ApiDataSource>((ref) {
 });
 
 final loginNotifierProvider =
-NotifierProvider.autoDispose<LoginNotifier, LoginState>(LoginNotifier.new);
-
+    NotifierProvider.autoDispose<LoginNotifier, LoginState>(LoginNotifier.new);
 
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
