@@ -188,9 +188,11 @@ class Request {
 
       return response;
     } on DioException catch (e) {
+      print(e);
       // THROW the DioException, do not return it
       throw e;
     } catch (e) {
+      print(e);
       // Throw clean exception
       throw Exception(e.toString());
     }

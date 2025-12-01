@@ -2,6 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions for SIM / phone number -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission
@@ -43,7 +45,17 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
+    <queries>
+        <!-- For WhatsApp app -->
+        <package android:name="com.whatsapp" />
 
+        <!-- For any https browser VIEW intent -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />

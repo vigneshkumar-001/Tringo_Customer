@@ -184,6 +184,14 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               : null;
 
                           Widget card = CommonContainer.servicesContainer(
+                            whatsAppOnTap: (){
+                              MapUrls.openWhatsapp(
+                                message: 'hi',
+                                context: context,
+                                phone:
+                                data.primaryPhone,
+                              );
+                            },
                             isMessageLoading:
                             isThisCardLoading,
                             messageOnTap: () {
