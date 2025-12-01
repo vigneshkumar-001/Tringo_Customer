@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/google_font.dart';
-import '../Home Screen/home_screen.dart';
+import '../Home Screen/Screens/home_screen.dart';
 
 class PrivacyPolicy extends StatefulWidget {
   const PrivacyPolicy({super.key});

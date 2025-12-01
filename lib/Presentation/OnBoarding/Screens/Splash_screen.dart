@@ -5,9 +5,9 @@ import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import '../../../Core/app_go_routes.dart';
-import 'Home Screen/home_screen.dart';
+import 'Home Screen/Screens/home_screen.dart';
 import 'Login Screen/login_mobile_number.dart';
-import 'fill_profile/fill_profile.dart';
+import 'fill_profile/Screens/fill_profile.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> checkNavigation() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+    final token = prefs.getString('token');
     final bool isProfileCompleted =
         prefs.getBool("isProfileCompleted") ?? false;
 
@@ -34,15 +34,14 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 5));
 
     if (!mounted) return;
-    context.go(AppRoutes.loginPath);
 
-    // if (!isLoggedIn) {
-    //   context.go(AppGoRoutes.loginPath);
-    // } else if (!isProfileCompleted) {
-    //   context.go(AppGoRoutes.fillProfilePath);
-    // } else {
-    //   context.go(AppGoRoutes.homePath);
-    // }
+    if (token == null) {
+      context.go(AppRoutes.loginPath);
+    } else if (!isProfileCompleted) {
+      context.go(AppRoutes.fillProfilePath);
+    } else {
+      context.go(AppRoutes.homePath);
+    }
   }
 
   // Future<void> checkNavigation() async {
