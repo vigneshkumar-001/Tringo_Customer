@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Products/product_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/Service_details.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_details.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Home Screen/home_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/Service_details.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_details.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';
@@ -16,7 +16,8 @@ import '../filter_popup_screen.dart';
 
 class ServiceAndShopsDetails extends StatefulWidget {
   final int initialIndex;
-  const ServiceAndShopsDetails({super.key, this.initialIndex = 0});
+  final String? shopId;
+  const ServiceAndShopsDetails({super.key, this.initialIndex = 0, this.shopId});
 
   @override
   State<ServiceAndShopsDetails> createState() => _ServiceAndShopsDetailsState();
@@ -40,8 +41,8 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
       HomeScreen(), // 0
       SearchScreen(), // 1
       _ExploreScreenStub(), // 2
-      ServiceDetails(), // 3
-      ShopsDetails(), // 4
+      ServiceDetails(serviceID: widget.shopId), // 3
+      ShopsDetails(shopId: widget.shopId), // 4
     ];
   }
 
@@ -105,7 +106,6 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
       ),
     );
   }
-
 
   // map taps from the bar
   void _onBarTap(int i) {

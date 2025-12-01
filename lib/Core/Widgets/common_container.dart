@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -538,6 +539,278 @@ class CommonContainer {
 
     bool messageContainer = false,
     bool mapBox = false,
+    bool fullEnquiry = false,
+    bool whatsAppIcon = false,
+    bool MessageIcon = false,
+    bool FireIcon = false,
+    bool order = false,
+
+    // 🔹 NEW: message loading flag
+    bool messageLoading = false,
+
+    EdgeInsetsGeometry? callNowPadding,
+    EdgeInsetsGeometry? mapBoxPadding,
+    EdgeInsetsGeometry? iconContainerPadding,
+
+    double? callIconSize,
+    double? callTextSize,
+    double? mapIconSize,
+    double? mapTextSize,
+    double? messagesIconSize,
+    double? whatsAppIconSize,
+    double? fireIconSize,
+
+    Color? callImageColor,
+    String? fireTooltip,
+    String? mapImage,
+    String? mapText,
+    String? callImage,
+    String? callText,
+    String? orderText,
+    String? orderImage,
+  }) {
+    // ---- Set SAFE DEFAULTS ----
+    final safeCallImage = callImage ?? AppImages.callImage;
+    final safeCallText = callText ?? "Call";
+
+    final safeOrderImage = orderImage ?? AppImages.orderImage;
+    final safeOrderText = orderText ?? "Order";
+
+    final safeMapImage = mapImage ?? AppImages.locationImage;
+    final safeMapText = mapText ?? "Map";
+
+    return Row(
+      children: [
+        if (order)
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: InkWell(
+              onTap: orderOnTap,
+              child: Container(
+                padding:
+                    callNowPadding ??
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColor.blueGradient1,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  children: [
+                    Image.asset(safeOrderImage, height: callIconSize ?? 16),
+                    const SizedBox(width: 7),
+                    Text(
+                      safeOrderText,
+                      style: GoogleFont.Mulish(
+                        fontWeight: FontWeight.bold,
+                        fontSize: callTextSize ?? 16,
+                        color: AppColor.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // CALL BUTTON
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final bounded =
+                constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
+
+            final callBtn = InkWell(
+              onTap: callOnTap,
+              child: Container(
+                padding:
+                    callNowPadding ??
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColor.blue,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      safeCallImage,
+                      height: callIconSize ?? 16,
+                      color: callImageColor,
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      safeCallText,
+                      style: GoogleFont.Mulish(
+                        fontWeight: FontWeight.bold,
+                        fontSize: callTextSize ?? 14,
+                        color: AppColor.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+
+            return bounded ? Expanded(child: callBtn) : callBtn;
+          },
+        ),
+        if (fullEnquiry)
+          Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: InkWell(
+              onTap: messageLoading ? null : messageOnTap,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColor.blue, width: 1.5),
+                ),
+                child: Padding(
+                  padding:
+                      mapBoxPadding ??
+                      const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
+                  // 🔹 FIX: give inner content a fixed width/height
+                  child: SizedBox(
+                    height: 24, // same height for both states
+                    width: 130, // adjust to match your current button width
+                    child: messageLoading
+                        ? const Center(
+                            child: SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                safeMapImage,
+                                height: mapIconSize ?? 21,
+                                color: AppColor.blue,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                safeMapText,
+                                style: GoogleFont.Mulish(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: mapTextSize ?? 16,
+                                  color: AppColor.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        if (mapBox)
+          Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: InkWell(
+              onTap: mapOnTap,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColor.blue, width: 1.5),
+                ),
+                child: Padding(
+                  padding:
+                      mapBoxPadding ??
+                      const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        safeMapImage,
+                        height: mapIconSize ?? 21,
+                        color: AppColor.blue,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        safeMapText,
+                        style: GoogleFont.Mulish(
+                          fontWeight: FontWeight.bold,
+                          fontSize: mapTextSize ?? 16,
+                          color: AppColor.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
+          const SizedBox(width: 9),
+
+        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
+          Container(
+            padding:
+                iconContainerPadding ??
+                const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColor.white2,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Wrap(
+              spacing: 16,
+              alignment: WrapAlignment.center,
+              children: [
+                if (MessageIcon)
+                  GestureDetector(
+                    onTap: messageLoading ? null : messageOnTap,
+                    child: messageLoading
+                        ? SizedBox(
+                            height: messagesIconSize ?? 19,
+                            width: messagesIconSize ?? 19,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Image.asset(
+                            AppImages.messageImage,
+                            height: messagesIconSize ?? 19,
+                          ),
+                  ),
+                if (whatsAppIcon)
+                  GestureDetector(
+                    onTap: whatsAppOnTap,
+                    child: Image.asset(
+                      AppImages.whatsappImage,
+                      height: whatsAppIconSize ?? 19,
+                    ),
+                  ),
+                if (FireIcon)
+                  Tooltip(
+                    message: fireTooltip ?? 'Trending service',
+                    child: GestureDetector(
+                      onTap: fireOnTap,
+                      child: Image.asset(
+                        AppImages.fireImage,
+                        height: fireIconSize ?? 19,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /*
+  static callNowButton({
+    VoidCallback? callOnTap,
+    VoidCallback? orderOnTap,
+    VoidCallback? mapOnTap,
+    VoidCallback? messageOnTap,
+    VoidCallback? whatsAppOnTap,
+    VoidCallback? fireOnTap,
+    bool messageLoading = false,
+    bool messageContainer = false,
+    bool mapBox = false,
     bool whatsAppIcon = false,
     bool MessageIcon = false,
     bool FireIcon = false,
@@ -563,7 +836,8 @@ class CommonContainer {
     String? callText,
     String? orderText,
     String? orderImage,
-  }) {
+  })
+  {
     // ---- Set SAFE DEFAULTS ----
     final safeCallImage = callImage ?? AppImages.callImage;
     final safeCallText = callText ?? "Call";
@@ -733,6 +1007,7 @@ class CommonContainer {
       ],
     );
   }
+*/
 
   // static callNowButton({
   //   VoidCallback? callOnTap,
@@ -1129,17 +1404,237 @@ class CommonContainer {
     required String ratingStar,
     required String ratingCount,
     required String time,
-    String? heroTag, // 👈 optional
+    String? heroTag,
     VoidCallback? onTap,
+    VoidCallback? callTap,
+    VoidCallback? messageOnTap,
+    VoidCallback? whatsAppOnTap,
+    VoidCallback? fireOnTap,
+    String? fireTooltip,
     bool horizontalDivider = false,
     bool Verify = false,
+
+    bool isMessageLoading = false,
   }) {
-    // thumbnail
-    Widget thumb = Image.asset(
-      image,
+    Widget thumb = CachedNetworkImage(
+      imageUrl: image,
       height: 100,
       width: 100,
       fit: BoxFit.cover,
+      placeholder: (context, url) => const SizedBox(
+        height: 50,
+        width: 50,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) => const SizedBox(
+        height: 100,
+        width: 100,
+        child: Icon(Icons.broken_image),
+      ),
+    );
+
+    if (heroTag != null && heroTag.isNotEmpty) {
+      thumb = Hero(tag: heroTag, child: thumb);
+    }
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            // ... your existing top content (image, name, rating, etc.)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 15.0),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    clipBehavior: Clip.antiAlias,
+                    borderRadius: BorderRadius.circular(12),
+                    child: thumb,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (Verify)
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColor.blueGradient1,
+                                  AppColor.blueGradient2,
+                                  AppColor.blueGradient3,
+                                ],
+                                begin: Alignment.centerRight,
+                                end: Alignment.centerLeft,
+                              ),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset(AppImages.verifyTick, height: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Trusted',
+                                    style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 10,
+                                      color: AppColor.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 9),
+                        Text(
+                          companyName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFont.Mulish(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: AppColor.darkBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Image.asset(
+                              AppImages.locationImage,
+                              height: 10,
+                              color: AppColor.lightGray2,
+                            ),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                location,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFont.Mulish(
+                                  fontSize: 12,
+                                  color: AppColor.lightGray2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              fieldName,
+                              style: GoogleFont.Mulish(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: AppColor.lightGray3,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            CommonContainer.greenStarRating(
+                              ratingStar: ratingStar,
+                              ratingCount: ratingCount,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Opens Upto ',
+                              style: GoogleFont.Mulish(
+                                fontSize: 9,
+                                color: AppColor.lightGray2,
+                              ),
+                            ),
+                            Text(
+                              time,
+                              style: GoogleFont.Mulish(
+                                fontSize: 9,
+                                color: AppColor.lightGray2,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 🔹 CALL / MESSAGE / WHATSAPP ROW
+            CommonContainer.callNowButton(
+              callImage: AppImages.callImage,
+              callIconSize: 16,
+              callText: 'Call Now',
+              MessageIcon: true,
+              whatsAppIcon: true,
+              FireIcon: true,
+              fireOnTap: fireOnTap,
+              fireTooltip: fireTooltip,
+              whatsAppOnTap: whatsAppOnTap,
+              messageOnTap: messageOnTap,
+
+              callOnTap: callTap,
+              messageContainer: true,
+              // 🔹 pass loading flag
+              messageLoading: isMessageLoading,
+            ),
+            const SizedBox(height: 20),
+            if (horizontalDivider) CommonContainer.horizonalDivider(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /*
+  static servicesContainer({
+    required String image,
+    required String companyName,
+    required String location,
+    required String fieldName,
+    required String ratingStar,
+    required String ratingCount,
+    required String time,
+    String? heroTag, // 👈 optional
+    VoidCallback? onTap,
+    VoidCallback? callTap,
+    VoidCallback? messageOnTap,
+    VoidCallback? whatsAppOnTap,
+    bool horizontalDivider = false,
+    bool Verify = false,
+  })
+  {
+    // thumbnail
+    // Widget thumb = Image.network(
+    //   image,
+    //   height: 100,
+    //   width: 100,
+    //   fit: BoxFit.cover,
+    // );
+    Widget thumb = CachedNetworkImage(
+      imageUrl: image,
+      height: 100,
+      width: 100,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => const SizedBox(
+        height: 50,
+        width: 50,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) => const SizedBox(
+        height: 100,
+        width: 100,
+        child: Icon(Icons.broken_image),
+      ),
     );
 
     // only wrap with Hero if a tag is provided
@@ -1320,6 +1815,7 @@ class CommonContainer {
               ),
             ),
             CommonContainer.callNowButton(
+
               callImage: AppImages.callImage,
               callIconSize: 16,
               callText: 'Call Now',
@@ -1327,9 +1823,9 @@ class CommonContainer {
               whatsAppIcon: true,
               FireIcon: true,
               fireOnTap: () {},
-              whatsAppOnTap: () {},
-              messageOnTap: () {},
-              callOnTap: () {},
+              whatsAppOnTap: whatsAppOnTap,
+              messageOnTap: messageOnTap,
+              callOnTap: callTap,
               messageContainer: true,
             ),
             const SizedBox(height: 20),
@@ -1339,6 +1835,7 @@ class CommonContainer {
       ),
     );
   }
+*/
 
   static serviceDetails({
     VoidCallback? onTap,
@@ -1361,12 +1858,31 @@ class CommonContainer {
             child: Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    image,
-                    height: imageHeight,
-                    width: imageWidth,
-                    fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    height: 130,
+                    width: 130,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: CachedNetworkImage(
+                      imageUrl: image, // your network image URL
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Center(
+                        child: SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          size: 40, // reduce icon size
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
 
@@ -1746,21 +2262,22 @@ class CommonContainer {
     double fontSize = 16,
     FontWeight titleWeight = FontWeight.w800,
     bool Verify = false,
+    bool doorDelivery = false,
     bool locations = false,
     bool weight = false,
     bool Ad = false,
     VoidCallback? onTap,
     bool horizontalDivider = false,
 
-    List<String> weightOptions = const ['300Gm', '500Gm'],
+    // List<String> weightOptions = const ['300Gm', '500Gm'],
     int? selectedWeightIndex, // null = none selected
     ValueChanged<int>? onWeightChanged, // callback when tapped
   }) {
     // Apply filtering logic:
-    final List<String> filteredWeightOptions = [
-      if (weightOptions.contains('1Kg')) '1Kg',
-      ...weightOptions.where((w) => w.toLowerCase().endsWith('gm')).take(2),
-    ];
+    // final List<String> filteredWeightOptions = [
+    //   if (weightOptions.contains('1Kg')) '1Kg',
+    //   ...weightOptions.where((w) => w.toLowerCase().endsWith('gm')).take(2),
+    // ];
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -1776,15 +2293,28 @@ class CommonContainer {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
+                        height: 130,
+                        width: 130,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        height: 130, // desired height
-                        width: 130, // desired width
-                        child: FittedBox(
+                        child: CachedNetworkImage(
+                          imageUrl: image, // your network image URL
                           fit: BoxFit.cover,
-                          clipBehavior: Clip.hardEdge,
-                          child: Image.asset(image),
+                          placeholder: (context, url) => Center(
+                            child: SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 40, // reduce icon size
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1840,7 +2370,9 @@ class CommonContainer {
                         children: [
                           if (Verify) CommonContainer.verifyTick(),
                           SizedBox(width: 5),
-                          CommonContainer.doorDelivery(),
+                          doorDelivery == true
+                              ? CommonContainer.doorDelivery()
+                              : SizedBox.shrink(),
                         ],
                       ),
                       SizedBox(height: 12),
@@ -1914,18 +2446,18 @@ class CommonContainer {
                             offAmound,
                             style: GoogleFont.Mulish(
                               fontWeight: FontWeight.w800,
-                              fontSize: 22,
+                              fontSize: 20,
                               color: AppColor.darkBlue,
                             ),
                           ),
-                          SizedBox(width: 10),
+                          SizedBox(width: 5),
                           Stack(
                             alignment: Alignment.center,
                             children: [
                               Text(
                                 oldAmound,
                                 style: GoogleFont.Mulish(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   color: AppColor.lightGray3,
                                 ),
                               ),
@@ -1991,77 +2523,77 @@ class CommonContainer {
                           ),
                         ),
 
-                      if (weight)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Weight',
-                              style: GoogleFont.Mulish(
-                                fontSize: 12,
-                                color: AppColor.darkBlue,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Wrap(
-                                spacing: 10,
-                                runSpacing: 8,
-                                children: List.generate(
-                                  filteredWeightOptions.length,
-                                  (i) {
-                                    final bool isSelected =
-                                        selectedWeightIndex == i;
-                                    return InkWell(
-                                      borderRadius: BorderRadius.circular(50),
-                                      onTap: () => onWeightChanged?.call(i),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? AppColor.white
-                                              : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(
-                                            50,
-                                          ),
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? AppColor.blue
-                                                : AppColor.lightGray2,
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: isSelected
-                                              ? [
-                                                  BoxShadow(
-                                                    color: AppColor.blue
-                                                        .withOpacity(0.14),
-                                                    blurRadius: 10,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ]
-                                              : null,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        child: Text(
-                                          filteredWeightOptions[i],
-                                          style: GoogleFont.Mulish(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w800,
-                                            color: isSelected
-                                                ? AppColor.blue
-                                                : AppColor.lightGray2,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      // if (weight)
+                      //   Row(
+                      //     crossAxisAlignment: CrossAxisAlignment.center,
+                      //     children: [
+                      //       Text(
+                      //         'Weight',
+                      //         style: GoogleFont.Mulish(
+                      //           fontSize: 12,
+                      //           color: AppColor.darkBlue,
+                      //         ),
+                      //       ),
+                      //       const SizedBox(width: 10),
+                      //       Expanded(
+                      //         child: Wrap(
+                      //           spacing: 10,
+                      //           runSpacing: 8,
+                      //           children: List.generate(
+                      //             filteredWeightOptions.length,
+                      //             (i) {
+                      //               final bool isSelected =
+                      //                   selectedWeightIndex == i;
+                      //               return InkWell(
+                      //                 borderRadius: BorderRadius.circular(50),
+                      //                 onTap: () => onWeightChanged?.call(i),
+                      //                 child: Container(
+                      //                   decoration: BoxDecoration(
+                      //                     color: isSelected
+                      //                         ? AppColor.white
+                      //                         : Colors.transparent,
+                      //                     borderRadius: BorderRadius.circular(
+                      //                       50,
+                      //                     ),
+                      //                     border: Border.all(
+                      //                       color: isSelected
+                      //                           ? AppColor.blue
+                      //                           : AppColor.lightGray2,
+                      //                       width: 1.5,
+                      //                     ),
+                      //                     boxShadow: isSelected
+                      //                         ? [
+                      //                             BoxShadow(
+                      //                               color: AppColor.blue
+                      //                                   .withOpacity(0.14),
+                      //                               blurRadius: 10,
+                      //                               offset: const Offset(0, 2),
+                      //                             ),
+                      //                           ]
+                      //                         : null,
+                      //                   ),
+                      //                   padding: const EdgeInsets.symmetric(
+                      //                     horizontal: 12,
+                      //                     vertical: 6,
+                      //                   ),
+                      //                   child: Text(
+                      //                     filteredWeightOptions[i],
+                      //                     style: GoogleFont.Mulish(
+                      //                       fontSize: 12,
+                      //                       fontWeight: FontWeight.w800,
+                      //                       color: isSelected
+                      //                           ? AppColor.blue
+                      //                           : AppColor.lightGray2,
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //               );
+                      //             },
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
                     ],
                   ),
                 ),
@@ -2087,6 +2619,7 @@ class CommonContainer {
     double imageHeight = 150,
     double imageWidth = 197,
     bool Verify = false,
+    bool doorDelivery = false,
     bool Ad = false,
   }) {
     // BOUND THE CARD WIDTH → avoids "unbounded width" in horizontal List
@@ -2099,17 +2632,23 @@ class CommonContainer {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
+                child: CachedNetworkImage(
+                  imageUrl:
                   image,
-                  height: imageHeight,
-                  width: imageWidth,
+                  height: 150,
+                  width: 190,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: imageHeight,
-                    width: imageWidth,
-                    alignment: Alignment.center,
-                    color: AppColor.textWhite,
-                    child: const Icon(Icons.broken_image_outlined),
+                  placeholder: (context, url) =>
+                      Container(
+                        height: 150,
+                        width: 190,
+                        color: Colors.grey
+                            .withOpacity(0.2),
+                      ),
+                  errorWidget:
+                      (context, url, error) =>
+                  const Icon(
+                    Icons.broken_image,
                   ),
                 ),
               ),
@@ -2144,15 +2683,15 @@ class CommonContainer {
                 ),
             ],
           ),
-            SizedBox(height: 20),
+          SizedBox(height: 20),
           Row(
             children: [
               if (Verify) CommonContainer.verifyTick(),
               SizedBox(width: 5),
-              CommonContainer.doorDelivery(),
+              if (doorDelivery) CommonContainer.doorDelivery(),
             ],
           ),
-            SizedBox(height: 15),
+          SizedBox(height: 15),
           Text(
             foodName,
             maxLines: 2,
@@ -2162,7 +2701,7 @@ class CommonContainer {
               fontWeight: FontWeight.w800,
             ),
           ),
-            SizedBox(height: 8),
+          SizedBox(height: 8),
 
           CommonContainer.greenStarRating(
             ratingStar: ratingStar,
@@ -2851,17 +3390,17 @@ class CommonContainer {
           backgroundColor: buttonColor,
         ),
         child: isLoading == true
-            ?  loader
-        // SizedBox(
-        //         width: 20,
-        //         height: 20,
-        //         child: CircularProgressIndicator(
-        //           strokeWidth: 2,
-        //           valueColor: AlwaysStoppedAnimation<Color>(
-        //             textColor ?? Colors.white,
-        //           ),
-        //         ),
-        //       )
+            ? loader
+            // SizedBox(
+            //         width: 20,
+            //         height: 20,
+            //         child: CircularProgressIndicator(
+            //           strokeWidth: 2,
+            //           valueColor: AlwaysStoppedAnimation<Color>(
+            //             textColor ?? Colors.white,
+            //           ),
+            //         ),
+            //       )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -3163,9 +3702,9 @@ class CommonContainer {
                   color: AppColor.white,
                 ),
               ),
-                SizedBox(width: 5),
+              SizedBox(width: 5),
               Image.asset(AppImages.starImage, height: 7),
-                SizedBox(width: 5),
+              SizedBox(width: 5),
               Container(
                 width: 1.5,
                 height: 11,
@@ -3174,7 +3713,7 @@ class CommonContainer {
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
-                SizedBox(width: 5),
+              SizedBox(width: 5),
               Text(
                 ratingCount!,
                 style: GoogleFont.Mulish(fontSize: 12, color: AppColor.white),
@@ -3219,47 +3758,47 @@ class CommonContainer {
             Expanded(
               child: selectedImage == null
                   ? IgnorePointer(
-                ignoring: onTap != null,
-                child: TextFormField(
-                  controller: controller,
-                  readOnly: readOnly || onTap != null,
-                  keyboardType: keyboardType,
-                  maxLength: maxLength,
+                      ignoring: onTap != null,
+                      child: TextFormField(
+                        controller: controller,
+                        readOnly: readOnly || onTap != null,
+                        keyboardType: keyboardType,
+                        maxLength: maxLength,
 
-                  // ************ IMPORTANT ************
-                  validator: validator,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  // ************************************
+                        // ************ IMPORTANT ************
+                        validator: validator,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
 
-                  style: GoogleFont.Mulish(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                  ),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    border: InputBorder.none,
-                    hintText: hint,
-                    hintStyle: GoogleFont.Mulish(
-                      fontWeight: FontWeight.w600,
-                      color: AppColor.borderGray,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              )
+                        // ************************************
+                        style: GoogleFont.Mulish(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          border: InputBorder.none,
+                          hintText: hint,
+                          hintStyle: GoogleFont.Mulish(
+                            fontWeight: FontWeight.w600,
+                            color: AppColor.borderGray,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    )
                   : Container(
-                height: 60,
-                alignment: Alignment.centerLeft,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(selectedImage),
-                    width: 130,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+                      height: 60,
+                      alignment: Alignment.centerLeft,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(selectedImage),
+                          width: 130,
+                          height: 60,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
             ),
 
             if (showRightSection) ...[
@@ -3307,5 +3846,4 @@ class CommonContainer {
       ),
     );
   }
-
 }

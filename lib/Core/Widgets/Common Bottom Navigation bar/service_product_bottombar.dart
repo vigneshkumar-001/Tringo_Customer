@@ -3,13 +3,13 @@ import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/searc
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Products/product_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_single_company_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Home Screen/home_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_product_list.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_single_company_list.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_product_list.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';
@@ -17,7 +17,20 @@ import '../filter_popup_screen.dart';
 
 class ServiceProductBottombar extends StatefulWidget {
   final int initialIndex;
-  const ServiceProductBottombar({super.key, this.initialIndex = 0});
+  final String? shopId;
+  final String? shopImageUrl;
+  final String? category;
+  final String? englishName;
+  final bool? isTrusted;
+  const ServiceProductBottombar({
+    super.key,
+    this.initialIndex = 0,
+    this.shopId,
+    this.category,
+    this.shopImageUrl,
+    this.isTrusted,
+    this.englishName,
+  });
 
   @override
   State<ServiceProductBottombar> createState() =>
@@ -37,11 +50,16 @@ class _ServiceProductBottombarState extends State<ServiceProductBottombar> {
     _selectedIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _selectedIndex);
 
-    // replace stubs with your real pages if you have them
     _pages = [
       HomeScreen(), // 0
       SearchScreen(), // 1
-      ServiceSingleCompanyList(), // 2
+      ServiceSingleCompanyList(
+        shopId: widget.shopId,
+        shopImgUrl: widget.shopImageUrl,
+        isTrusted: widget.isTrusted,
+        englishName: widget.englishName,
+        category: widget.category,
+      ), // 2
     ];
   }
 

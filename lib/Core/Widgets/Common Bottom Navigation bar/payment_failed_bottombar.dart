@@ -5,12 +5,12 @@ import '../../../Presentation/OnBoarding/Screens/Food Screen/food_booking_failed
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_booking_success.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_details.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Products/product_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/Service_details.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Home Screen/home_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/Service_details.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';

@@ -1,13 +1,13 @@
 // lib/Core/Routing/app_go_routes.dart
 import 'package:go_router/go_router.dart';
 
-import '../Presentation/OnBoarding/Screens/Home Screen/home_screen.dart';
+import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../Presentation/OnBoarding/Screens/Privacy Policy/privacy_policy.dart';
 import '../Presentation/OnBoarding/Screens/Splash_screen.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/login_mobile_number.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/mobile_number_verify.dart';
 import '../Presentation/OnBoarding/Screens/OTP Screen/otp_screen.dart';
-import '../Presentation/OnBoarding/Screens/fill_profile/fill_profile.dart';
+import '../Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
 
 
 class AppRoutes {

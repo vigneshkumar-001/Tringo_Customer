@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Products/product_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Search Screen/search_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/service_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/shops_listing.dart';
-import '../../../Presentation/OnBoarding/Screens/Home Screen/home_screen.dart';
+import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
+import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Smart Connect/Smart_connect_search.dart';
 import '../../../Presentation/OnBoarding/Screens/Smart Connect/smart_connect_details.dart';
 import '../../Utility/app_Images.dart';

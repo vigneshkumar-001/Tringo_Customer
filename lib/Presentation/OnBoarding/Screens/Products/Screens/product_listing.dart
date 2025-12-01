@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/product_details.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Screens/product_details.dart';
 
-import '../../../../Core/Utility/app_Images.dart';
-import '../../../../Core/Utility/app_color.dart';
-import '../../../../Core/Utility/google_font.dart';
-import '../../../../Core/Widgets/common_container.dart';
-import '../../../../Core/Widgets/current_location_widget.dart';
-import '../Food Screen/food_details.dart';
+import '../../../../../Core/Utility/app_Images.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Widgets/current_location_widget.dart';
+import '../../Food Screen/food_details.dart';
 
 class ProductListing extends StatefulWidget {
   final String? title;

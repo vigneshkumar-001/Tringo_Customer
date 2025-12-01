@@ -1,23 +1,31 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/shops_product.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/service_single_company_list.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Screens/search_service_data.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Screens/service_single_company_list.dart';
 
-import '../../../../Core/Utility/app_Images.dart';
-import '../../../../Core/Utility/app_color.dart';
-import '../../../../Core/Utility/google_font.dart';
-import '../../../../Core/Widgets/Common Bottom Navigation bar/service_product_bottombar.dart';
-import '../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Utility/app_Images.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/Utility/map_urls.dart';
+import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_product_bottombar.dart';
+import '../../../../../Core/Widgets/common_container.dart';
+import '../../Home Screen/Controller/home_notifier.dart';
 
-class ServiceDetails extends StatefulWidget {
-  final String? heroTag; // optional; if null/empty, no hero anim
-  final String? image; // optional; falls back to AppImages.imageContainer1
-  const ServiceDetails({super.key, this.heroTag, this.image});
+class ServiceDetails extends ConsumerStatefulWidget {
+  final String? heroTag;
+  final String? image;
+  final String? serviceID;
+  const ServiceDetails({super.key, this.heroTag, this.image, this.serviceID});
 
   @override
-  State<ServiceDetails> createState() => _ServiceDetailsState();
+  ConsumerState<ServiceDetails> createState() => _ServiceDetailsState();
 }
 
-class _ServiceDetailsState extends State<ServiceDetails>
+class _ServiceDetailsState extends ConsumerState<ServiceDetails>
     with SingleTickerProviderStateMixin {
   final List<Map<String, dynamic>> categoryTabs = [
     {"label": "Electrical"},
@@ -57,6 +65,15 @@ class _ServiceDetailsState extends State<ServiceDetails>
       reverseDuration: const Duration(milliseconds: 1000),
     );
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(serviceNotifierProvider.notifier)
+          .showSpecificServiceDetails(
+            force: true,
+            shopId: widget.serviceID ?? '',
+          );
+      _ac.forward();
+    });
     final curve = CurvedAnimation(
       parent: _ac,
       curve: Curves.easeOutCubic,
@@ -164,8 +181,26 @@ class _ServiceDetailsState extends State<ServiceDetails>
     final double giftSize = (w * 0.25).clamp(80.0, 120.0);
 
     final bool useHero = (widget.heroTag != null && widget.heroTag!.isNotEmpty);
-    final String imagePath = widget.image ?? AppImages.servicesContainer1;
 
+    final state = ref.watch(serviceNotifierProvider);
+    final homeState = ref.watch(homeNotifierProvider);
+    if (state.isLoading) {
+      return Scaffold(
+        body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
+      );
+    }
+    final serviceData = state.serviceDetailsResponse;
+    if (serviceData == null || serviceData.data == null) {
+      return const Scaffold(body: Center(child: Text('No data')));
+    }
+
+    final String imagePath = widget.image ?? AppImages.servicesContainer1;
+    final serviceRawData = serviceData.data;
+    final services = serviceData.data?.services ?? [];
+    final products = serviceData.data?.products ?? [];
+
+    final hasServices = services.isNotEmpty;
+    final hasProducts = products.isNotEmpty;
     final Widget bigImage = ClipRRect(
       clipBehavior: Clip.antiAlias,
       borderRadius: BorderRadius.circular(20),
@@ -208,9 +243,13 @@ class _ServiceDetailsState extends State<ServiceDetails>
                                 CommonContainer.leftSideArrow(
                                   onTap: () => Navigator.pop(context),
                                 ),
-                                SizedBox(width: 220),
+                                Spacer(),
                                 CommonContainer.gradientContainer(
-                                  text: 'Electrical',
+                                  text:
+                                      serviceRawData?.category
+                                          ?.toUpperCase()
+                                          .toString() ??
+                                      '',
                                   textColor: AppColor.blue,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -227,15 +266,14 @@ class _ServiceDetailsState extends State<ServiceDetails>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Chips
-                              _staggerFromTop(
-                                aChips,
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: CommonContainer.verifyTick(),
-                                ),
-                              ),
+                              serviceRawData?.isTrusted == true
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      child: CommonContainer.verifyTick(),
+                                    )
+                                  : SizedBox.shrink(),
 
                               const SizedBox(height: 12),
 
@@ -247,7 +285,8 @@ class _ServiceDetailsState extends State<ServiceDetails>
                                     horizontal: 16,
                                   ),
                                   child: Text(
-                                    'Home triangle-Electricians',
+                                    serviceRawData?.englishName.toString() ??
+                                        '',
                                     style: GoogleFont.Mulish(
                                       fontSize: 25,
                                       fontWeight: FontWeight.bold,
@@ -272,7 +311,9 @@ class _ServiceDetailsState extends State<ServiceDetails>
                                       Expanded(
                                         child: Text(
                                           maxLines: 2,
-                                          'Find experienced and reliable electricians in Madurai for all your electrical need.Fast response, 24/7 availability, and competitive pricing.',
+                                          serviceRawData?.descriptionEn
+                                                  .toString() ??
+                                              '',
                                           style: GoogleFont.Mulish(
                                             color: AppColor.lightGray2,
                                           ),
@@ -294,6 +335,39 @@ class _ServiceDetailsState extends State<ServiceDetails>
                                   padding: EdgeInsets.symmetric(horizontal: 16),
                                   scrollDirection: Axis.horizontal,
                                   child: CommonContainer.callNowButton(
+                                    callOnTap: () async {
+                                      await MapUrls.openDialer(
+                                        context,
+                                        serviceRawData?.primaryPhone,
+                                      );
+                                    },
+                                    messageOnTap: () {
+                                      ref
+                                          .read(homeNotifierProvider.notifier)
+                                          .putEnquiry(
+                                            context: context,
+                                            serviceId: '',
+                                            productId: '',
+                                            message: '',
+                                            shopId:
+                                                serviceRawData?.id.toString() ??
+                                                '',
+                                          );
+                                    },
+                                    mapOnTap: () {
+                                      ref
+                                          .read(homeNotifierProvider.notifier)
+                                          .putEnquiry(
+                                            context: context,
+                                            serviceId: '',
+                                            productId: '',
+                                            message: '',
+                                            shopId:
+                                                serviceRawData?.id.toString() ??
+                                                '',
+                                          );
+                                    },
+                                    messageLoading: homeState.isEnquiryLoading,
                                     callImage: AppImages.callImage,
                                     callText: 'Call Now',
                                     mapText: 'Enquire Now',
@@ -320,118 +394,136 @@ class _ServiceDetailsState extends State<ServiceDetails>
                                     whatsAppIcon: true,
 
                                     whatsAppOnTap: () {},
-                                    mapBox: true,
+                                    fullEnquiry: true,
                                     messageContainer: true,
                                   ),
                                 ),
                               ),
 
                               const SizedBox(height: 20),
-
-                              // Images row: left = Hero image, right = stagger
-                              SingleChildScrollView(
-                                physics: BouncingScrollPhysics(),
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    Stack(
+                              SizedBox(
+                                height: 260,
+                                child: ListView.builder(
+                                  physics: BouncingScrollPhysics(),
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: serviceRawData?.media?.length,
+                                  itemBuilder: (context, index) {
+                                    final data = serviceRawData?.media?[index];
+                                    return Row(
                                       children: [
-                                        useHero
-                                            ? Hero(
-                                                tag: widget.heroTag!,
-                                                child: bigImage,
-                                              )
-                                            : bigImage,
-                                        // rating pill
-                                        Positioned(
-                                          top: 20,
-                                          left: 15,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppColor.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  '4.1',
-                                                  style: GoogleFont.Mulish(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                    color: AppColor.darkBlue,
+                                        Stack(
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8.0,
                                                   ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadiusGeometry.circular(
+                                                      20,
+                                                    ),
+                                                child: CachedNetworkImage(
+                                                  imageUrl:
+                                                      data?.url?.toString() ??
+                                                      '',
+                                                  height: 250,
+                                                  width: 310,
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (context, url) =>
+                                                      Container(
+                                                        height: 250,
+                                                        width: 310,
+                                                        color: Colors.grey
+                                                            .withOpacity(0.2),
+                                                      ),
+                                                  errorWidget:
+                                                      (context, url, error) =>
+                                                          const Icon(
+                                                            Icons.broken_image,
+                                                          ),
                                                 ),
-                                                const SizedBox(width: 5),
-                                                Image.asset(
-                                                  AppImages.starImage,
-                                                  height: 9,
-                                                  color: AppColor.green,
-                                                ),
-                                                const SizedBox(width: 5),
-                                                Container(
-                                                  width: 1.5,
-                                                  height: 11,
+                                              ),
+                                            ),
+                                            if (index == 0)
+                                              Positioned(
+                                                top: 20,
+                                                left: 15,
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: AppColor.darkBlue
-                                                        .withOpacity(0.2),
+                                                    color: AppColor.white,
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          1,
+                                                          30,
                                                         ),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 5),
-                                                Text(
-                                                  '56',
-                                                  style: GoogleFont.Mulish(
-                                                    fontSize: 12,
-                                                    color: AppColor.darkBlue,
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        serviceRawData
+                                                                ?.averageRating
+                                                                .toString() ??
+                                                            '',
+                                                        style:
+                                                            GoogleFont.Mulish(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14,
+                                                              color: AppColor
+                                                                  .darkBlue,
+                                                            ),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      Image.asset(
+                                                        AppImages.starImage,
+                                                        height: 9,
+                                                        color: AppColor.green,
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      Container(
+                                                        width: 1.5,
+                                                        height: 11,
+                                                        decoration: BoxDecoration(
+                                                          color: AppColor
+                                                              .darkBlue
+                                                              .withOpacity(0.2),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                1,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      Text(
+                                                        serviceRawData
+                                                                ?.reviewCount
+                                                                .toString() ??
+                                                            '',
+                                                        style:
+                                                            GoogleFont.Mulish(
+                                                              fontSize: 12,
+                                                              color: AppColor
+                                                                  .darkBlue,
+                                                            ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          ),
+                                              ),
+                                          ],
                                         ),
                                       ],
-                                    ),
-
-                                    // Second image
-                                    _staggerFromTop(
-                                      aSecondImg,
-                                      Image.asset(
-                                        AppImages.servicesContainer2,
-                                        height: 250,
-                                        width: 257,
-                                      ),
-                                    ),
-
-                                    // Third image
-                                    _staggerFromTop(
-                                      aSecondImg,
-                                      Image.asset(
-                                        AppImages.servicesContainer5,
-                                        height: 250,
-                                        width: 257,
-                                      ),
-                                    ),
-
-                                    // Fourth image
-                                    // _staggerFromTop(
-                                    //   aSecondImg,
-                                    //   Image.asset(
-                                    //     AppImages.imageContainer4,
-                                    //     height: 250,
-                                    //     width: 310,
-                                    //   ),
-                                    // ),
-                                  ],
+                                    );
+                                  },
                                 ),
                               ),
                             ],
@@ -446,8 +538,7 @@ class _ServiceDetailsState extends State<ServiceDetails>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _staggerFromTop(
-                    aOfferProducts,
+                  if (hasServices) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 15,
@@ -472,9 +563,7 @@ class _ServiceDetailsState extends State<ServiceDetails>
                         ],
                       ),
                     ),
-                  ),
-                  _staggerFromTop(
-                    aSnacksFliter,
+
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
@@ -483,91 +572,91 @@ class _ServiceDetailsState extends State<ServiceDetails>
                         vertical: 20,
                       ),
                       child: Row(
-                        children: List.generate(categoryTabs.length, (index) {
-                          final isSelected = selectedIndex == index;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: CommonContainer.categoryChip(
-                              rightSideArrow: true,
-                              ContainerColor: isSelected
-                                  ? AppColor.white
-                                  : Colors.transparent,
-                              BorderColor: isSelected
-                                  ? AppColor.brightGray
-                                  : AppColor.brightGray,
-                              TextColor: isSelected
-                                  ? AppColor.lightGray2
-                                  : AppColor.lightGray2,
-                              categoryTabs[index]["label"],
-                              isSelected: isSelected,
-                              onTap: () {
-                                setState(() => selectedIndex = index);
-                              },
-                            ),
-                          );
-                        }),
+                        children: List.generate(
+                          serviceRawData?.productCategories?.length ?? 0,
+                          (index) {
+                            final isSelected = selectedIndex == index;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: CommonContainer.categoryChip(
+                                rightSideArrow: true,
+                                ContainerColor: isSelected
+                                    ? AppColor.white
+                                    : Colors.transparent,
+                                BorderColor: isSelected
+                                    ? AppColor.brightGray
+                                    : AppColor.brightGray,
+                                TextColor: isSelected
+                                    ? AppColor.lightGray2
+                                    : AppColor.lightGray2,
+                                serviceRawData?.productCategories?[index].label
+                                        .toString() ??
+                                    '',
+                                isSelected: isSelected,
+                                onTap: () {
+                                  setState(() => selectedIndex = index);
+                                },
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                  _staggerFromTop(
-                    aSnacksBox,
+
                     Stack(
                       children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 15),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColor.white.withOpacity(0.5),
-                                AppColor.white.withOpacity(0.3),
-                                AppColor.white,
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              CommonContainer.serviceDetails(
-                                filedName: 'Electrical Consulting',
-                                imageWidth: 130,
-                                image: AppImages.servicesFiled1,
-                                ratingStar: '4.5',
-                                ratingCount: '16',
-                                offAmound: '₹79',
-                                horizontalDivider: true,
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: serviceRawData?.services?.length,
+                          itemBuilder: (context, index) {
+                            final data = serviceRawData?.services?[index];
+                            return Container(
+                              padding: EdgeInsets.symmetric(horizontal: 15),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColor.white.withOpacity(0.5),
+                                    AppColor.white.withOpacity(0.3),
+                                    AppColor.white,
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
                               ),
-                              CommonContainer.serviceDetails(
-                                filedName: 'Fan Repair Service',
-                                imageWidth: 130,
-                                image: AppImages.servicesFiled2,
-                                ratingStar: '4.5',
-                                ratingCount: '16',
-                                offAmound: '₹150',
-                                horizontalDivider: true,
+                              child: Column(
+                                children: [
+                                  CommonContainer.serviceDetails(
+                                    filedName:
+                                        data?.englishName.toString() ?? '',
+                                    imageWidth: 130,
+                                    image:
+                                        data?.primaryImageUrl.toString() ?? '',
+                                    ratingStar: '0.0',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SearchServiceData(
+                                                serviceId: data?.id,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    ratingCount: '0',
+                                    offAmound:
+                                        '₹${data?.startsAt.toString() ?? ''}',
+                                    horizontalDivider: true,
+                                  ),
+
+                                  SizedBox(height: 35),
+                                ],
                               ),
-                              CommonContainer.serviceDetails(
-                                filedName: 'AC Installation',
-                                imageWidth: 130,
-                                image: AppImages.servicesFiled3,
-                                ratingStar: '4.5',
-                                ratingCount: '16',
-                                offAmound: '₹1200',
-                                horizontalDivider: true,
-                              ),
-                              CommonContainer.serviceDetails(
-                                filedName: 'Building Construction',
-                                imageWidth: 130,
-                                image: AppImages.servicesFiled4,
-                                ratingStar: '4.5',
-                                ratingCount: '16',
-                                offAmound: '₹15000',
-                                horizontalDivider: true,
-                              ),
-                              SizedBox(height: 35),
-                            ],
-                          ),
+                            );
+                          },
                         ),
+
                         Positioned(
                           bottom: 0,
                           left: 0,
@@ -611,6 +700,17 @@ class _ServiceDetailsState extends State<ServiceDetails>
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             ServiceProductBottombar(
+                                              category: serviceRawData?.category
+                                                  .toString(),
+                                              englishName: serviceRawData
+                                                  ?.englishName
+                                                  .toString(),
+                                              isTrusted:
+                                                  serviceRawData?.isTrusted,
+                                              shopImageUrl:
+                                                  serviceRawData?.media?[0].url,
+                                              shopId: serviceRawData?.id
+                                                  .toString(),
                                               initialIndex: 2,
                                             ),
                                         // ServiceSingleCompanyList(),
@@ -624,8 +724,9 @@ class _ServiceDetailsState extends State<ServiceDetails>
                         ),
                       ],
                     ),
-                  ),
-                  SizedBox(height: 40),
+                  ],
+
+                  /*          SizedBox(height: 40),
                   _staggerFromTop(
                     aHorizonalDivider,
                     CommonContainer.horizonalDivider(),
@@ -692,7 +793,7 @@ class _ServiceDetailsState extends State<ServiceDetails>
                   _staggerFromTop(
                     aHorizonalDivider,
                     CommonContainer.horizonalDivider(),
-                  ),
+                  ),*/
                   SizedBox(height: 45),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15),
