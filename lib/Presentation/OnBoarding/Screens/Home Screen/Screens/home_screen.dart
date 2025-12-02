@@ -48,6 +48,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _servicesPressed = false;
   StreamSubscription<ServiceStatus>? _serviceSub;
 
+  final Set<String> _disabledMessageShopIds = {};
+  final Set<String> _disabledMessageIds = {};
+
   StreamSubscription<Position>? _posSub;
 
   String shopHeroTag(int index, String name, {String section = 'shops'}) {
@@ -964,7 +967,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                 state.isEnquiryLoading &&
                                                 state.activeEnquiryId ==
                                                     services.id;
-
+                                            final hasMessaged =
+                                            _disabledMessageIds.contains(services.id);
                                             return Padding(
                                               padding: const EdgeInsets.only(
                                                 bottom: 20,
@@ -980,8 +984,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     },
                                                     horizontalDivider: true,
                                                     fireOnTap: () {},
-
+                                                    isMessageLoading: isThisCardLoading,
+                                                    messageDisabled: hasMessaged,
                                                     messageOnTap: () {
+                                                      if (hasMessaged || isThisCardLoading) return;
+
+                                                      // lock this service message button
+                                                      setState(() {
+                                                        _disabledMessageIds.add(services.id);
+                                                      });
+
                                                       ref
                                                           .read(
                                                             homeNotifierProvider
@@ -996,9 +1008,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                             shopId: services.id,
                                                           );
                                                     },
-
-                                                    isMessageLoading:
-                                                        isThisCardLoading,
 
                                                     onTap: () {
                                                       Navigator.push(
@@ -1297,6 +1306,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           final isThisCardLoading =
                                               state.isEnquiryLoading &&
                                               state.activeEnquiryId == shops.id;
+                                          final hasMessaged =
+                                              _disabledMessageShopIds.contains(
+                                                shops.id,
+                                              );
+
                                           return Padding(
                                             padding: const EdgeInsets.symmetric(
                                               vertical: 5,
@@ -1315,7 +1329,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                                                   isMessageLoading:
                                                       isThisCardLoading,
+                                                  messageDisabled: hasMessaged,
                                                   messageOnTap: () {
+                                                    if (hasMessaged ||
+                                                        isThisCardLoading)
+                                                      return;
+
+                                                    //  lock this shop’s message button (one-time click)
+                                                    setState(() {
+                                                      _disabledMessageShopIds
+                                                          .add(shops.id);
+                                                    });
                                                     ref
                                                         .read(
                                                           homeNotifierProvider

@@ -548,6 +548,8 @@ class CommonContainer {
     // 🔹 NEW: message loading flag
     bool messageLoading = false,
 
+    bool messageDisabled = false,
+
     EdgeInsetsGeometry? callNowPadding,
     EdgeInsetsGeometry? mapBoxPadding,
     EdgeInsetsGeometry? iconContainerPadding,
@@ -760,7 +762,10 @@ class CommonContainer {
               children: [
                 if (MessageIcon)
                   GestureDetector(
-                    onTap: messageLoading ? null : messageOnTap,
+                    // ❌ disable tap when loading OR already clicked once
+                    onTap: (messageLoading || messageDisabled)
+                        ? null
+                        : messageOnTap,
                     child: messageLoading
                         ? SizedBox(
                             height: messagesIconSize ?? 19,
@@ -769,11 +774,35 @@ class CommonContainer {
                               strokeWidth: 2,
                             ),
                           )
-                        : Image.asset(
-                            AppImages.messageImage,
-                            height: messagesIconSize ?? 19,
+                        : Opacity(
+                            // 🔹 dim icon when disabled
+                            opacity: messageDisabled ? 0.4 : 1.0,
+                            child: Image.asset(
+                              AppImages.messageImage,
+                              height: messagesIconSize ?? 19,
+                              // 🔹 change color when disabled
+                              color: messageDisabled
+                                  ? AppColor.lightGray2
+                                  : null,
+                            ),
                           ),
                   ),
+                // if (MessageIcon)
+                //   GestureDetector(
+                //     onTap: messageLoading ? null : messageOnTap,
+                //     child: messageLoading
+                //         ? SizedBox(
+                //             height: messagesIconSize ?? 19,
+                //             width: messagesIconSize ?? 19,
+                //             child: const CircularProgressIndicator(
+                //               strokeWidth: 2,
+                //             ),
+                //           )
+                //         : Image.asset(
+                //             AppImages.messageImage,
+                //             height: messagesIconSize ?? 19,
+                //           ),
+                //   ),
                 if (whatsAppIcon)
                   GestureDetector(
                     onTap: whatsAppOnTap,
@@ -800,638 +829,51 @@ class CommonContainer {
     );
   }
 
-  /*
-  static callNowButton({
-    VoidCallback? callOnTap,
-    VoidCallback? orderOnTap,
-    VoidCallback? mapOnTap,
-    VoidCallback? messageOnTap,
-    VoidCallback? whatsAppOnTap,
-    VoidCallback? fireOnTap,
-    bool messageLoading = false,
-    bool messageContainer = false,
-    bool mapBox = false,
-    bool whatsAppIcon = false,
-    bool MessageIcon = false,
-    bool FireIcon = false,
-    bool order = false,
-
-    EdgeInsetsGeometry? callNowPadding,
-    EdgeInsetsGeometry? mapBoxPadding,
-    EdgeInsetsGeometry? iconContainerPadding,
-
-    double? callIconSize,
-    double? callTextSize,
-    double? mapIconSize,
-    double? mapTextSize,
-    double? messagesIconSize,
-    double? whatsAppIconSize,
-    double? fireIconSize,
-
-    Color? callImageColor,
-
-    String? mapImage,
-    String? mapText,
-    String? callImage,
-    String? callText,
-    String? orderText,
-    String? orderImage,
-  })
-  {
-    // ---- Set SAFE DEFAULTS ----
-    final safeCallImage = callImage ?? AppImages.callImage;
-    final safeCallText = callText ?? "Call";
-
-    final safeOrderImage = orderImage ?? AppImages.orderImage;
-    final safeOrderText = orderText ?? "Order";
-
-    final safeMapImage = mapImage ?? AppImages.locationImage;
-    final safeMapText = mapText ?? "Map";
-
-    return Row(
-      children: [
-        if (order)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: InkWell(
-              onTap: orderOnTap,
-              child: Container(
-                padding:
-                    callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColor.blueGradient1,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Image.asset(safeOrderImage, height: callIconSize ?? 16),
-                    SizedBox(width: 7),
-                    Text(
-                      safeOrderText,
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.bold,
-                        fontSize: callTextSize ?? 16,
-                        color: AppColor.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-        // CALL BUTTON SAFE VERSION
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final bounded =
-                constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
-
-            final callBtn = InkWell(
-              onTap: callOnTap,
-              child: Container(
-                padding:
-                    callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColor.blue,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      safeCallImage,
-                      height: callIconSize ?? 16,
-                      color: callImageColor,
-                    ),
-                    SizedBox(width: 7),
-                    Text(
-                      safeCallText,
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.bold,
-                        fontSize: callTextSize ?? 14,
-                        color: AppColor.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-
-            return bounded ? Expanded(child: callBtn) : callBtn;
-          },
-        ),
-
-        if (mapBox)
-          Padding(
-            padding: const EdgeInsets.only(left: 10),
-            child: InkWell(
-              onTap: mapOnTap,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColor.blue, width: 1.5),
-                ),
-                child: Padding(
-                  padding:
-                      mapBoxPadding ??
-                      const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
-                  child: Row(
-                    children: [
-                      Image.asset(
-                        safeMapImage,
-                        height: mapIconSize ?? 21,
-                        color: AppColor.blue,
-                      ),
-                      SizedBox(width: 5),
-                      Text(
-                        safeMapText,
-                        style: GoogleFont.Mulish(
-                          fontWeight: FontWeight.bold,
-                          fontSize: mapTextSize ?? 16,
-                          color: AppColor.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
-          SizedBox(width: 9),
-
-        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
-          Container(
-            padding:
-                iconContainerPadding ??
-                const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColor.white2,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Wrap(
-              spacing: 16,
-              alignment: WrapAlignment.center,
-              children: [
-                if (MessageIcon)
-                  GestureDetector(
-                    onTap: messageOnTap,
-                    child: Image.asset(
-                      AppImages.messageImage,
-                      height: messagesIconSize ?? 19,
-                    ),
-                  ),
-                if (whatsAppIcon)
-                  GestureDetector(
-                    onTap: whatsAppOnTap,
-                    child: Image.asset(
-                      AppImages.whatsappImage,
-                      height: whatsAppIconSize ?? 19,
-                    ),
-                  ),
-                if (FireIcon)
-                  GestureDetector(
-                    onTap: fireOnTap,
-                    child: Image.asset(
-                      AppImages.fireImage,
-                      height: fireIconSize ?? 19,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-*/
-
-  // static callNowButton({
-  //   VoidCallback? callOnTap,
-  //   VoidCallback? orderOnTap,
-  //   VoidCallback? mapOnTap,
-  //   VoidCallback? messageOnTap,
-  //   VoidCallback? whatsAppOnTap,
-  //   VoidCallback? fireOnTap,
-  //   bool messageContainer = false,
-  //   bool mapBox = false,
-  //   bool whatsAppIcon = false,
-  //   bool MessageIcon = false,
-  //   bool FireIcon = false,
-  //   bool order = false,
-  //
-  //   // Custom paddings
-  //   EdgeInsetsGeometry? callNowPadding,
-  //   EdgeInsetsGeometry? mapBoxPadding,
-  //   EdgeInsetsGeometry? iconContainerPadding,
-  //
-  //   // Custom sizes
-  //   double? callIconSize,
-  //   double? callTextSize,
-  //   double? mapIconSize,
-  //   double? mapTextSize,
-  //   double? messagesIconSize,
-  //   double? whatsAppIconSize,
-  //   double? fireIconSize,
-  //
-  //   Color? callImageColor,
-  //
-  //   String? mapImage,
-  //   String? mapText,
-  //   String? callImage,
-  //   String? callText,
-  //   String? orderText,
-  //   String? orderImage,
-  // }) {
-  //   return Row(
-  //     children: [
-  //       if (order)
-  //         Padding(
-  //           padding: const EdgeInsets.only(right: 8.0),
-  //           child: InkWell(
-  //             onTap: orderOnTap,
-  //             child: Container(
-  //               padding:
-  //                   callNowPadding ??
-  //                   const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-  //               decoration: BoxDecoration(
-  //                 color: AppColor.blueGradient1,
-  //                 borderRadius: BorderRadius.circular(15),
-  //               ),
-  //               child: Row(
-  //                 children: [
-  //                   Image.asset(orderImage!, height: callIconSize ?? 16),
-  //                   const SizedBox(width: 7),
-  //                   Text(
-  //                     orderText!,
-  //                     style: GoogleFont.Mulish(
-  //                       fontWeight: FontWeight.bold,
-  //                       fontSize: callTextSize ?? 16,
-  //                       color: AppColor.white,
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //
-  //       // ---- Call button (smart flexible) ----
-  //       LayoutBuilder(
-  //         builder: (context, constraints) {
-  //           final bounded =
-  //               constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
-  //
-  //           final callBtn = InkWell(
-  //             onTap: callOnTap,
-  //             child: Container(
-  //               padding:
-  //                   callNowPadding ??
-  //                   const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-  //               decoration: BoxDecoration(
-  //                 color: AppColor.blue,
-  //                 borderRadius: BorderRadius.circular(15),
-  //               ),
-  //               child: Row(
-  //                 mainAxisAlignment: MainAxisAlignment.center, // nice centering
-  //                 mainAxisSize: MainAxisSize.min,
-  //                 children: [
-  //                   Image.asset(
-  //                     callImage!,
-  //                     height: callIconSize ?? 16,
-  //                     color: callImageColor,
-  //                   ),
-  //                     SizedBox(width: 7),
-  //                   Text(
-  //                     callText!,
-  //                     style: GoogleFont.Mulish(
-  //                       fontWeight: FontWeight.bold,
-  //                       fontSize: callTextSize ?? 14,
-  //                       color: AppColor.white,
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           );
-  //
-  //           // If width is bounded (typical page layout), behave like Expanded.
-  //           // If unbounded (inside horizontal SingleChildScrollView), return intrinsic size.
-  //           return bounded ? Expanded(child: callBtn) : callBtn;
-  //         },
-  //       ),
-  //
-  //       // ⬇️ make call button flexible so layout matches Figma on all screens
-  //       /*   Expanded(
-  //         child: InkWell(
-  //           onTap: callOnTap,
-  //           child: Container(
-  //             padding: callNowPadding ?? const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-  //             decoration: BoxDecoration(
-  //               color: AppColor.blue,
-  //               borderRadius: BorderRadius.circular(15),
-  //             ),
-  //             child: Row(
-  //               mainAxisAlignment: MainAxisAlignment.center, // keep icon + text centered
-  //               children: [
-  //                 Image.asset(callImage!, height: callIconSize ?? 16, color: callImageColor),
-  //                 const SizedBox(width: 7),
-  //                 Text(
-  //                   callText!,
-  //                   style: GoogleFont.Mulish(
-  //                     fontWeight: FontWeight.bold,
-  //                     fontSize: callTextSize ?? 14,
-  //                     color: AppColor.white,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ),*/
-  //       if (mapBox)
-  //         Padding(
-  //           padding: const EdgeInsets.only(left: 10),
-  //           child: InkWell(
-  //             borderRadius: BorderRadius.circular(14),
-  //             onTap: mapOnTap,
-  //             child: Container(
-  //               decoration: BoxDecoration(
-  //                 borderRadius: BorderRadius.circular(14),
-  //                 border: Border.all(color: AppColor.blue, width: 1.5),
-  //               ),
-  //               child: Padding(
-  //                 padding:
-  //                     mapBoxPadding ??
-  //                     const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
-  //                 child: Row(
-  //                   children: [
-  //                     Image.asset(
-  //                       mapImage!,
-  //                       height: mapIconSize ?? 21,
-  //                       color: AppColor.blue,
-  //                     ),
-  //                     const SizedBox(width: 3),
-  //                     Text(
-  //                       mapText!,
-  //                       style: GoogleFont.Mulish(
-  //                         fontWeight: FontWeight.bold,
-  //                         fontSize: mapTextSize ?? 16,
-  //                         color: AppColor.blue,
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //
-  //       // ⬇️ only add gap if the pill is going to show
-  //       if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
-  //         const SizedBox(width: 9),
-  //
-  //       if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
-  //         Container(
-  //           padding:
-  //               iconContainerPadding ??
-  //               const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-  //           decoration: BoxDecoration(
-  //             color: AppColor.white2,
-  //             borderRadius: BorderRadius.circular(16),
-  //           ),
-  //           // ⬇️ auto-size & auto-center the icons based on how many are visible
-  //           child: Wrap(
-  //             spacing: 16, // even spacing for 2+ icons
-  //             alignment: WrapAlignment.center,
-  //             crossAxisAlignment: WrapCrossAlignment.center,
-  //             children: [
-  //               if (MessageIcon)
-  //                 GestureDetector(
-  //                   onTap: messageOnTap,
-  //                   child: Image.asset(
-  //                     AppImages.messageImage,
-  //                     height: messagesIconSize ?? 19,
-  //                   ),
-  //                 ),
-  //               if (whatsAppIcon)
-  //                 GestureDetector(
-  //                   onTap: whatsAppOnTap,
-  //                   child: Image.asset(
-  //                     AppImages.whatsappImage,
-  //                     height: whatsAppIconSize ?? 19,
-  //                   ),
-  //                 ),
-  //               if (FireIcon)
-  //                 GestureDetector(
-  //                   onTap: fireOnTap,
-  //                   child: Image.asset(
-  //                     AppImages.fireImage,
-  //                     height: fireIconSize ?? 19,
-  //                   ),
-  //                 ),
-  //             ],
-  //           ),
-  //         ),
-  //     ],
-  //   );
-  //
-  //   /*return Row(
-  //     children: [
-  //       if (order)
-  //         Padding(
-  //           padding: const EdgeInsets.only(right: 8.0),
-  //           child: InkWell(
-  //             onTap: orderOnTap,
-  //             child: Container(
-  //               padding:
-  //                   callNowPadding ??
-  //                   EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-  //               decoration: BoxDecoration(
-  //                 color: AppColor.blueGradient1,
-  //                 borderRadius: BorderRadius.circular(15),
-  //               ),
-  //               child: Row(
-  //                 children: [
-  //                   Image.asset(
-  //                     AppImages.orderImage,
-  //                     height: callIconSize ?? 16,
-  //                   ),
-  //                   SizedBox(width: 7),
-  //                   Text(
-  //                     'Order Your’s',
-  //                     style: GoogleFont.Mulish(
-  //                       fontWeight: FontWeight.bold,
-  //                       fontSize: callTextSize ?? 16,
-  //                       color: AppColor.white,
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //
-  //       InkWell(
-  //         onTap: callOnTap,
-  //         child: Container(
-  //           padding:
-  //               callNowPadding ??
-  //               EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-  //           decoration: BoxDecoration(
-  //             color: AppColor.blue,
-  //             borderRadius: BorderRadius.circular(15),
-  //           ),
-  //           child: Row(
-  //             children: [
-  //               Image.asset(
-  //                 callImage!,
-  //                 height: callIconSize ?? 16,
-  //                 color: callImageColor,
-  //               ),
-  //               SizedBox(width: 7),
-  //               Text(
-  //                 callText!,
-  //                 style: GoogleFont.Mulish(
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: callTextSize ?? 14,
-  //                   color: AppColor.white,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //
-  //       if (mapBox)
-  //         Padding(
-  //           padding: const EdgeInsets.only(left: 10),
-  //           child: InkWell(
-  //             borderRadius: BorderRadius.circular(14),
-  //             onTap: mapOnTap,
-  //             child: Container(
-  //               decoration: BoxDecoration(
-  //                 borderRadius: BorderRadius.circular(14),
-  //                 border: Border.all(color: AppColor.blue, width: 1.5),
-  //               ),
-  //               child: Padding(
-  //                 padding:
-  //                     mapBoxPadding ??
-  //                     const EdgeInsets.symmetric(horizontal: 17, vertical: 5),
-  //                 child: Row(
-  //                   children: [
-  //                     Image.asset(
-  //                       mapImage!,
-  //                       height: mapIconSize ?? 21,
-  //                       color: AppColor.blue,
-  //                     ),
-  //                     SizedBox(width: 3),
-  //                     Text(
-  //                       mapText!,
-  //                       style: GoogleFont.Mulish(
-  //                         fontWeight: FontWeight.bold,
-  //                         fontSize: mapTextSize ?? 16,
-  //                         color: AppColor.blue,
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //
-  //       SizedBox(width: 9),
-  //
-  //       if (messageContainer)
-  //         // Action Icon Container (message, WhatsApp, fire)
-  //         Container(
-  //           padding:
-  //               iconContainerPadding ??
-  //               EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-  //           decoration: BoxDecoration(
-  //             color: AppColor.white2,
-  //             borderRadius: BorderRadius.circular(16),
-  //           ),
-  //           child: Row(
-  //             mainAxisAlignment: MainAxisAlignment.center, // center icons
-  //             mainAxisSize: MainAxisSize.min, // shrink-wrap the row
-  //             children: [
-  //               if (MessageIcon)
-  //                 GestureDetector(
-  //                   onTap: messageOnTap,
-  //                   child: Image.asset(
-  //                     AppImages.messageImage,
-  //                     height: messagesIconSize ?? 19,
-  //                   ),
-  //                 ),
-  //
-  //               if (whatsAppIcon)
-  //                 Padding(
-  //                   padding: const EdgeInsets.symmetric(horizontal: 16),
-  //                   child: GestureDetector(
-  //                     onTap: whatsAppOnTap,
-  //                     child: Image.asset(
-  //                       AppImages.whatsappImage,
-  //                       height: whatsAppIconSize ?? 19,
-  //                     ),
-  //                   ),
-  //                 ),
-  //
-  //               if (FireIcon)
-  //                 GestureDetector(
-  //                   onTap: fireOnTap,
-  //                   child: Image.asset(
-  //                     AppImages.fireImage,
-  //                     height: fireIconSize ?? 19,
-  //                   ),
-  //                 ),
-  //             ],
-  //           ),
-  //         ),
-  //     ],
-  //   );*/
-  // }
-  /*
-  static servicesContainer({
+  static Widget servicesContainer({
+    // still required – we always pass something (network url or asset path)
     required String image,
-    required String companyName,
-    required String location,
-    required String fieldName,
-    required String ratingStar,
-    required String ratingCount,
-    required String time,
+
+    // 🔹 Make all these nullable to avoid runtime crashes
+    String? companyName,
+    String? location,
+    String? fieldName,
+    String? ratingStar,
+    String? ratingCount,
+    String? time,
+
     String? heroTag,
     VoidCallback? onTap,
     VoidCallback? callTap,
     VoidCallback? messageOnTap,
     VoidCallback? whatsAppOnTap,
-    VoidCallback? fireOnTap,
+    VoidCallback? fireOnTap, // still optional
     String? fireTooltip,
     bool horizontalDivider = false,
     bool Verify = false,
-
     bool isMessageLoading = false,
+    bool messageDisabled = false,
   }) {
-    Widget thumb = CachedNetworkImage(
-      imageUrl: image,
-      height: 100,
-      width: 100,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => const SizedBox(
-        height: 50,
-        width: 50,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
-      errorWidget: (context, url, error) => const SizedBox(
-        height: 100,
-        width: 100,
-        child: Icon(Icons.broken_image),
-      ),
-    );
+    // 🔹 Decide whether this is a network image or asset
+    final bool isNetworkImage = image.startsWith('http');
+
+    Widget thumb = isNetworkImage
+        ? CachedNetworkImage(
+            imageUrl: image,
+            height: 100,
+            width: 100,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => const SizedBox(
+              height: 50,
+              width: 50,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            errorWidget: (context, url, error) => const SizedBox(
+              height: 100,
+              width: 100,
+              child: Icon(Icons.broken_image),
+            ),
+          )
+        : Image.asset(image, height: 100, width: 100, fit: BoxFit.cover);
 
     if (heroTag != null && heroTag.isNotEmpty) {
       thumb = Hero(tag: heroTag, child: thumb);
@@ -1444,7 +886,6 @@ class CommonContainer {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
-            // ... your existing top content (image, name, rating, etc.)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 15.0),
               child: Row(
@@ -1496,8 +937,10 @@ class CommonContainer {
                             ),
                           ),
                         const SizedBox(height: 9),
+
+                        // 🔹 Safe company name
                         Text(
-                          companyName,
+                          companyName ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFont.Mulish(
@@ -1507,6 +950,7 @@ class CommonContainer {
                           ),
                         ),
                         const SizedBox(height: 6),
+
                         Row(
                           children: [
                             Image.asset(
@@ -1517,7 +961,7 @@ class CommonContainer {
                             const SizedBox(width: 3),
                             Flexible(
                               child: Text(
-                                location,
+                                location ?? '',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFont.Mulish(
@@ -1528,7 +972,7 @@ class CommonContainer {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              fieldName,
+                              fieldName ?? '',
                               style: GoogleFont.Mulish(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
@@ -1538,11 +982,12 @@ class CommonContainer {
                           ],
                         ),
                         const SizedBox(height: 10),
+
                         Row(
                           children: [
                             CommonContainer.greenStarRating(
-                              ratingStar: ratingStar,
-                              ratingCount: ratingCount,
+                              ratingStar: ratingStar ?? '0',
+                              ratingCount: ratingCount ?? '0',
                             ),
                             const SizedBox(width: 10),
                             Text(
@@ -1553,204 +998,7 @@ class CommonContainer {
                               ),
                             ),
                             Text(
-                              time,
-                              style: GoogleFont.Mulish(
-                                fontSize: 9,
-                                color: AppColor.lightGray2,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 🔹 CALL / MESSAGE / WHATSAPP ROW
-            CommonContainer.callNowButton(
-              callImage: AppImages.callImage,
-              callIconSize: 16,
-              callText: 'Call Now',
-              MessageIcon: true,
-              whatsAppIcon: true,
-              FireIcon: true,
-              fireOnTap: fireOnTap,
-              fireTooltip: fireTooltip,
-              whatsAppOnTap: whatsAppOnTap,
-              messageOnTap: messageOnTap,
-
-              callOnTap: callTap,
-              messageContainer: true,
-              // 🔹 pass loading flag
-              messageLoading: isMessageLoading,
-            ),
-            const SizedBox(height: 20),
-            if (horizontalDivider) CommonContainer.horizonalDivider(),
-          ],
-        ),
-      ),
-    );
-  }*/
-
-  static servicesContainer({
-    required String image,
-    required String companyName,
-    required String location,
-    required String fieldName,
-    required String ratingStar,
-    required String ratingCount,
-    required String time,
-    String? heroTag,
-    VoidCallback? onTap,
-    VoidCallback? callTap,
-    VoidCallback? messageOnTap,
-    VoidCallback? whatsAppOnTap,
-    VoidCallback? fireOnTap, // still here, but optional
-    String? fireTooltip, // 👈 tooltip text comes here
-    bool horizontalDivider = false,
-    bool Verify = false,
-    bool isMessageLoading = false,
-  }) {
-    Widget thumb = CachedNetworkImage(
-      imageUrl: image,
-      height: 100,
-      width: 100,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => const SizedBox(
-        height: 50,
-        width: 50,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
-      errorWidget: (context, url, error) => const SizedBox(
-        height: 100,
-        width: 100,
-        child: Icon(Icons.broken_image),
-      ),
-    );
-
-    if (heroTag != null && heroTag.isNotEmpty) {
-      thumb = Hero(tag: heroTag, child: thumb);
-    }
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(24),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 15.0),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    clipBehavior: Clip.antiAlias,
-                    borderRadius: BorderRadius.circular(12),
-                    child: thumb,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (Verify)
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColor.blueGradient1,
-                                  AppColor.blueGradient2,
-                                  AppColor.blueGradient3,
-                                ],
-                                begin: Alignment.centerRight,
-                                end: Alignment.centerLeft,
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.asset(AppImages.verifyTick, height: 14),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Trusted',
-                                    style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 10,
-                                      color: AppColor.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        SizedBox(height: 9),
-                        Text(
-                          companyName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                        SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Image.asset(
-                              AppImages.locationImage,
-                              height: 10,
-                              color: AppColor.lightGray2,
-                            ),
-                            SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFont.Mulish(
-                                  fontSize: 12,
-                                  color: AppColor.lightGray2,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              fieldName,
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                color: AppColor.lightGray3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10),
-                        Row(
-                          children: [
-                            CommonContainer.greenStarRating(
-                              ratingStar: ratingStar,
-                              ratingCount: ratingCount,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Opens Upto ',
-                              style: GoogleFont.Mulish(
-                                fontSize: 9,
-                                color: AppColor.lightGray2,
-                              ),
-                            ),
-                            Text(
-                              time,
+                              time ?? '',
                               style: GoogleFont.Mulish(
                                 fontSize: 9,
                                 color: AppColor.lightGray2,
@@ -1774,13 +1022,14 @@ class CommonContainer {
               MessageIcon: true,
               whatsAppIcon: true,
               FireIcon: true,
-              fireOnTap: fireOnTap, // can be null now
-              fireTooltip: fireTooltip, // 👈 pass tooltip here
+              fireOnTap: fireOnTap,
+              fireTooltip: fireTooltip,
               whatsAppOnTap: whatsAppOnTap,
               messageOnTap: messageOnTap,
               callOnTap: callTap,
               messageContainer: true,
               messageLoading: isMessageLoading,
+              messageDisabled: messageDisabled,
             ),
             const SizedBox(height: 20),
             if (horizontalDivider) CommonContainer.horizonalDivider(),
@@ -1789,6 +1038,203 @@ class CommonContainer {
       ),
     );
   }
+
+  // static servicesContainer({
+  //   required String image,
+  //   required String companyName,
+  //   required String location,
+  //   required String fieldName,
+  //   required String ratingStar,
+  //   required String ratingCount,
+  //   required String time,
+  //   String? heroTag,
+  //   VoidCallback? onTap,
+  //   VoidCallback? callTap,
+  //   VoidCallback? messageOnTap,
+  //   VoidCallback? whatsAppOnTap,
+  //   VoidCallback? fireOnTap, // still here, but optional
+  //   String? fireTooltip, // 👈 tooltip text comes here
+  //   bool horizontalDivider = false,
+  //   bool Verify = false,
+  //   bool isMessageLoading = false,
+  //   bool messageDisabled = false,
+  // }) {
+  //   Widget thumb = CachedNetworkImage(
+  //     imageUrl: image,
+  //     height: 100,
+  //     width: 100,
+  //     fit: BoxFit.cover,
+  //     placeholder: (context, url) => const SizedBox(
+  //       height: 50,
+  //       width: 50,
+  //       child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+  //     ),
+  //     errorWidget: (context, url, error) => const SizedBox(
+  //       height: 100,
+  //       width: 100,
+  //       child: Icon(Icons.broken_image),
+  //     ),
+  //   );
+  //
+  //   if (heroTag != null && heroTag.isNotEmpty) {
+  //     thumb = Hero(tag: heroTag, child: thumb);
+  //   }
+  //
+  //   return InkWell(
+  //     borderRadius: BorderRadius.circular(24),
+  //     onTap: onTap,
+  //     child: Padding(
+  //       padding: const EdgeInsets.symmetric(horizontal: 16),
+  //       child: Column(
+  //         children: [
+  //           Padding(
+  //             padding: const EdgeInsets.symmetric(vertical: 15.0),
+  //             child: Row(
+  //               children: [
+  //                 ClipRRect(
+  //                   clipBehavior: Clip.antiAlias,
+  //                   borderRadius: BorderRadius.circular(12),
+  //                   child: thumb,
+  //                 ),
+  //                 SizedBox(width: 12),
+  //                 Expanded(
+  //                   child: Column(
+  //                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                     children: [
+  //                       if (Verify)
+  //                         Container(
+  //                           decoration: BoxDecoration(
+  //                             gradient: LinearGradient(
+  //                               colors: [
+  //                                 AppColor.blueGradient1,
+  //                                 AppColor.blueGradient2,
+  //                                 AppColor.blueGradient3,
+  //                               ],
+  //                               begin: Alignment.centerRight,
+  //                               end: Alignment.centerLeft,
+  //                             ),
+  //                             borderRadius: BorderRadius.circular(30),
+  //                           ),
+  //                           child: Padding(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 10,
+  //                               vertical: 5,
+  //                             ),
+  //                             child: Row(
+  //                               mainAxisSize: MainAxisSize.min,
+  //                               children: [
+  //                                 Image.asset(AppImages.verifyTick, height: 14),
+  //                                 const SizedBox(width: 4),
+  //                                 Text(
+  //                                   'Trusted',
+  //                                   style: GoogleFont.Mulish(
+  //                                     fontWeight: FontWeight.w900,
+  //                                     fontSize: 10,
+  //                                     color: AppColor.white,
+  //                                   ),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       SizedBox(height: 9),
+  //                       Text(
+  //                         companyName,
+  //                         maxLines: 1,
+  //                         overflow: TextOverflow.ellipsis,
+  //                         style: GoogleFont.Mulish(
+  //                           fontWeight: FontWeight.w800,
+  //                           fontSize: 16,
+  //                           color: AppColor.darkBlue,
+  //                         ),
+  //                       ),
+  //                       SizedBox(height: 6),
+  //                       Row(
+  //                         children: [
+  //                           Image.asset(
+  //                             AppImages.locationImage,
+  //                             height: 10,
+  //                             color: AppColor.lightGray2,
+  //                           ),
+  //                           SizedBox(width: 3),
+  //                           Flexible(
+  //                             child: Text(
+  //                               location,
+  //                               maxLines: 1,
+  //                               overflow: TextOverflow.ellipsis,
+  //                               style: GoogleFont.Mulish(
+  //                                 fontSize: 12,
+  //                                 color: AppColor.lightGray2,
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           SizedBox(width: 10),
+  //                           Text(
+  //                             fieldName,
+  //                             style: GoogleFont.Mulish(
+  //                               fontWeight: FontWeight.bold,
+  //                               fontSize: 12,
+  //                               color: AppColor.lightGray3,
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       SizedBox(height: 10),
+  //                       Row(
+  //                         children: [
+  //                           CommonContainer.greenStarRating(
+  //                             ratingStar: ratingStar,
+  //                             ratingCount: ratingCount,
+  //                           ),
+  //                           SizedBox(width: 10),
+  //                           Text(
+  //                             'Opens Upto ',
+  //                             style: GoogleFont.Mulish(
+  //                               fontSize: 9,
+  //                               color: AppColor.lightGray2,
+  //                             ),
+  //                           ),
+  //                           Text(
+  //                             time,
+  //                             style: GoogleFont.Mulish(
+  //                               fontSize: 9,
+  //                               color: AppColor.lightGray2,
+  //                               fontWeight: FontWeight.w800,
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //
+  //           // 🔹 CALL / MESSAGE / WHATSAPP / FIRE (with tooltip)
+  //           CommonContainer.callNowButton(
+  //             callImage: AppImages.callImage,
+  //             callIconSize: 16,
+  //             callText: 'Call Now',
+  //             MessageIcon: true,
+  //             whatsAppIcon: true,
+  //             FireIcon: true,
+  //             fireOnTap: fireOnTap, // can be null now
+  //             fireTooltip: fireTooltip, // 👈 pass tooltip here
+  //             whatsAppOnTap: whatsAppOnTap,
+  //             messageOnTap: messageOnTap,
+  //             callOnTap: callTap,
+  //             messageContainer: true,
+  //             messageLoading: isMessageLoading,
+  //             messageDisabled: messageDisabled,
+  //           ),
+  //           const SizedBox(height: 20),
+  //           if (horizontalDivider) CommonContainer.horizonalDivider(),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   static serviceDetails({
     VoidCallback? onTap,
