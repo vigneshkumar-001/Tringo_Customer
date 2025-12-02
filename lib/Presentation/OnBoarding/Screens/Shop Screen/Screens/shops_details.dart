@@ -176,36 +176,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     final state = ref.watch(shopsNotifierProvider);
     final stateS = ref.watch(homeNotifierProvider);
 
-    if (state.isLoading && state.shopDetailsResponse == null) {
+    if (state.isLoading) {
       return Scaffold(
-        body: Center(
-          child: ThreeDotsLoader(dotColor: AppColor.black),
-        ),
+        body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
       );
     }
-
-    // 2️⃣ After load finished but error & no data → show simple error
-    if (!state.isLoading &&
-        state.error != null &&
-        state.shopDetailsResponse == null) {
-      return Scaffold(
-        body: Center(
-          child: Text(
-            state.error!,
-            style: TextStyle(color: Colors.red),
-          ),
-        ),
-      );
-    }
-
-
     final shopsData = state.shopDetailsResponse;
-
     if (shopsData == null || shopsData.data == null) {
-
-      return const Scaffold(
-        body: Center(child: NoDataScreen()),
-      );
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
     final double w = MediaQuery.of(context).size.width;
     // gift size scales with screen width (max 120)
