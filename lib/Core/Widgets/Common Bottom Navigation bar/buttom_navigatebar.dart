@@ -272,109 +272,109 @@ class FigmaBottomNavBar extends StatelessWidget {
                   ),
                   SizedBox(width: 10),
 
-                  // SPARKLE gradient circle
-                  _gradientCircle(
-                    size: 40,
-                    onTap: () => onChanged(2),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-
-                  // FILTER pill (with count)
-                  _pill(
-                    context,
-                    onTap: () => onChanged(3),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            'Filter',
-                            style: GoogleFont.Mulish(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: AppColor.lightGray2,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 18,
-                          color: Colors.black54,
-                        ),
-                        if (filterCount > 0) ...[
-                          SizedBox(width: 8),
-                          _countChip(
-                            context,
-                            value: '$filterCount',
-                            onClear: onClearFilters,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10),
-
-                  // SORT pill
-                  _pill(
-                    context,
-                    onTap: () => onChanged(4),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Sort By',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColor.lightGray2,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 18,
-                          color: Colors.black54,
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 4),
-
-                  // CATEGORY pills -> send index 5..7 back up
-                  _pill(
-                    context,
-                    onTap: () => onChanged(5),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: _ChipLabel('Restaurants'),
-                  ),
-                  SizedBox(width: 4),
-                  _pill(
-                    context,
-                    onTap: () => onChanged(6),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: _ChipLabel('Textiles'),
-                  ),
-                  SizedBox(width: 4),
-                  _pill(
-                    context,
-                    onTap: () => onChanged(7),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: _ChipLabel('Bakery'),
-                  ),
+                  // // SPARKLE gradient circle
+                  // _gradientCircle(
+                  //   size: 40,
+                  //   onTap: () => onChanged(2),
+                  //   child: Icon(
+                  //     Icons.auto_awesome,
+                  //     color: Colors.white,
+                  //     size: 20,
+                  //   ),
+                  // ),
+                  // SizedBox(width: 10),
+                  //
+                  // // FILTER pill (with count)
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(3),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Padding(
+                  //         padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  //         child: Text(
+                  //           'Filter',
+                  //           style: GoogleFont.Mulish(
+                  //             fontWeight: FontWeight.w700,
+                  //             fontSize: 14,
+                  //             color: AppColor.lightGray2,
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Icon(
+                  //         Icons.keyboard_arrow_down_rounded,
+                  //         size: 18,
+                  //         color: Colors.black54,
+                  //       ),
+                  //       if (filterCount > 0) ...[
+                  //         SizedBox(width: 8),
+                  //         _countChip(
+                  //           context,
+                  //           value: '$filterCount',
+                  //           onClear: onClearFilters,
+                  //         ),
+                  //       ],
+                  //     ],
+                  //   ),
+                  // ),
+                  // SizedBox(width: 10),
+                  //
+                  // // SORT pill
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(4),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Text(
+                  //         'Sort By',
+                  //         style: GoogleFont.Mulish(
+                  //           fontWeight: FontWeight.w700,
+                  //           fontSize: 14,
+                  //           color: AppColor.lightGray2,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Icon(
+                  //         Icons.keyboard_arrow_down_rounded,
+                  //         size: 18,
+                  //         color: Colors.black54,
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  // SizedBox(width: 4),
+                  //
+                  // // CATEGORY pills -> send index 5..7 back up
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(5),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: _ChipLabel('Restaurants'),
+                  // ),
+                  // SizedBox(width: 4),
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(6),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: _ChipLabel('Textiles'),
+                  // ),
+                  // SizedBox(width: 4),
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(7),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: _ChipLabel('Bakery'),
+                  // ),
                 ],
               ),
             ),
