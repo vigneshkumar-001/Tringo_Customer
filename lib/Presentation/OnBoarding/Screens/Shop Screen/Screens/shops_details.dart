@@ -36,6 +36,8 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   int selectedIndex = 0;
   int selectedWeight = 0; // default
 
+  bool _enquiryDisabled = false;
+
   late final AnimationController _ac;
 
   late final Animation<double> aHeader; // back + chip
@@ -358,6 +360,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     );
                                   },
                                   messageOnTap: () {
+                                    if (_enquiryDisabled ||
+                                        stateS.isEnquiryLoading)
+                                      return;
+
+                                    setState(() {
+                                      _enquiryDisabled = true;
+                                    });
+
                                     ref
                                         .read(homeNotifierProvider.notifier)
                                         .putEnquiry(
@@ -382,6 +392,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     );
                                   },
                                   messageLoading: stateS.isEnquiryLoading,
+                                  messageDisabled: _enquiryDisabled,
                                   MessageIcon: true,
                                   mapText: 'Map',
                                   mapImage: AppImages.locationImage,
