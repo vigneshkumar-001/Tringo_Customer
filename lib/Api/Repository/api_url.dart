@@ -49,8 +49,17 @@ class ApiUrl {
   static String productList({
     required double lng,
     required double lat,
+    required String kind,
     required String searchWords,
   }) {
-    return "${base}api/v1/public/products?page=1&limit=20&q=$searchWords&lat=$lat&lng=$lng";
+    return "${base}api/v1/public/listings?type=$kind&page=1&limit=2";
   }
+
+  // static String productList({
+  //   required double lng,
+  //   required double lat,
+  //   required String searchWords,
+  // }) {
+  //   return "${base}api/v1/public/products?page=1&limit=20&q=$searchWords&lat=$lat&lng=$lng";
+  // }
 }

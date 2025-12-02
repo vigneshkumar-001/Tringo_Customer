@@ -14,7 +14,8 @@ import '../../No Data Screen/Screen/no_data_screen.dart';
 
 class ProductListing extends ConsumerStatefulWidget {
   final String? title;
-  const ProductListing({super.key, this.title});
+  final String? kind;
+  const ProductListing({super.key, this.title,this.kind});
 
   @override
   ConsumerState<ProductListing> createState() => _ProductListingState();
@@ -25,7 +26,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(productNotifierProvider.notifier).productList();
+      ref.read(productNotifierProvider.notifier).productList(kind: widget.kind??'');
     });
   }
 
@@ -104,54 +105,180 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                     color: AppColor.lightGray2,
                   ),
                 ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: productListData.data?.items.length ?? 0,
+            itemBuilder: (context, index) {
+              final item = productListData.data?.items[index];
 
-                // ✅ Products list
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final data = items[index];
-                    final shop = data.shop; // may be null
+              if (item == null) return const SizedBox.shrink();
 
-                    return CommonContainer.foodList(
-                      titleWeight: FontWeight.w400,
-                      locations: true,
-                      fontSize: 12,
-                      imageWidth: 130,
-                      imageHeight: 150,
-                      Ad: false,
-                      horizontalDivider: true,
+              final shop = item.shop;
 
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProductDetails(productId: data.id),
-                          ),
-                        );
-                      },
+              return CommonContainer.foodList(
+                titleWeight: FontWeight.w400,
+                locations: true,
+                fontSize: 12,
+                imageWidth: 130,
+                imageHeight: 150,
+                Ad: false,
+                horizontalDivider: true,
 
-                      // 🔹 All below are now null-safe
-                      Verify: shop?.isTrusted ?? false, // bool not bool?
-                      image: data.imageUrl ?? '',
-                      foodName: data.englishName ?? '',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetails(productId: item.id),
+                    ),
+                  );
+                },
 
-                      ratingStar: (shop?.rating ?? 0).toString(),
-                      ratingCount: (shop?.ratingCount ?? 0).toString(),
+                // BOOL? → BOOL
+                Verify: shop?.isTrusted ?? false,
 
-                      offAmound: '₹${data.price ?? ''}',
-                      oldAmound: '₹${data.offerPrice ?? ''}',
+                // Strings with fallback
+                image: item.imageUrl ?? "",
+                foodName: item.englishName ?? "",
 
-                      km: (shop?.distanceKm ?? '').toString(),
-                      location:
-                          '${shop?.englishName ?? ''} & ${shop?.category ?? ''}',
-                    );
-                  },
+                // Ratings
+                ratingStar: (shop?.rating ?? 0).toString(),
+                ratingCount: (shop?.ratingCount ?? 0).toString(),
+
+                // Prices
+                offAmound: "₹${item.offerPrice ?? item.price ?? 0}",
+                oldAmound: "₹${item.price ?? 0}",
+
+                // Distance
+                km: (shop?.distanceKm ?? "").toString(),
+
+                // Location
+                location: "${shop?.englishName ?? ''} & ${shop?.category ?? ''}",
+              );
+            },
+          ),
+
+
+
+          SizedBox(height: 10),
+                /*      CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: true,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage2,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
                 ),
-
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
+                CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: true,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage3,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),
+                SizedBox(height: 10),
+                CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: false,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage4,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),*/
+                /*      CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: true,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage2,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),
+                SizedBox(height: 10),
+                CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: true,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage3,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),
+                SizedBox(height: 10),
+                CommonContainer.foodList(
+                  titleWeight: FontWeight.w400,
+                  locations: true,
+                  fontSize: 12,
+                  imageWidth: 130,
+                  imageHeight: 150,
+                  Ad: false,
+                  horizontalDivider: false,
+                  onTap: () {},
+                  Verify: false,
+                  image: AppImages.fanImage4,
+                  foodName: 'Super P400 BLDC Pedestal Fan by Super fan',
+                  ratingStar: '4.5',
+                  ratingCount: '16',
+                  offAmound: '₹2,999',
+                  oldAmound: '₹3,999',
+                  km: '100Mtrs',
+                  location: 'Lkh Electricals & Applicances',
+                ),*/
               ],
             ),
           ),
