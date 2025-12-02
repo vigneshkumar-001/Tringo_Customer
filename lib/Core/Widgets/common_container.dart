@@ -784,13 +784,13 @@ class CommonContainer {
                   ),
                 if (FireIcon)
                   Tooltip(
-                    message: fireTooltip ?? 'Trending service',
-                    child: GestureDetector(
-                      onTap: fireOnTap,
-                      child: Image.asset(
-                        AppImages.fireImage,
-                        height: fireIconSize ?? 19,
-                      ),
+                    message: fireTooltip ?? 'App Offer 5%',
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 2),
+                    preferBelow: false,
+                    child: Image.asset(
+                      AppImages.fireImage,
+                      height: fireIconSize ?? 19,
                     ),
                   ),
               ],
@@ -1395,7 +1395,7 @@ class CommonContainer {
   //     ],
   //   );*/
   // }
-
+/*
   static servicesContainer({
     required String image,
     required String companyName,
@@ -1593,9 +1593,8 @@ class CommonContainer {
         ),
       ),
     );
-  }
+  }*/
 
-  /*
   static servicesContainer({
     required String image,
     required String companyName,
@@ -1604,22 +1603,17 @@ class CommonContainer {
     required String ratingStar,
     required String ratingCount,
     required String time,
-    String? heroTag, // 👈 optional
+    String? heroTag,
     VoidCallback? onTap,
     VoidCallback? callTap,
     VoidCallback? messageOnTap,
     VoidCallback? whatsAppOnTap,
+    VoidCallback? fireOnTap,       // still here, but optional
+    String? fireTooltip,           // 👈 tooltip text comes here
     bool horizontalDivider = false,
     bool Verify = false,
-  })
-  {
-    // thumbnail
-    // Widget thumb = Image.network(
-    //   image,
-    //   height: 100,
-    //   width: 100,
-    //   fit: BoxFit.cover,
-    // );
+    bool isMessageLoading = false,
+  }) {
     Widget thumb = CachedNetworkImage(
       imageUrl: image,
       height: 100,
@@ -1637,7 +1631,6 @@ class CommonContainer {
       ),
     );
 
-    // only wrap with Hero if a tag is provided
     if (heroTag != null && heroTag.isNotEmpty) {
       thumb = Hero(tag: heroTag, child: thumb);
     }
@@ -1656,7 +1649,7 @@ class CommonContainer {
                   ClipRRect(
                     clipBehavior: Clip.antiAlias,
                     borderRadius: BorderRadius.circular(12),
-                    child: thumb, // 👈 uses hero ONLY when heroTag provided
+                    child: thumb,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1744,48 +1737,6 @@ class CommonContainer {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            // Container(
-                            //   padding: const EdgeInsets.symmetric(
-                            //     horizontal: 8,
-                            //     vertical: 4,
-                            //   ),
-                            //   decoration: BoxDecoration(
-                            //     color: AppColor.green,
-                            //     borderRadius: BorderRadius.circular(30),
-                            //   ),
-                            //   child: Row(
-                            //     mainAxisSize: MainAxisSize.min,
-                            //     children: [
-                            //       Text(
-                            //         ratingStar,
-                            //         style: GoogleFont.Mulish(
-                            //           fontWeight: FontWeight.bold,
-                            //           fontSize: 14,
-                            //           color: AppColor.white,
-                            //         ),
-                            //       ),
-                            //       const SizedBox(width: 5),
-                            //       Image.asset(AppImages.starImage, height: 9),
-                            //       const SizedBox(width: 5),
-                            //       Container(
-                            //         width: 1.5,
-                            //         height: 11,
-                            //         decoration: BoxDecoration(
-                            //           color: AppColor.white.withOpacity(0.2),
-                            //           borderRadius: BorderRadius.circular(1),
-                            //         ),
-                            //       ),
-                            //       const SizedBox(width: 5),
-                            //       Text(
-                            //         ratingCount,
-                            //         style: GoogleFont.Mulish(
-                            //           fontSize: 12,
-                            //           color: AppColor.white,
-                            //         ),
-                            //       ),
-                            //     ],
-                            //   ),
-                            // ),
                             CommonContainer.greenStarRating(
                               ratingStar: ratingStar,
                               ratingCount: ratingCount,
@@ -1814,19 +1765,22 @@ class CommonContainer {
                 ],
               ),
             ),
-            CommonContainer.callNowButton(
 
+            // 🔹 CALL / MESSAGE / WHATSAPP / FIRE (with tooltip)
+            CommonContainer.callNowButton(
               callImage: AppImages.callImage,
               callIconSize: 16,
               callText: 'Call Now',
               MessageIcon: true,
               whatsAppIcon: true,
               FireIcon: true,
-              fireOnTap: () {},
+              fireOnTap: fireOnTap,          // can be null now
+              fireTooltip: fireTooltip,      // 👈 pass tooltip here
               whatsAppOnTap: whatsAppOnTap,
               messageOnTap: messageOnTap,
               callOnTap: callTap,
               messageContainer: true,
+              messageLoading: isMessageLoading,
             ),
             const SizedBox(height: 20),
             if (horizontalDivider) CommonContainer.horizonalDivider(),
@@ -1835,7 +1789,7 @@ class CommonContainer {
       ),
     );
   }
-*/
+
 
   static serviceDetails({
     VoidCallback? onTap,
@@ -2633,23 +2587,17 @@ class CommonContainer {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: CachedNetworkImage(
-                  imageUrl:
-                  image,
+                  imageUrl: image,
                   height: 150,
                   width: 190,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) =>
-                      Container(
-                        height: 150,
-                        width: 190,
-                        color: Colors.grey
-                            .withOpacity(0.2),
-                      ),
-                  errorWidget:
-                      (context, url, error) =>
-                  const Icon(
-                    Icons.broken_image,
+                  placeholder: (context, url) => Container(
+                    height: 150,
+                    width: 190,
+                    color: Colors.grey.withOpacity(0.2),
                   ),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.broken_image),
                 ),
               ),
               if (Ad)
@@ -3443,7 +3391,7 @@ class CommonContainer {
         child: Container(
           decoration: BoxDecoration(
             color:
-            backgroundColor ??
+                backgroundColor ??
                 (isBorder ? AppColor.white : AppColor.skyBlue),
             border: isBorder
                 ? Border.all(color: const Color(0xff3F5FF2), width: 2)
@@ -3463,23 +3411,23 @@ class CommonContainer {
             child: loader != null
                 ? loader
                 : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  text,
-                  style: TextStyle(
-                    fontFamily: "Roboto-normal",
-                    fontSize: fontSize,
-                    color: textColor,
-                    fontWeight: fontWeight,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        text,
+                        style: TextStyle(
+                          fontFamily: "Roboto-normal",
+                          fontSize: fontSize,
+                          color: textColor,
+                          fontWeight: fontWeight,
+                        ),
+                      ),
+                      if (image != null) ...[
+                        const SizedBox(width: 15),
+                        Image.asset(image, height: 20),
+                      ],
+                    ],
                   ),
-                ),
-                if (image != null) ...[
-                  const SizedBox(width: 15),
-                  Image.asset(image, height: 20),
-                ],
-              ],
-            ),
           ),
         ),
       ),

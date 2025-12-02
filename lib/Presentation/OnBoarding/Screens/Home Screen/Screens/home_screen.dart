@@ -1275,6 +1275,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       phone: shops.primaryPhone,
                                                     );
                                                   },
+                                                  fireTooltip: 'App Offer 5%',
+
                                                   isMessageLoading:
                                                       isThisCardLoading,
                                                   messageOnTap: () {
@@ -1323,7 +1325,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       shops.englishName,
                                                   location:
                                                       '${shops.city}, ${shops.state}, ${shops.country}',
-                                                  fieldName: shops.distanceKm.toString()?? '',
+                                                  fieldName:
+                                                      shops.distanceKm
+                                                          .toString() ??
+                                                      '',
                                                   ratingStar: shops.rating
                                                       .toString(),
                                                   ratingCount: shops.ratingCount
