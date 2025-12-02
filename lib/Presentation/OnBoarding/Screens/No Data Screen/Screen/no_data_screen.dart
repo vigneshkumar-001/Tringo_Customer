@@ -88,7 +88,8 @@ class NoDataScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   onPressed:
-                      onBackTap ?? () => Navigator.of(context).maybePop(),
+                      onBackTap ?? () =>
+                          Navigator.of(context).maybePop(),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

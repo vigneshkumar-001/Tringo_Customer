@@ -78,21 +78,17 @@ class _SearchScreenBottombarState extends State<SearchScreenBottombar> {
     );
   }
 
-  /*
-  void _pushCategory(String name) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(), // add this param to your page
-      ),
+  //
+  // void _pushCategory(String name) {
+  //   Navigator.of(context).pushAndRemoveUntil(
+  //     MaterialPageRoute(builder: (_) => HomeScreen()),
+  //     (route) => false, // remove everything below
+  //   );
+  // }
 
-    );
-  }
-*/
   void _pushCategory(String name) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => HomeScreen()),
-      (route) => false, // remove everything below
-    );
+    // Just go back to previous screen (which is HomeScreen)
+    Navigator.of(context).pop();
   }
 
   // map taps from the bar
@@ -214,81 +210,80 @@ class FigmaBottomNavBar extends StatelessWidget {
                   SizedBox(width: 10),
 
                   // SPARKLE gradient circle
-                  _gradientCircle(
-                    size: 40,
-                    onTap: () => onChanged(2),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-
+                  // _gradientCircle(
+                  //   size: 40,
+                  //   onTap: () => onChanged(2),
+                  //   child: Icon(
+                  //     Icons.auto_awesome,
+                  //     color: Colors.white,
+                  //     size: 20,
+                  //   ),
+                  // ),
                   SizedBox(width: 10),
-                  _pill(
-                    context,
-                    onTap: () => onChanged(4),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Near By',
-                          style: GoogleFont.Mulish(
-                            fontSize: 14,
-                            color: AppColor.lightGray2,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Shops',
-                          style: GoogleFont.Mulish(
-                            fontSize: 14,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  _pill(
-                    context,
-                    onTap: () => onChanged(4),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Near By',
-                          style: GoogleFont.Mulish(
-                            fontSize: 14,
-                            color: AppColor.lightGray2,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Services',
-                          style: GoogleFont.Mulish(
-                            fontSize: 14,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  _pill(
-                    context,
-                    onTap: () => onChanged(7),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Text(
-                      'Bakery',
-                      style: GoogleFont.Mulish(color: AppColor.lightGray2),
-                    ),
-                  ),
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(4),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Text(
+                  //         'Near By',
+                  //         style: GoogleFont.Mulish(
+                  //           fontSize: 14,
+                  //           color: AppColor.lightGray2,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Text(
+                  //         'Shops',
+                  //         style: GoogleFont.Mulish(
+                  //           fontSize: 14,
+                  //           color: AppColor.darkBlue,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  // SizedBox(width: 10),
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(4),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Text(
+                  //         'Near By',
+                  //         style: GoogleFont.Mulish(
+                  //           fontSize: 14,
+                  //           color: AppColor.lightGray2,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Text(
+                  //         'Services',
+                  //         style: GoogleFont.Mulish(
+                  //           fontSize: 14,
+                  //           color: AppColor.darkBlue,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  // SizedBox(width: 10),
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(7),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Text(
+                  //     'Bakery',
+                  //     style: GoogleFont.Mulish(color: AppColor.lightGray2),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -322,39 +317,39 @@ class FigmaBottomNavBar extends StatelessWidget {
     );
   }
 
-  static Widget _gradientCircle({
-    required double size,
-    required Widget child,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(size / 2),
-      child: Container(
-        height: size,
-        width: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(size / 2),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFF7A00), // orange
-              Color(0xFFFF2D55), // pink
-              Color(0xFF7A5CFF), // purple
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: child,
-      ),
-    );
-  }
+  // static Widget _gradientCircle({
+  //   required double size,
+  //   required Widget child,
+  //   required VoidCallback onTap,
+  // }) {
+  //   return InkWell(
+  //     onTap: onTap,
+  //     borderRadius: BorderRadius.circular(size / 2),
+  //     child: Container(
+  //       height: size,
+  //       width: size,
+  //       alignment: Alignment.center,
+  //       decoration: BoxDecoration(
+  //         borderRadius: BorderRadius.circular(size / 2),
+  //         gradient: const LinearGradient(
+  //           begin: Alignment.topLeft,
+  //           end: Alignment.bottomRight,
+  //           colors: [
+  //             Color(0xFFFF7A00), // orange
+  //             Color(0xFFFF2D55), // pink
+  //             Color(0xFF7A5CFF), // purple
+  //           ],
+  //         ),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.black.withOpacity(0.15),
+  //             blurRadius: 10,
+  //             offset: const Offset(0, 4),
+  //           ),
+  //         ],
+  //       ),
+  //       child: child,
+  //     ),
+  //   );
+  // }
 }
