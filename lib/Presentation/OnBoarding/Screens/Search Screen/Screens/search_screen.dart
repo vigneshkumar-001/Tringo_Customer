@@ -108,6 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
+                            autofocus: true,
                             controller: _controller,
                             onChanged: (value) {
                               setState(() {});
@@ -118,7 +119,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 notifier.searchSuggestion(searchWords: q);
                               }
                             },
-                            // 🔹 keyboard search press
+
                             onSubmitted: (value) {
                               final term = value.trim();
                               if (term.isEmpty) return;
@@ -184,7 +185,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   else
                     for (final item in recentItems) ...[
                       CommonContainer.sortbyPopup(
-                        text1: item.label,   // e.g. Krishna sweets
+                        text1: item.label, // e.g. Krishna sweets
                         text2: item.inLabel, // Shop / Product / Service
                         connector: ' in ',
                         image: AppImages.rightArrow,
@@ -263,7 +264,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _handleSuggestionTap(BuildContext context, SearchItem item) {
-    if (item.type == 'SHOP') {
+    if (item.type == 'PRODUCT_SHOP') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => ButtomNavigatebar(initialIndex: 3)),
@@ -272,11 +273,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ButtomNavigatebar(initialIndex: 6,tittle: item.label,),
+          builder: (context) =>
+              ButtomNavigatebar(initialIndex: 6, tittle: item.label),
           // ShopsListing(),
         ),
       );
-    } else if (item.type == 'SERVICE') {
+    } else if (item.type == 'SERVICE_SHOP') {
       Navigator.push(
         context,
         MaterialPageRoute(

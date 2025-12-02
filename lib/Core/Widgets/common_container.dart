@@ -856,28 +856,26 @@ class CommonContainer {
     // 🔹 Decide whether this is a network image or asset
     final bool isNetworkImage = image.startsWith('http');
 
-    Widget thumb = isNetworkImage
-        ? CachedNetworkImage(
-            imageUrl: image,
-            height: 100,
-            width: 100,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => const SizedBox(
-              height: 50,
-              width: 50,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-            errorWidget: (context, url, error) => const SizedBox(
-              height: 100,
-              width: 100,
-              child: Icon(Icons.broken_image),
-            ),
-          )
-        : Image.asset(image, height: 100, width: 100, fit: BoxFit.cover);
+    CachedNetworkImage(
+      imageUrl: image,
+      height: 100,
+      width: 100,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => const SizedBox(
+        height: 50,
+        width: 50,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) => const SizedBox(
+        height: 100,
+        width: 100,
+        child: Icon(Icons.broken_image),
+      ),
+    );
 
-    if (heroTag != null && heroTag.isNotEmpty) {
-      thumb = Hero(tag: heroTag, child: thumb);
-    }
+    // if (heroTag != null && heroTag.isNotEmpty) {
+    //   thumb = Hero(tag: heroTag, child: thumb);
+    // }
 
     return InkWell(
       borderRadius: BorderRadius.circular(24),
@@ -890,10 +888,28 @@ class CommonContainer {
               padding: const EdgeInsets.symmetric(vertical: 15.0),
               child: Row(
                 children: [
-                  ClipRRect(
-                    clipBehavior: Clip.antiAlias,
-                    borderRadius: BorderRadius.circular(12),
-                    child: thumb,
+                  // ClipRRect(
+                  //   clipBehavior: Clip.antiAlias,
+                  //   borderRadius: BorderRadius.circular(12),
+                  //   child: thumb,
+                  // ),
+                  CachedNetworkImage(
+                    imageUrl: image,
+                    height: 100,
+                    width: 100,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const SizedBox(
+                      height: 50,
+                      width: 50,
+                      child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => const SizedBox(
+                      height: 100,
+                      width: 100,
+                      child: Icon(Icons.broken_image),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
@@ -61,11 +62,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   @override
   void initState() {
     super.initState();
+
     _ac = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
       reverseDuration: const Duration(milliseconds: 1000),
     );
+    AppLogger.log.i(widget.shopId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(shopsNotifierProvider.notifier)
