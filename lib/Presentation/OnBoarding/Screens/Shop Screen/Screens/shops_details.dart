@@ -767,10 +767,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   TextColor: isSelected
                                       ? AppColor.lightGray2
                                       : AppColor.lightGray2,
-                                  shopsData
-                                          .data
-                                          ?.serviceTags?[index]
-                                          .label ??
+                                  shopsData.data?.serviceTags?[index].label ??
                                       '',
                                   isSelected: isSelected,
                                   onTap: () {
