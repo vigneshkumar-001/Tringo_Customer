@@ -47,6 +47,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _shopsPressed = false;
   bool _servicesPressed = false;
   StreamSubscription<ServiceStatus>? _serviceSub;
+  final Set<String> _enquiredServiceIds = {};
+  final Set<String> _enquiredShopIds = {};
 
   final Set<String> _disabledMessageShopIds = {};
   final Set<String> _disabledMessageIds = {};
@@ -954,15 +956,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             ),
                                           ],
                                         ),
-                                        child: ListView.builder(
+                                        child:
+                                        ListView.builder(
                                           shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          itemCount:
-                                              filteredServiceShops.length,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          itemCount: filteredServiceShops.length,
                                           itemBuilder: (context, index) {
-                                            final services =
-                                                filteredServiceShops[index];
+                                            final services = filteredServiceShops[index];
                                             final isThisCardLoading =
                                                 state.isEnquiryLoading &&
                                                 state.activeEnquiryId ==
@@ -970,9 +970,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             final hasMessaged =
                                             _disabledMessageIds.contains(services.id);
                                             return Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 20,
-                                              ),
+                                              padding: const EdgeInsets.only(bottom: 20),
                                               child: Column(
                                                 children: [
                                                   CommonContainer.servicesContainer(
@@ -995,30 +993,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       });
 
                                                       ref
-                                                          .read(
-                                                            homeNotifierProvider
-                                                                .notifier,
-                                                          )
+                                                          .read(homeNotifierProvider.notifier)
                                                           .putEnquiry(
-                                                            context: context,
-                                                            serviceId:
-                                                                services.id,
-                                                            productId: '',
-                                                            message: '',
-                                                            shopId: services.id,
-                                                          );
+                                                        context: context,
+                                                        serviceId: services.id,
+                                                        productId: '',
+                                                        message: '',
+                                                        shopId: services.id,
+                                                      );
                                                     },
 
                                                     onTap: () {
                                                       Navigator.push(
                                                         context,
                                                         MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              ServiceAndShopsDetails(
-                                                                shopId:
-                                                                    services.id,
-                                                                initialIndex: 3,
-                                                              ),
+                                                          builder: (context) => ServiceAndShopsDetails(
+                                                            shopId: services.id,
+                                                            initialIndex: 3,
+                                                          ),
                                                         ),
                                                       );
                                                     },
@@ -1026,33 +1018,120 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       MapUrls.openWhatsapp(
                                                         message: 'hi',
                                                         context: context,
-                                                        phone: services
-                                                            .primaryPhone,
+                                                        phone: services.primaryPhone,
                                                       );
                                                     },
                                                     Verify: services.isTrusted,
-                                                    image: services
-                                                        .primaryImageUrl
-                                                        .toString(),
+                                                    image: services.primaryImageUrl.toString(),
                                                     companyName:
-                                                        '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
+                                                    '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
                                                     location:
-                                                        '${services.city},${services.state},${services.country} ',
-                                                    fieldName: services
-                                                        .ownershipTypeLabel,
-                                                    ratingStar: services.rating
-                                                        .toString(),
-                                                    ratingCount: services
-                                                        .ratingCount
-                                                        .toString(),
+                                                    '${services.city},${services.state},${services.country} ',
+                                                    fieldName: services.ownershipTypeLabel,
+                                                    ratingStar: services.rating.toString(),
+                                                    ratingCount: services.ratingCount.toString(),
                                                     time: '9Pm',
                                                   ),
-                                                  // SizedBox(height: 6),
                                                 ],
                                               ),
                                             );
                                           },
-                                        ),
+                                        )
+
+                                        // ListView.builder(
+                                        //   shrinkWrap: true,
+                                        //   physics:
+                                        //       const NeverScrollableScrollPhysics(),
+                                        //   itemCount:
+                                        //       filteredServiceShops.length,
+                                        //   itemBuilder: (context, index) {
+                                        //     final services =
+                                        //         filteredServiceShops[index];
+                                        //     final isThisCardLoading =
+                                        //         state.isEnquiryLoading &&
+                                        //         state.activeEnquiryId ==
+                                        //             services.id;
+                                        //
+                                        //     return Padding(
+                                        //       padding: const EdgeInsets.only(
+                                        //         bottom: 20,
+                                        //       ),
+                                        //       child: Column(
+                                        //         children: [
+                                        //           CommonContainer.servicesContainer(
+                                        //             callTap: () async {
+                                        //               await MapUrls.openDialer(
+                                        //                 context,
+                                        //                 services.primaryPhone,
+                                        //               );
+                                        //             },
+                                        //             horizontalDivider: true,
+                                        //             fireOnTap: () {},
+                                        //
+                                        //             messageOnTap: () {
+                                        //
+                                        //               ref
+                                        //                   .read(
+                                        //                     homeNotifierProvider
+                                        //                         .notifier,
+                                        //                   )
+                                        //                   .putEnquiry(
+                                        //                     context: context,
+                                        //                     serviceId:
+                                        //                         services.id,
+                                        //                     productId: '',
+                                        //                     message: '',
+                                        //                     shopId: services.id,
+                                        //                   );
+                                        //             },
+                                        //
+                                        //             isMessageLoading:
+                                        //                 isThisCardLoading,
+                                        //
+                                        //             onTap: () {
+                                        //               Navigator.push(
+                                        //                 context,
+                                        //                 MaterialPageRoute(
+                                        //                   builder: (context) =>
+                                        //                       ServiceAndShopsDetails(
+                                        //                         shopId:
+                                        //                             services.id,
+                                        //                         initialIndex: 3,
+                                        //                       ),
+                                        //                 ),
+                                        //               );
+                                        //             },
+                                        //             whatsAppOnTap: () {
+                                        //               MapUrls.openWhatsapp(
+                                        //                 message: 'hi',
+                                        //                 context: context,
+                                        //                 phone: services
+                                        //                     .primaryPhone,
+                                        //               );
+                                        //             },
+                                        //             Verify: services.isTrusted,
+                                        //             image: services
+                                        //                 .primaryImageUrl
+                                        //                 .toString(),
+                                        //             companyName:
+                                        //                 '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
+                                        //             location:
+                                        //                 '${services.city},${services.state},${services.country} ',
+                                        //             fieldName: services
+                                        //                 .ownershipTypeLabel,
+                                        //             ratingStar: services.rating
+                                        //                 .toString(),
+                                        //             ratingCount: services
+                                        //                 .ratingCount
+                                        //                 .toString(),
+                                        //             time: '9Pm',
+                                        //           ),
+                                        //           // SizedBox(height: 6),
+                                        //         ],
+                                        //       ),
+                                        //     );
+                                        //   },
+                                        // ),
                                       ),
 
                                       SizedBox(height: 20),
@@ -1297,12 +1376,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           ),
                                         ],
                                       ),
-                                      child: ListView.builder(
+                                      child:
+                                      ListView.builder(
                                         shrinkWrap: true,
-                                        physics: NeverScrollableScrollPhysics(),
+                                        physics: const NeverScrollableScrollPhysics(),
                                         itemCount: filteredShops.length,
                                         itemBuilder: (context, index) {
                                           final shops = filteredShops[index];
+
                                           final isThisCardLoading =
                                               state.isEnquiryLoading &&
                                               state.activeEnquiryId == shops.id;
@@ -1312,9 +1393,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               );
 
                                           return Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 5,
-                                            ),
+                                            padding: const EdgeInsets.symmetric(vertical: 5),
                                             child: Column(
                                               children: [
                                                 CommonContainer.servicesContainer(
@@ -1341,18 +1420,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           .add(shops.id);
                                                     });
                                                     ref
-                                                        .read(
-                                                          homeNotifierProvider
-                                                              .notifier,
-                                                        )
+                                                        .read(homeNotifierProvider.notifier)
                                                         .putEnquiry(
-                                                          context: context,
-                                                          serviceId: '',
-                                                          productId: '',
-                                                          message: '',
-                                                          shopId: shops.id,
-                                                        );
+                                                      context: context,
+                                                      serviceId: '',
+                                                      productId: '',
+                                                      message: '',
+                                                      shopId: shops.id,
+                                                    );
                                                   },
+
                                                   callTap: () async {
                                                     await MapUrls.openDialer(
                                                       context,
@@ -1370,37 +1447,118 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            ServiceAndShopsDetails(
-                                                              shopId: shops.id,
-                                                              initialIndex: 4,
-                                                            ),
+                                                        builder: (context) => ServiceAndShopsDetails(
+                                                          shopId: shops.id,
+                                                          initialIndex: 4,
+                                                        ),
                                                       ),
                                                     );
                                                   },
                                                   Verify: shops.isTrusted,
-                                                  image: shops.primaryImageUrl
-                                                      .toString(),
-                                                  companyName:
-                                                      shops.englishName,
-                                                  location:
-                                                      '${shops.city}, ${shops.state}, ${shops.country}',
-                                                  fieldName:
-                                                      shops.distanceKm
-                                                          .toString() ??
-                                                      '',
-                                                  ratingStar: shops.rating
-                                                      .toString(),
-                                                  ratingCount: shops.ratingCount
-                                                      .toString(),
+                                                  image: shops.primaryImageUrl.toString(),
+                                                  companyName: shops.englishName,
+                                                  location: '${shops.city}, ${shops.state}, ${shops.country}',
+                                                  fieldName: shops.distanceKm.toString(),
+                                                  ratingStar: shops.rating.toString(),
+                                                  ratingCount: shops.ratingCount.toString(),
                                                   time: '9Pm',
                                                 ),
-                                                SizedBox(height: 6),
+                                                const SizedBox(height: 6),
                                               ],
                                             ),
                                           );
                                         },
                                       ),
+
+                                      // ListView.builder(
+                                      //   shrinkWrap: true,
+                                      //   physics: NeverScrollableScrollPhysics(),
+                                      //   itemCount: filteredShops.length,
+                                      //   itemBuilder: (context, index) {
+                                      //     final shops = filteredShops[index];
+                                      //     final isThisCardLoading =
+                                      //         state.isEnquiryLoading &&
+                                      //         state.activeEnquiryId == shops.id;
+                                      //     return Padding(
+                                      //       padding: const EdgeInsets.symmetric(
+                                      //         vertical: 5,
+                                      //       ),
+                                      //       child: Column(
+                                      //         children: [
+                                      //           CommonContainer.servicesContainer(
+                                      //             whatsAppOnTap: () {
+                                      //               MapUrls.openWhatsapp(
+                                      //                 message: 'hi',
+                                      //                 context: context,
+                                      //                 phone: shops.primaryPhone,
+                                      //               );
+                                      //             },
+                                      //             fireTooltip: 'App Offer 5%',
+                                      //
+                                      //             isMessageLoading:
+                                      //                 isThisCardLoading,
+                                      //             messageOnTap: () {
+                                      //               ref
+                                      //                   .read(
+                                      //                     homeNotifierProvider
+                                      //                         .notifier,
+                                      //                   )
+                                      //                   .putEnquiry(
+                                      //                     context: context,
+                                      //                     serviceId: '',
+                                      //                     productId: '',
+                                      //                     message: '',
+                                      //                     shopId: shops.id,
+                                      //                   );
+                                      //             },
+                                      //             callTap: () async {
+                                      //               await MapUrls.openDialer(
+                                      //                 context,
+                                      //                 shops.primaryPhone,
+                                      //               );
+                                      //             },
+                                      //
+                                      //             horizontalDivider: true,
+                                      //             heroTag: shopHeroTag(
+                                      //               0,
+                                      //               'Sri Krishna Sweets Private Limited',
+                                      //               section: 'shops-list',
+                                      //             ),
+                                      //             onTap: () {
+                                      //               Navigator.push(
+                                      //                 context,
+                                      //                 MaterialPageRoute(
+                                      //                   builder: (context) =>
+                                      //                       ServiceAndShopsDetails(
+                                      //                         shopId: shops.id,
+                                      //                         initialIndex: 4,
+                                      //                       ),
+                                      //                 ),
+                                      //               );
+                                      //             },
+                                      //             Verify: shops.isTrusted,
+                                      //             image: shops.primaryImageUrl
+                                      //                 .toString(),
+                                      //             companyName:
+                                      //                 shops.englishName,
+                                      //             location:
+                                      //                 '${shops.city}, ${shops.state}, ${shops.country}',
+                                      //             fieldName:
+                                      //                 shops.distanceKm
+                                      //                     .toString() ??
+                                      //                 '',
+                                      //             ratingStar: shops.rating
+                                      //                 .toString(),
+                                      //             ratingCount: shops.ratingCount
+                                      //                 .toString(),
+                                      //             time: '9Pm',
+                                      //           ),
+                                      //           SizedBox(height: 6),
+                                      //         ],
+                                      //       ),
+                                      //     );
+                                      //   },
+                                      // ),
                                     ),
 
                                     SizedBox(height: 25),
