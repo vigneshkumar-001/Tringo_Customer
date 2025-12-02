@@ -90,7 +90,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                 ),
                 SizedBox(height: 17),
                 Text(
-                  '${productListData.data.items.length}+ Results',
+                  '${productListData.data?.items.length}+ Results',
                   style: GoogleFont.Mulish(
                     fontSize: 14,
                     color: AppColor.lightGray2,
@@ -99,9 +99,9 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                 ListView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  itemCount: productListData.data.items.length,
+                  itemCount: productListData.data?. items.length,
                   itemBuilder: (context, index) {
-                    final data = productListData.data.items[index];
+                    final data = productListData.data?.items[index];
                     return CommonContainer.foodList(
                       titleWeight: FontWeight.w400,
                       locations: true,
@@ -115,11 +115,11 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                ProductDetails(productId: data.id),
+                                ProductDetails(productId: data?.id),
                           ),
                         );
                       },
-                      Verify: data.shop.isTrusted,
+                      Verify: data?.shop.isTrusted,
                       image: data.imageUrl.toString(),
                       foodName: data.englishName.toString(),
                       ratingStar: data.shop.rating.toString(),

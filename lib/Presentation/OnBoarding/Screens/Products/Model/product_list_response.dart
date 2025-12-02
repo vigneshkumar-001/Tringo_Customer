@@ -1,6 +1,6 @@
-class  ProductListResponse  {
+class ProductListResponse {
   final bool status;
-  final ProductListData data;
+  final ProductListData? data;
 
   ProductListResponse({
     required this.status,
@@ -9,23 +9,28 @@ class  ProductListResponse  {
 
   factory ProductListResponse.fromJson(Map<String, dynamic> json) {
     return ProductListResponse(
-      status: json['status'],
-      data: ProductListData.fromJson(json['data']),
+      status: json['status'] ?? false,
+      data: json['data'] != null
+          ? ProductListData.fromJson(json['data'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'status': status,
-    'data': data.toJson(),
+    'data': data?.toJson(),
   };
 }
+
 class ProductListData {
-  final int page;
-  final int limit;
+  final String? type;
+  final String? page;
+  final String? limit;
   final int total;
-  final List<ProductListItem> items;
+  final List<ProductItem> items;
 
   ProductListData({
+    required this.type,
     required this.page,
     required this.limit,
     required this.total,
@@ -34,16 +39,18 @@ class ProductListData {
 
   factory ProductListData.fromJson(Map<String, dynamic> json) {
     return ProductListData(
+      type: json['type'],
       page: json['page'],
       limit: json['limit'],
-      total: json['total'],
-      items: (json['items'] as List)
-          .map((e) => ProductListItem.fromJson(e))
+      total: json['total'] ?? 0,
+      items: (json['items'] as List<dynamic>? ?? [])
+          .map((e) => ProductItem.fromJson(e))
           .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
+    'type': type,
     'page': page,
     'limit': limit,
     'total': total,
@@ -52,40 +59,65 @@ class ProductListData {
 }
 
 
-class ProductListItem {
+
+class ProductItem {
   final String id;
   final String? englishName;
   final String? tamilName;
-  final int price;
+  final double price;
+  final double offerPrice;
   final String? offerLabel;
   final String? offerValue;
   final String? description;
-  final Shop shop;
+  final bool doorDelivery;
+  final double rating;
+  final int ratingCount;
+  final bool isFeatured;
   final String? imageUrl;
+  final String? category;
+  final String? subCategory;
+  final Shop shop;
+  final String? kind;
 
-  ProductListItem({
+  ProductItem({
     required this.id,
-    this.englishName,
-    this.tamilName,
+    required this.englishName,
+    required this.tamilName,
     required this.price,
-    this.offerLabel,
-    this.offerValue,
-    this.description,
+    required this.offerPrice,
+    required this.offerLabel,
+    required this.offerValue,
+    required this.description,
+    required this.doorDelivery,
+    required this.rating,
+    required this.ratingCount,
+    required this.isFeatured,
+    required this.imageUrl,
+    required this.category,
+    required this.subCategory,
     required this.shop,
-    this.imageUrl,
+    required this.kind,
   });
 
-  factory ProductListItem.fromJson(Map<String, dynamic> json) {
-    return ProductListItem(
+  factory ProductItem.fromJson(Map<String, dynamic> json) {
+    return ProductItem(
       id: json['id'],
       englishName: json['englishName'],
       tamilName: json['tamilName'],
-      price: json['price'],
+      price: (json['price'] ?? 0).toDouble(),
+      offerPrice: (json['offerPrice'] ?? 0).toDouble(),
       offerLabel: json['offerLabel'],
       offerValue: json['offerValue'],
       description: json['description'],
-      shop: Shop.fromJson(json['shop']),
+      doorDelivery: json['doorDelivery'] ?? false,
+      rating: (json['rating'] ?? 0).toDouble(),
+      ratingCount: json['ratingCount'] ?? 0,
+      isFeatured: json['isFeatured'] ?? false,
       imageUrl: json['imageUrl'],
+      category: json['category'],
+      subCategory: json['subCategory'],
+      shop: Shop.fromJson(json['shop']),
+      kind: json['kind'],
     );
   }
 
@@ -94,13 +126,22 @@ class ProductListItem {
     'englishName': englishName,
     'tamilName': tamilName,
     'price': price,
+    'offerPrice': offerPrice,
     'offerLabel': offerLabel,
     'offerValue': offerValue,
     'description': description,
-    'shop': shop.toJson(),
+    'doorDelivery': doorDelivery,
+    'rating': rating,
+    'ratingCount': ratingCount,
+    'isFeatured': isFeatured,
     'imageUrl': imageUrl,
+    'category': category,
+    'subCategory': subCategory,
+    'shop': shop.toJson(),
+    'kind': kind,
   };
 }
+
 
 class Shop {
   final String id;
@@ -111,15 +152,17 @@ class Shop {
   final String? city;
   final String? state;
   final String? country;
+  final String? ownershipType;
   final String? gpsLatitude;
   final String? gpsLongitude;
-  final int rating;
+  final double rating;
   final int ratingCount;
   final bool isTrusted;
   final bool doorDelivery;
   final String? shopKind;
   final String? primaryPhone;
-  final double distanceKm;
+  final List<ShopWeeklyHours> shopWeeklyHours;
+  final String? distanceKm;
   final String? distanceLabel;
   final String? openLabel;
   final bool isOpen;
@@ -127,26 +170,28 @@ class Shop {
 
   Shop({
     required this.id,
-    this.englishName,
-    this.tamilName,
-    this.category,
-    this.subCategory,
-    this.city,
-    this.state,
-    this.country,
-    this.gpsLatitude,
-    this.gpsLongitude,
+    required this.englishName,
+    required this.tamilName,
+    required this.category,
+    required this.subCategory,
+    required this.city,
+    required this.state,
+    required this.country,
+    required this.ownershipType,
+    required this.gpsLatitude,
+    required this.gpsLongitude,
     required this.rating,
     required this.ratingCount,
     required this.isTrusted,
     required this.doorDelivery,
-    this.shopKind,
-    this.primaryPhone,
+    required this.shopKind,
+    required this.primaryPhone,
+    required this.shopWeeklyHours,
     required this.distanceKm,
-    this.distanceLabel,
-    this.openLabel,
+    required this.distanceLabel,
+    required this.openLabel,
     required this.isOpen,
-    this.primaryImageUrl,
+    required this.primaryImageUrl,
   });
 
   factory Shop.fromJson(Map<String, dynamic> json) {
@@ -159,18 +204,22 @@ class Shop {
       city: json['city'],
       state: json['state'],
       country: json['country'],
+      ownershipType: json['ownershipType'],
       gpsLatitude: json['gpsLatitude'],
       gpsLongitude: json['gpsLongitude'],
-      rating: json['rating'],
-      ratingCount: json['ratingCount'],
-      isTrusted: json['isTrusted'],
-      doorDelivery: json['doorDelivery'],
+      rating: (json['rating'] ?? 0).toDouble(),
+      ratingCount: json['ratingCount'] ?? 0,
+      isTrusted: json['isTrusted'] ?? false,
+      doorDelivery: json['doorDelivery'] ?? false,
       shopKind: json['shopKind'],
       primaryPhone: json['primaryPhone'],
-      distanceKm: (json['distanceKm'] as num).toDouble(),
+      shopWeeklyHours: (json['shopWeeklyHours'] as List<dynamic>? ?? [])
+          .map((e) => ShopWeeklyHours.fromJson(e))
+          .toList(),
+      distanceKm: json['distanceKm']?.toString(),
       distanceLabel: json['distanceLabel'],
       openLabel: json['openLabel'],
-      isOpen: json['isOpen'],
+      isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
     );
   }
@@ -184,6 +233,7 @@ class Shop {
     'city': city,
     'state': state,
     'country': country,
+    'ownershipType': ownershipType,
     'gpsLatitude': gpsLatitude,
     'gpsLongitude': gpsLongitude,
     'rating': rating,
@@ -192,6 +242,7 @@ class Shop {
     'doorDelivery': doorDelivery,
     'shopKind': shopKind,
     'primaryPhone': primaryPhone,
+    'shopWeeklyHours': shopWeeklyHours.map((e) => e.toJson()).toList(),
     'distanceKm': distanceKm,
     'distanceLabel': distanceLabel,
     'openLabel': openLabel,
@@ -199,4 +250,34 @@ class Shop {
     'primaryImageUrl': primaryImageUrl,
   };
 }
+class ShopWeeklyHours {
+  final String day;
+  final String opensAt;
+  final String closesAt;
+  final bool closed;
+
+  ShopWeeklyHours({
+    required this.day,
+    required this.opensAt,
+    required this.closesAt,
+    required this.closed,
+  });
+
+  factory ShopWeeklyHours.fromJson(Map<String, dynamic> json) {
+    return ShopWeeklyHours(
+      day: json['day'] ?? '',
+      opensAt: json['opensAt'] ?? '',
+      closesAt: json['closesAt'] ?? '',
+      closed: json['closed'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'day': day,
+    'opensAt': opensAt,
+    'closesAt': closesAt,
+    'closed': closed,
+  };
+}
+
 
