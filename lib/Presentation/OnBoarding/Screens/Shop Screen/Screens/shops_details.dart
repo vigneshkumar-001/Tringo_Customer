@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
@@ -59,11 +60,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   @override
   void initState() {
     super.initState();
+
     _ac = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
       reverseDuration: const Duration(milliseconds: 1000),
     );
+    AppLogger.log.i(widget.shopId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(shopsNotifierProvider.notifier)
@@ -173,14 +176,36 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     final state = ref.watch(shopsNotifierProvider);
     final stateS = ref.watch(homeNotifierProvider);
 
-    if (state.isLoading) {
+    if (state.isLoading && state.shopDetailsResponse == null) {
       return Scaffold(
-        body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
+        body: Center(
+          child: ThreeDotsLoader(dotColor: AppColor.black),
+        ),
       );
     }
+
+    // 2️⃣ After load finished but error & no data → show simple error
+    if (!state.isLoading &&
+        state.error != null &&
+        state.shopDetailsResponse == null) {
+      return Scaffold(
+        body: Center(
+          child: Text(
+            state.error!,
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
+
+
     final shopsData = state.shopDetailsResponse;
+
     if (shopsData == null || shopsData.data == null) {
-      return const Scaffold(body: Center(child: NoDataScreen()));
+
+      return const Scaffold(
+        body: Center(child: NoDataScreen()),
+      );
     }
     final double w = MediaQuery.of(context).size.width;
     // gift size scales with screen width (max 120)
