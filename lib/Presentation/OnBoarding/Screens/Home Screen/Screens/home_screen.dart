@@ -22,6 +22,7 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigate
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/food_details_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/search_screen_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_shops_details.dart';
+import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../../Smart Connect/smart_connect_guide.dart';
 
@@ -261,7 +262,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     final home = state.homeResponse;
     if (home == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(
+        body: Center(
+          child: NoDataScreen(showBottomButton: false, showTopBackArrow: false),
+        ),
+      );
     }
 
     final categories = home.data.shopCategories;
@@ -299,455 +304,814 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
       child: Scaffold(
         body: SafeArea(
-          child: SingleChildScrollView(
-            controller: _homeScrollCtrl,
-            physics: BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 20),
-                  decoration: BoxDecoration(color: AppColor.darkBlue),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: _initLocationFlow, // tap to refresh
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 6,
-                                  horizontal: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Image.asset(
-                                      AppImages.locationImage,
-                                      height: 24,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        currentAddress ??
-                                            (_locBusy
-                                                ? 'Fetching location...'
-                                                : 'Tap to fetch location'),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                        style: GoogleFont.Mulish(
-                                          color: AppColor.white,
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(homeNotifierProvider.notifier).fetchHomeDetails();
+            },
+            child: SingleChildScrollView(
+              controller: _homeScrollCtrl,
+              physics: BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+                    decoration: BoxDecoration(color: AppColor.darkBlue),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: _initLocationFlow, // tap to refresh
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                    horizontal: 4,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Image.asset(
+                                        AppImages.locationImage,
+                                        height: 24,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          currentAddress ??
+                                              (_locBusy
+                                                  ? 'Fetching location...'
+                                                  : 'Tap to fetch location'),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                          style: GoogleFont.Mulish(
+                                            color: AppColor.white,
+                                          ),
                                         ),
                                       ),
+                                      SizedBox(width: 6),
+                                      // if (_locBusy)
+                                      //   SizedBox(
+                                      //     height: 14,
+                                      //     width: 14,
+                                      //     child: CircularProgressIndicator(
+                                      //       strokeWidth: 2,
+                                      //       color: AppColor.white,
+                                      //     ),
+                                      //   )
+                                      // else
+                                      Image.asset(
+                                        AppImages.drapDownImage,
+                                        height: 11,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            /* Row(
+                              children: [
+                                Image.asset(AppImages.locationImage, height: 24),
+                                SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'Marudhupandiyar nagar main road, Madurai',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: GoogleFont.Mulish(color: AppColor.white),
+                                  ),
+                                ),
+                                SizedBox(width: 6),
+                                Image.asset(AppImages.drapDownImage, height: 11),
+                              ],
+                            ),*/
+                            // Spacer(),
+                            SizedBox(width: 20),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: DottedBorder(
+                                color: AppColor.lightBlueBorder,
+                                dashPattern: [4.0, 2.0],
+                                borderType: dotted.BorderType.RRect,
+                                padding: EdgeInsets.all(10),
+                                radius: Radius.circular(18),
+                                child: Row(
+                                  children: [
+                                    Image.asset(
+                                      AppImages.coinImage,
+                                      height: 16,
+                                      width: 17.33,
                                     ),
                                     SizedBox(width: 6),
-                                    // if (_locBusy)
-                                    //   SizedBox(
-                                    //     height: 14,
-                                    //     width: 14,
-                                    //     child: CircularProgressIndicator(
-                                    //       strokeWidth: 2,
-                                    //       color: AppColor.white,
-                                    //     ),
-                                    //   )
-                                    // else
-                                    Image.asset(
-                                      AppImages.drapDownImage,
-                                      height: 11,
+                                    Text(
+                                      home.data.user.coins.toString(),
+                                      style: GoogleFont.Mulish(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 12,
+                                        color: AppColor.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' Tcoins',
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 12,
+                                        color: AppColor.white,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                          ),
 
-                          /* Row(
-                            children: [
-                              Image.asset(AppImages.locationImage, height: 24),
-                              SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  'Marudhupandiyar nagar main road, Madurai',
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: GoogleFont.Mulish(color: AppColor.white),
+                            SizedBox(width: 10),
+
+                            ///  Proper spacing and avatar
+                            /*InkWell(
+                              onTap: () {
+                              },
+                              child: CircleAvatar(
+                                backgroundColor: Colors.transparent,
+                                radius: 16,
+                                child: Image.asset(AppImages.avatarImage),
+                              ),
+                            ),*/
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProfileScreen(
+                                      url:
+                                          state
+                                              .homeResponse
+                                              ?.data
+                                              .user
+                                              .avatarUrl
+                                              .toString() ??
+                                          '',
+                                      name:
+                                          state.homeResponse?.data.user.name
+                                              .toString() ??
+                                          '',
+                                      phnNumber:
+                                          state
+                                              .homeResponse
+                                              ?.data
+                                              .user
+                                              .phoneNumber
+                                              .toString() ??
+                                          '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: CachedNetworkImage(
+                                imageUrl: home.data.user.avatarUrl.toString(),
+                                imageBuilder: (context, imageProvider) =>
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: Colors.transparent,
+                                      backgroundImage: imageProvider,
+                                    ),
+                                placeholder: (context, url) =>
+                                    const CircleAvatar(
+                                      radius: 16,
+                                      child: SizedBox(
+                                        height: 12,
+                                        width: 12,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    ),
+                                errorWidget: (context, url, error) =>
+                                    CircleAvatar(
+                                      radius: 16,
+                                      child: Image.asset(AppImages.avatarImage),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 28),
+                        InkWell(
+                          onTap: () {
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SearchScreenBottombar(
+                                  initialIndex: 1,
                                 ),
                               ),
-                              SizedBox(width: 6),
-                              Image.asset(AppImages.drapDownImage, height: 11),
-                            ],
-                          ),*/
-                          // Spacer(),
-                          SizedBox(width: 20),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: DottedBorder(
-                              color: AppColor.lightBlueBorder,
-                              dashPattern: [4.0, 2.0],
-                              borderType: dotted.BorderType.RRect,
-                              padding: EdgeInsets.all(10),
-                              radius: Radius.circular(18),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColor.white,
+                              borderRadius: BorderRadius.circular(40),
+                              border: Border.all(
+                                color: AppColor.lightGray1,
+                                width: 3,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10.0,
+                              ),
                               child: Row(
                                 children: [
                                   Image.asset(
-                                    AppImages.coinImage,
-                                    height: 16,
-                                    width: 17.33,
+                                    AppImages.searchImage,
+                                    height: 17,
                                   ),
-                                  SizedBox(width: 6),
+                                  SizedBox(width: 10),
                                   Text(
-                                    home.data.user.coins.toString(),
+                                    'Search product, shop, service, mobile no',
                                     style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 12,
-                                      color: AppColor.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    ' Tcoins',
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 12,
-                                      color: AppColor.white,
+                                      color: AppColor.lightGray,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-
-                          SizedBox(width: 10),
-
-                          ///  Proper spacing and avatar
-                          /*InkWell(
-                            onTap: () {
-                            },
-                            child: CircleAvatar(
-                              backgroundColor: Colors.transparent,
-                              radius: 16,
-                              child: Image.asset(AppImages.avatarImage),
-                            ),
-                          ),*/
-                          InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProfileScreen(
-                                    url:
-                                        state.homeResponse?.data.user.avatarUrl
-                                            .toString() ??
-                                        '',
-                                    name:
-                                        state.homeResponse?.data.user.name
-                                            .toString() ??
-                                        '',
-                                    phnNumber:
-                                        state
-                                            .homeResponse
-                                            ?.data
-                                            .user
-                                            .phoneNumber
-                                            .toString() ??
-                                        '',
-                                  ),
-                                ),
-                              );
-                            },
-                            child: CachedNetworkImage(
-                              imageUrl: home.data.user.avatarUrl.toString(),
-                              imageBuilder: (context, imageProvider) =>
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: Colors.transparent,
-                                    backgroundImage: imageProvider,
-                                  ),
-                              placeholder: (context, url) => const CircleAvatar(
-                                radius: 16,
-                                child: SizedBox(
-                                  height: 12,
-                                  width: 12,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  CircleAvatar(
-                                    radius: 16,
-                                    child: Image.asset(AppImages.avatarImage),
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 28),
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const SearchScreenBottombar(initialIndex: 1),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColor.white,
-                            borderRadius: BorderRadius.circular(40),
-                            border: Border.all(
-                              color: AppColor.lightGray1,
-                              width: 3,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10.0),
-                            child: Row(
-                              children: [
-                                Image.asset(AppImages.searchImage, height: 17),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Search product, shop, service, mobile no',
-                                  style: GoogleFont.Mulish(
-                                    color: AppColor.lightGray,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
-                      ),
-                      SizedBox(height: 11),
-                      Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColor.lightBlueCont,
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 10,
-                              horizontal: 15,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Explore Near',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 12,
-                                    color: AppColor.lightGray,
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                GestureDetector(
-                                  onTapDown: (_) =>
-                                      setState(() => _shopsPressed = true),
-                                  onTapUp: (_) =>
-                                      setState(() => _shopsPressed = false),
-                                  onTapCancel: () =>
-                                      setState(() => _shopsPressed = false),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ButtomNavigatebar(initialIndex: 3),
-                                      ),
-                                    );
-                                  },
-                                  child: AnimatedScale(
-                                    scale: _shopsPressed ? 0.90 : 1.0,
-                                    duration: const Duration(milliseconds: 0),
-                                    child: Row(
-                                      children: [
-                                        Image.asset(
-                                          AppImages.shopImage,
-                                          height: 23,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          'Shops',
-                                          style: GoogleFont.Mulish(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 12,
-                                            color: AppColor.lightGray,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Container(
-                                  width: 2,
-                                  height: 16,
-                                  color: AppColor.lightBlueBorder,
-                                ),
-                                const SizedBox(width: 10),
-                                // --- SERVICES BUTTON ---
-                                GestureDetector(
-                                  onTapDown: (_) =>
-                                      setState(() => _servicesPressed = true),
-                                  onTapUp: (_) =>
-                                      setState(() => _servicesPressed = false),
-                                  onTapCancel: () =>
-                                      setState(() => _servicesPressed = false),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const ButtomNavigatebar(
-                                          initialIndex: 4,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: AnimatedScale(
-                                    scale: _servicesPressed ? 0.90 : 1.0,
-                                    duration: const Duration(milliseconds: 0),
-                                    child: Row(
-                                      children: [
-                                        Image.asset(
-                                          AppImages.servicesImage,
-                                          height: 23,
-                                        ),
-                                        SizedBox(width: 10),
-                                        Text(
-                                          'Services',
-                                          style: GoogleFont.Mulish(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 12,
-                                            color: AppColor.lightGray,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          SizedBox(width: 12),
-                          InkWell(
-                            onTap: () async {
-                              // 1) Scroll HomeScreen to top (nice quick animation)
-                              if (_homeScrollCtrl.hasClients) {
-                                await _homeScrollCtrl.animateTo(
-                                  0,
-                                  duration: const Duration(milliseconds: 350),
-                                  curve: Curves.easeOut,
-                                );
-                              }
-
-                              // 2) Slide the next page up from bottom
-                              if (!mounted) return;
-                              await Navigator.of(
-                                context,
-                              ).push(slideUpRoute(const SmartConnectGuide()));
-                            },
-                            child: Image.asset(
-                              AppImages.aiGuideImage,
-                              height: 45,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 27),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColor.white.withOpacity(0.8),
-                        AppColor.white,
-                        AppColor.white,
-                      ],
-                      begin: Alignment.center,
-                      end: Alignment.center,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColor.white2.withOpacity(0.5),
-                              AppColor.white2.withOpacity(0.5),
-                              // AppColor.white2.withOpacity(0.5),
-                              AppColor.white2.withOpacity(0.9),
-                              AppColor.lowLightWhite,
-                              AppColor.lowLightWhite,
-                              AppColor.lowLightWhite,
-                              AppColor.lowLightWhite,
-                              AppColor.white2.withOpacity(0.5),
-                              // AppColor.white.withOpacity(0.9),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                        child: Column(
+                        SizedBox(height: 11),
+                        Row(
                           children: [
-                            CarouselSlider(
-                              options: CarouselOptions(
-                                height: 131,
-                                enlargeCenterPage: false,
-                                enableInfiniteScroll: true,
-                                autoPlay: true,
-                                autoPlayInterval: Duration(seconds: 4),
-                                viewportFraction: 0.9,
-                                padEnds: true, // Still safe to keep off
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColor.lightBlueCont,
+                                borderRadius: BorderRadius.circular(40),
                               ),
-                              items: imageList.map((imagePath) {
-                                return Builder(
-                                  builder: (BuildContext context) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Image.asset(
-                                          imagePath,
-                                          width: double.infinity,
-                                          fit: BoxFit.fill,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 15,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Explore Near',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 12,
+                                      color: AppColor.lightGray,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTapDown: (_) =>
+                                        setState(() => _shopsPressed = true),
+                                    onTapUp: (_) =>
+                                        setState(() => _shopsPressed = false),
+                                    onTapCancel: () =>
+                                        setState(() => _shopsPressed = false),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ButtomNavigatebar(
+                                                initialIndex: 3,
+                                              ),
                                         ),
+                                      );
+                                    },
+                                    child: AnimatedScale(
+                                      scale: _shopsPressed ? 0.90 : 1.0,
+                                      duration: const Duration(milliseconds: 0),
+                                      child: Row(
+                                        children: [
+                                          Image.asset(
+                                            AppImages.shopImage,
+                                            height: 23,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Shops',
+                                            style: GoogleFont.Mulish(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12,
+                                              color: AppColor.lightGray,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    );
-                                  },
-                                );
-                              }).toList(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    width: 2,
+                                    height: 16,
+                                    color: AppColor.lightBlueBorder,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  // --- SERVICES BUTTON ---
+                                  GestureDetector(
+                                    onTapDown: (_) =>
+                                        setState(() => _servicesPressed = true),
+                                    onTapUp: (_) => setState(
+                                      () => _servicesPressed = false,
+                                    ),
+                                    onTapCancel: () => setState(
+                                      () => _servicesPressed = false,
+                                    ),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ButtomNavigatebar(
+                                                initialIndex: 4,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: AnimatedScale(
+                                      scale: _servicesPressed ? 0.90 : 1.0,
+                                      duration: const Duration(milliseconds: 0),
+                                      child: Row(
+                                        children: [
+                                          Image.asset(
+                                            AppImages.servicesImage,
+                                            height: 23,
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'Services',
+                                            style: GoogleFont.Mulish(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12,
+                                              color: AppColor.lightGray,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(width: 12),
+                            InkWell(
+                              onTap: () async {
+                                // 1) Scroll HomeScreen to top (nice quick animation)
+                                if (_homeScrollCtrl.hasClients) {
+                                  await _homeScrollCtrl.animateTo(
+                                    0,
+                                    duration: const Duration(milliseconds: 350),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
+
+                                // 2) Slide the next page up from bottom
+                                if (!mounted) return;
+                                await Navigator.of(
+                                  context,
+                                ).push(slideUpRoute(const SmartConnectGuide()));
+                              },
+                              child: Image.asset(
+                                AppImages.aiGuideImage,
+                                height: 45,
+                              ),
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 27),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColor.white.withOpacity(0.8),
+                          AppColor.white,
+                          AppColor.white,
+                        ],
+                        begin: Alignment.center,
+                        end: Alignment.center,
                       ),
-                      SizedBox(height: 57),
-
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColor.white2.withOpacity(0.5),
-                              AppColor.white2.withOpacity(0.5),
-                              AppColor.white2.withOpacity(0.9),
-                              AppColor.white2.withOpacity(0.5),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColor.white2.withOpacity(0.5),
+                                AppColor.white2.withOpacity(0.5),
+                                // AppColor.white2.withOpacity(0.5),
+                                AppColor.white2.withOpacity(0.9),
+                                AppColor.lowLightWhite,
+                                AppColor.lowLightWhite,
+                                AppColor.lowLightWhite,
+                                AppColor.lowLightWhite,
+                                AppColor.white2.withOpacity(0.5),
+                                // AppColor.white.withOpacity(0.9),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              CarouselSlider(
+                                options: CarouselOptions(
+                                  height: 131,
+                                  enlargeCenterPage: false,
+                                  enableInfiniteScroll: true,
+                                  autoPlay: true,
+                                  autoPlayInterval: Duration(seconds: 4),
+                                  viewportFraction: 0.9,
+                                  padEnds: true, // Still safe to keep off
+                                ),
+                                items: imageList.map((imagePath) {
+                                  return Builder(
+                                    builder: (BuildContext context) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          child: Image.asset(
+                                            imagePath,
+                                            width: double.infinity,
+                                            fit: BoxFit.fill,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }).toList(),
+                              ),
                             ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
                           ),
                         ),
-                        child: Column(
+                        SizedBox(height: 57),
+
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColor.white2.withOpacity(0.5),
+                                AppColor.white2.withOpacity(0.5),
+                                AppColor.white2.withOpacity(0.9),
+                                AppColor.white2.withOpacity(0.5),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // HEADER (title + arrow + floating right icon box)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 14,
+                                ),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    // row with title + arrow; give right padding so it doesn't hide under the floating box
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        right: 120,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Services',
+                                            style: GoogleFont.Mulish(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 22,
+                                              color: AppColor.darkBlue,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          CommonContainer.rightSideArrowButton(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ButtomNavigatebar(
+                                                        initialIndex: 4,
+                                                      ),
+                                                  // ServiceListing(),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    Positioned(
+                                      right: 0,
+                                      bottom: -38,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: AppColor.iceBlue,
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(30),
+                                            topRight: Radius.circular(30),
+                                          ),
+                                          boxShadow: [
+                                            // subtle lift for depth
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.05,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 28,
+                                            vertical: 20,
+                                          ),
+                                          child: Center(
+                                            child: Image.asset(
+                                              AppImages.servicesImage,
+                                              height: 58,
+                                              color: AppColor.deepTeaBlue,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: 8),
+
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColor.iceBlue,
+                                ),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                    vertical: 20,
+                                  ),
+                                  child: Row(
+                                    children: List.generate(
+                                      home.data.categories.length,
+                                      (index) {
+                                        final isSelected =
+                                            selectedServiceIndex == index;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: CommonContainer.categoryChip(
+                                            ContainerColor: isSelected
+                                                ? AppColor.iceBlue
+                                                : Colors.transparent,
+                                            BorderColor: isSelected
+                                                ? AppColor.deepTeaBlue
+                                                : AppColor.frostBlue,
+                                            TextColor: isSelected
+                                                ? AppColor.darkBlue
+                                                : AppColor.deepTeaBlue,
+                                            home.data.categories[index].name,
+                                            isSelected: isSelected,
+                                            onTap: () {
+                                              setState(
+                                                () => selectedServiceIndex =
+                                                    index,
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Wrap the whole section with the gradient, not each item
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColor.iceBlue,
+                                      AppColor.iceBlue,
+                                      AppColor.iceBlue,
+                                      AppColor.iceBlue,
+                                      AppColor.iceBlue,
+                                      AppColor.iceBlue.withOpacity(0.99),
+                                      AppColor.iceBlue.withOpacity(0.50),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: AppColor.white,
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.04,
+                                              ),
+                                              blurRadius: 10,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount:
+                                              filteredServiceShops.length,
+                                          itemBuilder: (context, index) {
+                                            final services =
+                                                filteredServiceShops[index];
+                                            final isThisCardLoading =
+                                                state.isEnquiryLoading &&
+                                                state.activeEnquiryId ==
+                                                    services.id;
+
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 20,
+                                              ),
+                                              child: Column(
+                                                children: [
+                                                  CommonContainer.servicesContainer(
+                                                    callTap: () async {
+                                                      await MapUrls.openDialer(
+                                                        context,
+                                                        services.primaryPhone,
+                                                      );
+                                                    },
+                                                    horizontalDivider: true,
+                                                    fireOnTap: () {},
+
+                                                    messageOnTap: () {
+                                                      ref
+                                                          .read(
+                                                            homeNotifierProvider
+                                                                .notifier,
+                                                          )
+                                                          .putEnquiry(
+                                                            context: context,
+                                                            serviceId:
+                                                                services.id,
+                                                            productId: '',
+                                                            message: '',
+                                                            shopId: services.id,
+                                                          );
+                                                    },
+
+                                                    isMessageLoading:
+                                                        isThisCardLoading,
+
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              ServiceAndShopsDetails(
+                                                                shopId:
+                                                                    services.id,
+                                                                initialIndex: 3,
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    whatsAppOnTap: () {
+                                                      MapUrls.openWhatsapp(
+                                                        message: 'hi',
+                                                        context: context,
+                                                        phone: services
+                                                            .primaryPhone,
+                                                      );
+                                                    },
+                                                    Verify: services.isTrusted,
+                                                    image: services
+                                                        .primaryImageUrl
+                                                        .toString(),
+                                                    companyName:
+                                                        '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
+                                                    location:
+                                                        '${services.city},${services.state},${services.country} ',
+                                                    fieldName: services
+                                                        .ownershipTypeLabel,
+                                                    ratingStar: services.rating
+                                                        .toString(),
+                                                    ratingCount: services
+                                                        .ratingCount
+                                                        .toString(),
+                                                    time: '9Pm',
+                                                  ),
+                                                  // SizedBox(height: 6),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+
+                                      SizedBox(height: 20),
+
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'View All Services',
+                                            style: GoogleFont.Mulish(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: AppColor.darkBlue,
+                                            ),
+                                          ),
+                                          SizedBox(width: 12),
+                                          CommonContainer.rightSideArrowButton(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ButtomNavigatebar(
+                                                        initialIndex: 4,
+                                                      ),
+                                                  // ServiceListing(),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 30),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColor.white3,
+                                AppColor.white3,
+                                AppColor.white3,
+                                AppColor.white.withOpacity(0.2),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                child: Image.asset(AppImages.addImage),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 57),
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // HEADER (title + arrow + floating right icon box)
@@ -761,20 +1125,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 children: [
                                   // row with title + arrow; give right padding so it doesn't hide under the floating box
                                   Padding(
-                                    padding: const EdgeInsets.only(right: 120),
+                                    padding: const EdgeInsets.only(left: 140),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
+
                                       children: [
                                         Text(
-                                          'Services',
+                                          'Products',
                                           style: GoogleFont.Mulish(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 22,
                                             color: AppColor.darkBlue,
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        Spacer(),
                                         CommonContainer.rightSideArrowButton(
                                           onTap: () {
                                             Navigator.push(
@@ -782,9 +1147,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               MaterialPageRoute(
                                                 builder: (context) =>
                                                     ButtomNavigatebar(
-                                                      initialIndex: 4,
+                                                      initialIndex: 3,
                                                     ),
-                                                // ServiceListing(),
+                                                // ShopsListing(),
                                               ),
                                             );
                                           },
@@ -793,12 +1158,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ),
 
+                                  // floating right icon box
                                   Positioned(
-                                    right: 0,
+                                    left: 0,
                                     bottom: -38,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: AppColor.iceBlue,
+                                        color: AppColor.lowLightGreen,
                                         borderRadius: const BorderRadius.only(
                                           topLeft: Radius.circular(30),
                                           topRight: Radius.circular(30),
@@ -821,9 +1187,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         ),
                                         child: Center(
                                           child: Image.asset(
-                                            AppImages.servicesImage,
+                                            AppImages.shopGreenImage,
                                             height: 58,
-                                            color: AppColor.deepTeaBlue,
+                                            // color: AppColor.deepTeaBlue,
                                           ),
                                         ),
                                       ),
@@ -833,11 +1199,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             ),
 
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
 
+                            // CATEGORY CHIPS
                             Container(
                               decoration: BoxDecoration(
-                                color: AppColor.iceBlue,
+                                color: AppColor.lowLightGreen,
                               ),
                               child: SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
@@ -848,30 +1215,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 child: Row(
                                   children: List.generate(
-                                    home.data.categories.length,
+                                    home.data.shopCategories.length,
                                     (index) {
-                                      final isSelected =
-                                          selectedServiceIndex == index;
+                                      final isSelected = selectedIndex == index;
+                                      final category =
+                                          home.data.shopCategories[index];
                                       return Padding(
                                         padding: const EdgeInsets.only(
                                           right: 8,
                                         ),
                                         child: CommonContainer.categoryChip(
                                           ContainerColor: isSelected
-                                              ? AppColor.iceBlue
+                                              ? AppColor.lowLightGreen
                                               : Colors.transparent,
                                           BorderColor: isSelected
-                                              ? AppColor.deepTeaBlue
-                                              : AppColor.frostBlue,
+                                              ? AppColor.lightGreen
+                                              : AppColor.lowLightGreen2,
                                           TextColor: isSelected
-                                              ? AppColor.darkBlue
-                                              : AppColor.deepTeaBlue,
-                                          home.data.categories[index].name,
+                                              ? AppColor.lightGreen
+                                              : AppColor.lowLightGreen3,
+                                          category.name,
                                           isSelected: isSelected,
                                           onTap: () {
                                             setState(
-                                              () =>
-                                                  selectedServiceIndex = index,
+                                              () => selectedIndex = index,
                                             );
                                           },
                                         ),
@@ -881,389 +1248,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ),
                             ),
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: filteredServiceShops.length,
-                              itemBuilder: (context, index) {
-                                final services = filteredServiceShops[index];
-                                final isThisCardLoading =
-                                    state.isEnquiryLoading &&
-                                    state.activeEnquiryId == services.id;
-                                // final offerText = (services.appOffer ?? '').trim();
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColor.iceBlue,
-                                        AppColor.iceBlue,
-                                        AppColor.iceBlue,
-                                        AppColor.iceBlue,
-                                        AppColor.iceBlue,
-                                        AppColor.iceBlue.withOpacity(0.99),
-                                        AppColor.iceBlue.withOpacity(0.50),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 15,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: AppColor.white,
-                                            borderRadius: BorderRadius.circular(
-                                              16,
+
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen,
+                                    AppColor.lowLightGreen.withOpacity(0.99),
+                                    AppColor.lowLightGreen.withOpacity(0.99),
+                                    AppColor.lowLightGreen.withOpacity(0.20),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColor.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.04,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.04,
-                                                ),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
+                                            blurRadius: 10,
+                                            offset: Offset(0, 2),
                                           ),
-                                          child: Padding(
+                                        ],
+                                      ),
+                                      child: ListView.builder(
+                                        shrinkWrap: true,
+                                        physics: NeverScrollableScrollPhysics(),
+                                        itemCount: filteredShops.length,
+                                        itemBuilder: (context, index) {
+                                          final shops = filteredShops[index];
+                                          final isThisCardLoading =
+                                              state.isEnquiryLoading &&
+                                              state.activeEnquiryId == shops.id;
+                                          return Padding(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 5,
-                                            ),
-                                            child: Column(
-                                              children: [
-                                                CommonContainer.servicesContainer(
-                                                  callTap: () async {
-                                                    await MapUrls.openDialer(
-                                                      context,
-                                                      services.primaryPhone,
-                                                    );
-                                                  },
-                                                  horizontalDivider: true,
-                                                  fireOnTap: () {},
-
-                                                  messageOnTap: () {
-                                                    ref
-                                                        .read(
-                                                          homeNotifierProvider
-                                                              .notifier,
-                                                        )
-                                                        .putEnquiry(
-                                                          context: context,
-                                                          serviceId:
-                                                              services.id,
-                                                          productId: '',
-                                                          message: '',
-                                                          shopId: services.id,
-                                                        );
-                                                  },
-
-                                                  isMessageLoading:
-                                                      isThisCardLoading,
-
-                                                  onTap: () {
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            ServiceAndShopsDetails(
-                                                              shopId:
-                                                                  services.id,
-                                                              initialIndex: 3,
-                                                            ),
-                                                        // ServiceDetails(),
-                                                      ),
-                                                    );
-                                                  },
-                                                  whatsAppOnTap: () {
-                                                    print(
-                                                      services.primaryPhone,
-                                                    );
-                                                    MapUrls.openWhatsapp(
-                                                      message: 'hi',
-                                                      context: context,
-                                                      phone:
-                                                          services.primaryPhone,
-                                                    );
-                                                  },
-                                                  Verify: services.isTrusted,
-                                                  image: services
-                                                      .primaryImageUrl
-                                                      .toString(),
-                                                  companyName:
-                                                      '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
-                                                  location:
-                                                      '${services.city},${services.state},${services.country} ',
-                                                  fieldName: services
-                                                      .ownershipTypeLabel,
-                                                  ratingStar: services.rating
-                                                      .toString(),
-                                                  ratingCount: services
-                                                      .ratingCount
-                                                      .toString(),
-                                                  time: '9Pm',
-                                                ),
-                                                SizedBox(height: 6),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: 20),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'View All Services',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: AppColor.darkBlue,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                CommonContainer.rightSideArrowButton(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ButtomNavigatebar(initialIndex: 4),
-                                        // ServiceListing(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 30),
-                          ],
-                        ),
-                      ),
-
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColor.white3,
-                              AppColor.white3,
-                              AppColor.white3,
-                              AppColor.white.withOpacity(0.2),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                              ),
-                              child: Image.asset(AppImages.addImage),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 57),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // HEADER (title + arrow + floating right icon box)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 14,
-                            ),
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // row with title + arrow; give right padding so it doesn't hide under the floating box
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 140),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-
-                                    children: [
-                                      Text(
-                                        'Products',
-                                        style: GoogleFont.Mulish(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 22,
-                                          color: AppColor.darkBlue,
-                                        ),
-                                      ),
-                                      Spacer(),
-                                      CommonContainer.rightSideArrowButton(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ButtomNavigatebar(
-                                                    initialIndex: 3,
-                                                  ),
-                                              // ShopsListing(),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // floating right icon box
-                                Positioned(
-                                  left: 0,
-                                  bottom: -38,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: AppColor.lowLightGreen,
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(30),
-                                        topRight: Radius.circular(30),
-                                      ),
-                                      boxShadow: [
-                                        // subtle lift for depth
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 28,
-                                        vertical: 20,
-                                      ),
-                                      child: Center(
-                                        child: Image.asset(
-                                          AppImages.shopGreenImage,
-                                          height: 58,
-                                          // color: AppColor.deepTeaBlue,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // CATEGORY CHIPS
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColor.lowLightGreen,
-                            ),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 20,
-                              ),
-                              child: Row(
-                                children: List.generate(
-                                  home.data.shopCategories.length,
-                                  (index) {
-                                    final isSelected = selectedIndex == index;
-                                    final category =
-                                        home.data.shopCategories[index];
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: CommonContainer.categoryChip(
-                                        ContainerColor: isSelected
-                                            ? AppColor.lowLightGreen
-                                            : Colors.transparent,
-                                        BorderColor: isSelected
-                                            ? AppColor.lightGreen
-                                            : AppColor.lowLightGreen2,
-                                        TextColor: isSelected
-                                            ? AppColor.lightGreen
-                                            : AppColor.lowLightGreen3,
-                                        category.name,
-                                        isSelected: isSelected,
-                                        onTap: () {
-                                          setState(() => selectedIndex = index);
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen,
-                                  AppColor.lowLightGreen.withOpacity(0.99),
-                                  AppColor.lowLightGreen.withOpacity(0.99),
-                                  AppColor.lowLightGreen.withOpacity(0.20),
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 15,
-                              ),
-                              child: Column(
-                                children: [
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    itemCount: filteredShops.length,
-                                    itemBuilder: (context, index) {
-                                      final shops = filteredShops[index];
-                                      final isThisCardLoading =
-                                          state.isEnquiryLoading &&
-                                          state.activeEnquiryId == shops.id;
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 5,
-                                        ),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: AppColor.white,
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.04,
-                                                ),
-                                                blurRadius: 10,
-                                                offset: Offset(0, 2),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 5,
+                                              vertical: 5,
                                             ),
                                             child: Column(
                                               children: [
@@ -1338,62 +1374,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                 SizedBox(height: 6),
                                               ],
                                             ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-
-                                  SizedBox(height: 25),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'View All Products',
-                                        style: GoogleFont.Mulish(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: AppColor.darkBlue,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      CommonContainer.rightSideArrowButton(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ButtomNavigatebar(
-                                                    initialIndex: 3,
-                                                  ),
-                                              // ShopsListing(),
-                                            ),
                                           );
                                         },
                                       ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 60),
-                                ],
+                                    ),
+
+                                    SizedBox(height: 25),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'View All Products',
+                                          style: GoogleFont.Mulish(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppColor.darkBlue,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        CommonContainer.rightSideArrowButton(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ButtomNavigatebar(
+                                                      initialIndex: 3,
+                                                    ),
+                                                // ShopsListing(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 60),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        'Copyrights 2025@ All Rights Reserved',
-                        style: GoogleFont.Mulish(
-                          fontSize: 10,
-                          color: AppColor.darkBlue,
+                          ],
                         ),
-                      ),
+                        SizedBox(height: 20),
+                        Text(
+                          'Copyrights 2025@ All Rights Reserved',
+                          style: GoogleFont.Mulish(
+                            fontSize: 10,
+                            color: AppColor.darkBlue,
+                          ),
+                        ),
 
-                      SizedBox(height: 25),
-                    ],
+                        SizedBox(height: 25),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

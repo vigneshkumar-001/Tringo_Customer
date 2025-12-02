@@ -13,6 +13,7 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_sho
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/current_location_widget.dart';
 import '../../Home Screen/Controller/home_notifier.dart';
+import '../../No Data Screen/Screen/no_data_screen.dart';
 import 'Service_details.dart';
 
 class ServiceListing extends ConsumerStatefulWidget {
@@ -97,7 +98,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
 
     final serviceRawData = state.serviceResponse;
     if (serviceRawData == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
 
     final servicesData = serviceRawData.data;

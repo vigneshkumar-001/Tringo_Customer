@@ -11,6 +11,7 @@ import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/current_location_widget.dart';
 import '../../Food Screen/food_details.dart';
+import '../../No Data Screen/Screen/no_data_screen.dart';
 
 class ProductListing extends ConsumerStatefulWidget {
   final String? title;
@@ -43,7 +44,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
 
     final productListData = state.productListResponse;
     if (productListData == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
     return Scaffold(
       backgroundColor: AppColor.white,

@@ -9,6 +9,7 @@ import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/shops_product.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Screens/shops_product_list.dart';
 
@@ -179,7 +180,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     }
     final shopsData = state.shopDetailsResponse;
     if (shopsData == null || shopsData.data == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
     final double w = MediaQuery.of(context).size.width;
     // gift size scales with screen width (max 120)

@@ -1395,7 +1395,7 @@ class CommonContainer {
   //     ],
   //   );*/
   // }
-/*
+  /*
   static servicesContainer({
     required String image,
     required String companyName,
@@ -1608,8 +1608,8 @@ class CommonContainer {
     VoidCallback? callTap,
     VoidCallback? messageOnTap,
     VoidCallback? whatsAppOnTap,
-    VoidCallback? fireOnTap,       // still here, but optional
-    String? fireTooltip,           // 👈 tooltip text comes here
+    VoidCallback? fireOnTap, // still here, but optional
+    String? fireTooltip, // 👈 tooltip text comes here
     bool horizontalDivider = false,
     bool Verify = false,
     bool isMessageLoading = false,
@@ -1651,7 +1651,7 @@ class CommonContainer {
                     borderRadius: BorderRadius.circular(12),
                     child: thumb,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1692,7 +1692,7 @@ class CommonContainer {
                               ),
                             ),
                           ),
-                        const SizedBox(height: 9),
+                        SizedBox(height: 9),
                         Text(
                           companyName,
                           maxLines: 1,
@@ -1703,7 +1703,7 @@ class CommonContainer {
                             color: AppColor.darkBlue,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Row(
                           children: [
                             Image.asset(
@@ -1711,7 +1711,7 @@ class CommonContainer {
                               height: 10,
                               color: AppColor.lightGray2,
                             ),
-                            const SizedBox(width: 3),
+                            SizedBox(width: 3),
                             Flexible(
                               child: Text(
                                 location,
@@ -1723,7 +1723,7 @@ class CommonContainer {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Text(
                               fieldName,
                               style: GoogleFont.Mulish(
@@ -1734,14 +1734,14 @@ class CommonContainer {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         Row(
                           children: [
                             CommonContainer.greenStarRating(
                               ratingStar: ratingStar,
                               ratingCount: ratingCount,
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Text(
                               'Opens Upto ',
                               style: GoogleFont.Mulish(
@@ -1774,8 +1774,8 @@ class CommonContainer {
               MessageIcon: true,
               whatsAppIcon: true,
               FireIcon: true,
-              fireOnTap: fireOnTap,          // can be null now
-              fireTooltip: fireTooltip,      // 👈 pass tooltip here
+              fireOnTap: fireOnTap, // can be null now
+              fireTooltip: fireTooltip, // 👈 pass tooltip here
               whatsAppOnTap: whatsAppOnTap,
               messageOnTap: messageOnTap,
               callOnTap: callTap,
@@ -1789,7 +1789,6 @@ class CommonContainer {
       ),
     );
   }
-
 
   static serviceDetails({
     VoidCallback? onTap,

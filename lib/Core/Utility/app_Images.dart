@@ -118,4 +118,6 @@ class AppImages {
   static String whatsAppBlack = 'Assets/Images/WhatsApp_Black.png';
   static String loginScreenBottom = 'Assets/Images/Login_Screen_Bottom.png';
   static String dateOfBirth = 'Assets/Images/Date of Brith.png';
+  static String noDataGif = 'Assets/Images/NoDataImage.gif';
+  static String leftStickArrow = 'Assets/Images/LeftStickArrow.png';
 }
