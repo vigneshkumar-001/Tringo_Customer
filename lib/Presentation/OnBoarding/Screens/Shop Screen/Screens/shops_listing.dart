@@ -29,6 +29,8 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
   late Animation<double> aLocationChip;
   late List<Animation<double>> aShops; // For each shop card
 
+  final Set<String> _disabledMessageShopIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -174,7 +176,11 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                           final data = shops[index];
                           final isThisCardLoading =
                               homeState.isEnquiryLoading &&
-                                  homeState.activeEnquiryId == data.id;
+                              homeState.activeEnquiryId == data.id;
+
+                          final hasMessaged =
+                              data.id != null &&
+                              _disabledMessageShopIds.contains(data.id);
                           // Staggered animation slot
                           final anim = aShops[index % aShops.length];
 
@@ -185,17 +191,27 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               : null;
 
                           Widget card = CommonContainer.servicesContainer(
-                            whatsAppOnTap: (){
+                            whatsAppOnTap: () {
                               MapUrls.openWhatsapp(
                                 message: 'hi',
                                 context: context,
-                                phone:
-                                data.primaryPhone,
+                                phone: data.primaryPhone,
                               );
                             },
-                            isMessageLoading:
-                            isThisCardLoading,
+                            isMessageLoading: isThisCardLoading,
+                            messageDisabled: hasMessaged,
+
                             messageOnTap: () {
+                              // safety – no double tap / double API hit
+                              if (hasMessaged || isThisCardLoading) return;
+
+                              // lock this shop's message button
+                              if (data.id != null) {
+                                setState(() {
+                                  _disabledMessageShopIds.add(data.id!);
+                                });
+                              }
+
                               ref
                                   .read(homeNotifierProvider.notifier)
                                   .putEnquiry(

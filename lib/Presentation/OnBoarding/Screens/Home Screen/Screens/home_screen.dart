@@ -50,6 +50,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final Set<String> _enquiredServiceIds = {};
   final Set<String> _enquiredShopIds = {};
 
+  final Set<String> _disabledMessageShopIds = {};
+  final Set<String> _disabledMessageIds = {};
+
   StreamSubscription<Position>? _posSub;
 
   String shopHeroTag(int index, String name, {String section = 'shops'}) {
@@ -961,10 +964,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           itemBuilder: (context, index) {
                                             final services = filteredServiceShops[index];
                                             final isThisCardLoading =
-                                                state.isEnquiryLoading && state.activeEnquiryId == services.id;
-
-                                            final alreadyEnquired = _enquiredServiceIds.contains(services.id);
-
+                                                state.isEnquiryLoading &&
+                                                state.activeEnquiryId ==
+                                                    services.id;
+                                            final hasMessaged =
+                                            _disabledMessageIds.contains(services.id);
                                             return Padding(
                                               padding: const EdgeInsets.only(bottom: 20),
                                               child: Column(
@@ -978,19 +982,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     },
                                                     horizontalDivider: true,
                                                     fireOnTap: () {},
-
-                                                    // 🔹 MESSAGE BUTTON – LOCK AFTER FIRST TAP
+                                                    isMessageLoading: isThisCardLoading,
+                                                    messageDisabled: hasMessaged,
                                                     messageOnTap: () {
-                                                      // if already sent enquiry for this service → do nothing
-                                                      if (alreadyEnquired) {
-                                                        // optional: show small info
-                                                        // AppSnackBar.info(context, 'Enquiry already sent for this service');
-                                                        return;
-                                                      }
+                                                      if (hasMessaged || isThisCardLoading) return;
 
-                                                      // mark as enquired (UI will rebuild)
+                                                      // lock this service message button
                                                       setState(() {
-                                                        _enquiredServiceIds.add(services.id);
+                                                        _disabledMessageIds.add(services.id);
                                                       });
 
                                                       ref
@@ -1003,8 +1002,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         shopId: services.id,
                                                       );
                                                     },
-
-                                                    isMessageLoading: isThisCardLoading,
 
                                                     onTap: () {
                                                       Navigator.push(
@@ -1388,10 +1385,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           final shops = filteredShops[index];
 
                                           final isThisCardLoading =
-                                              state.isEnquiryLoading && state.activeEnquiryId == shops.id;
-
-                                          // 👇 check if enquiry already sent for this shop
-                                          final alreadyEnquired = _enquiredShopIds.contains(shops.id);
+                                              state.isEnquiryLoading &&
+                                              state.activeEnquiryId == shops.id;
+                                          final hasMessaged =
+                                              _disabledMessageShopIds.contains(
+                                                shops.id,
+                                              );
 
                                           return Padding(
                                             padding: const EdgeInsets.symmetric(vertical: 5),
@@ -1407,21 +1406,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   },
                                                   fireTooltip: 'App Offer 5%',
 
-                                                  isMessageLoading: isThisCardLoading,
-
-                                                  // 🔹 Message – only first tap will work
+                                                  isMessageLoading:
+                                                      isThisCardLoading,
+                                                  messageDisabled: hasMessaged,
                                                   messageOnTap: () {
-                                                    if (alreadyEnquired) {
-                                                      // optional: small info
-                                                      // AppSnackBar.info(context, 'Enquiry already sent for this shop');
+                                                    if (hasMessaged ||
+                                                        isThisCardLoading)
                                                       return;
-                                                    }
 
-                                                    // mark this shop as enquired so it can't be sent again
+                                                    //  lock this shop’s message button (one-time click)
                                                     setState(() {
-                                                      _enquiredShopIds.add(shops.id);
+                                                      _disabledMessageShopIds
+                                                          .add(shops.id);
                                                     });
-
                                                     ref
                                                         .read(homeNotifierProvider.notifier)
                                                         .putEnquiry(
