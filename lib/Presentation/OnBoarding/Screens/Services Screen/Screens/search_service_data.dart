@@ -216,6 +216,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                     );
                   },
                   mapText: 'Map',
+
                   mapBoxPadding: EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 12,
@@ -250,7 +251,16 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               productDetailData.data.shop.id.toString() ?? '',
                         );
                   },
-                  whatsAppOnTap: () {},
+                  whatsAppOnTap: () {
+                    MapUrls.openWhatsapp(
+                      message: 'hi',
+                      context: context,
+                      phone:
+                      productDetailData.data.shop.primaryPhone
+                          .toString() ??
+                          '',
+                    );
+                  },
                   messageContainer: true,
                   MessageIcon: true,
                 ),

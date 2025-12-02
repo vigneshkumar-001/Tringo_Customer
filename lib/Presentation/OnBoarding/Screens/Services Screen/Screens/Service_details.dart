@@ -393,7 +393,16 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                     ),
                                     whatsAppIcon: true,
 
-                                    whatsAppOnTap: () {},
+                                    whatsAppOnTap: () {
+                                      MapUrls.openWhatsapp(
+                                        message: 'hi',
+                                        context: context,
+                                        phone:
+                                        serviceRawData?.primaryPhone
+                                            .toString() ??
+                                            '',
+                                      );
+                                    },
                                     fullEnquiry: true,
                                     messageContainer: true,
                                   ),
