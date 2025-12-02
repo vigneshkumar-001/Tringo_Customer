@@ -108,6 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
+                            autofocus: true,
                             controller: _controller,
                             onChanged: (value) {
                               setState(() {});

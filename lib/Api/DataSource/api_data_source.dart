@@ -180,6 +180,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
+      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -275,6 +276,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
+      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
