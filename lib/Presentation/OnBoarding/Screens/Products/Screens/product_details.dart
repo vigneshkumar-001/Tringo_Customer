@@ -23,6 +23,9 @@ class ProductDetails extends ConsumerStatefulWidget {
 
 class _ProductDetailsState extends ConsumerState<ProductDetails> {
   int quantity = 1;
+
+  bool _messageDisabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -232,7 +235,15 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                   ),
                   whatsAppIcon: true,
                   messageLoading: homeState.isEnquiryLoading,
+                  messageDisabled: _messageDisabled,
                   messageOnTap: () {
+
+                    if (_messageDisabled || homeState.isEnquiryLoading) return;
+
+                    // ✅ lock this message button
+                    setState(() {
+                      _messageDisabled = true;
+                    });
                     ref
                         .read(homeNotifierProvider.notifier)
                         .putEnquiry(

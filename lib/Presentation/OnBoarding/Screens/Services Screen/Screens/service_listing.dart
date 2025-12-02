@@ -31,6 +31,8 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
   late Animation<double> aTitle;
   late List<Animation<double>> aServices;
 
+  final Set<String> _disabledMessageServiceIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -178,6 +180,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                     children: [
                       ListView.builder(
                         shrinkWrap: true,
+                        primary: false,
                         physics: NeverScrollableScrollPhysics(),
                         itemCount: servicesData.length,
                         itemBuilder: (context, index) {
@@ -185,6 +188,9 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                           final isThisCardLoading =
                               states.isEnquiryLoading &&
                               states.activeEnquiryId == data.id;
+
+                          final hasMessaged = _disabledMessageServiceIds
+                              .contains(data.id);
                           return CommonContainer.servicesContainer(
                             callTap: () async {
                               await MapUrls.openDialer(
@@ -193,7 +199,14 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                               );
                             },
                             isMessageLoading: isThisCardLoading,
+                            messageDisabled: hasMessaged,
                             messageOnTap: () {
+                              if (hasMessaged || isThisCardLoading) return;
+
+                              // lock this card's message button
+                              setState(() {
+                                _disabledMessageServiceIds.add(data.id);
+                              });
                               ref
                                   .read(homeNotifierProvider.notifier)
                                   .putEnquiry(

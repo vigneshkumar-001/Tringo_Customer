@@ -37,6 +37,8 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
   int selectedIndex = 0;
   int selectedWeight = 0; // default
 
+  bool _enquiryDisabled = false;
+
   late final AnimationController _ac;
 
   late final Animation<double> aHeader; // back + chip
@@ -343,6 +345,15 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                       );
                                     },
                                     messageOnTap: () {
+                                      // block if already enquired or loading
+                                      if (_enquiryDisabled ||
+                                          homeState.isEnquiryLoading)
+                                        return;
+
+                                      setState(() {
+                                        _enquiryDisabled =
+                                            true; // lock UI + text
+                                      });
                                       ref
                                           .read(homeNotifierProvider.notifier)
                                           .putEnquiry(
@@ -356,6 +367,13 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                           );
                                     },
                                     mapOnTap: () {
+                                      if (_enquiryDisabled ||
+                                          homeState.isEnquiryLoading)
+                                        return;
+
+                                      setState(() {
+                                        _enquiryDisabled = true;
+                                      });
                                       ref
                                           .read(homeNotifierProvider.notifier)
                                           .putEnquiry(
@@ -369,9 +387,12 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                           );
                                     },
                                     messageLoading: homeState.isEnquiryLoading,
+                                    messageDisabled: _enquiryDisabled,
                                     callImage: AppImages.callImage,
                                     callText: 'Call Now',
-                                    mapText: 'Enquire Now',
+                                    mapText: _enquiryDisabled
+                                        ? 'Enquired'
+                                        : 'Enquire Now',
                                     mapImage: AppImages.messageImage,
                                     callIconSize: 21,
                                     callTextSize: 16,
@@ -399,8 +420,8 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                         message: 'hi',
                                         context: context,
                                         phone:
-                                        serviceRawData?.primaryPhone
-                                            .toString() ??
+                                            serviceRawData?.primaryPhone
+                                                .toString() ??
                                             '',
                                       );
                                     },

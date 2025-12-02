@@ -186,8 +186,8 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     // gift size scales with screen width (max 120)
     final double giftSize = (w * 0.25).clamp(80.0, 120.0);
 
-    final bool useHero = (widget.heroTag != null && widget.heroTag!.isNotEmpty);
-    final String imagePath = widget.image ?? AppImages.imageContainer1;
+    // final bool useHero = (widget.heroTag != null && widget.heroTag!.isNotEmpty);
+    // final String imagePath = widget.image ?? AppImages.imageContainer1;
 
     final services = shopsData.data?.services ?? [];
     final products = shopsData.data?.products ?? [];
@@ -195,11 +195,11 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     final hasServices = services.isNotEmpty;
     final hasProducts = products.isNotEmpty;
 
-    final Widget bigImage = ClipRRect(
-      clipBehavior: Clip.antiAlias,
-      borderRadius: BorderRadius.circular(20),
-      child: Image.asset(imagePath, height: 230, width: 310, fit: BoxFit.cover),
-    );
+    // final Widget bigImage = ClipRRect(
+    //   clipBehavior: Clip.antiAlias,
+    //   borderRadius: BorderRadius.circular(20),
+    //   child: Image.asset(imagePath, height: 230, width: 310, fit: BoxFit.cover),
+    // );
 
     return Scaffold(
       body: SafeArea(
