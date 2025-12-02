@@ -308,6 +308,7 @@ class ListingItem {
       'ownershipType': ownershipType,
     };
   }
+
   String get ownershipTypeLabel {
     if (ownershipType == 'COMPANY') return 'Company';
     if (ownershipType == 'INDIVIDUAL') return 'Individual';
