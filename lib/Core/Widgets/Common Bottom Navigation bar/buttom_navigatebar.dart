@@ -15,7 +15,8 @@ import '../filter_popup_screen.dart';
 class ButtomNavigatebar extends StatefulWidget {
   final int initialIndex;
   final String? tittle;
-  const ButtomNavigatebar({super.key, this.initialIndex = 0, this.tittle});
+  final String? kind;
+  const ButtomNavigatebar({super.key, this.initialIndex = 0, this.tittle,this.kind});
 
   @override
   State<ButtomNavigatebar> createState() => _ButtomNavigatebarState();
@@ -42,7 +43,7 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
       ShopsListing(), // 3
       ServiceListing(), // 4
       FoodList(), // 5
-      ProductListing(title: widget.tittle,), // 6
+      ProductListing(title: widget.tittle,kind:widget.kind ,), // 6
     ];
   }
 

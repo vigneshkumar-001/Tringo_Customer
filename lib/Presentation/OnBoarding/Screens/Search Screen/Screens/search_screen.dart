@@ -269,12 +269,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         context,
         MaterialPageRoute(builder: (_) => ButtomNavigatebar(initialIndex: 3)),
       );
-    } else if (item.type == 'PRODUCT') {
+    } else if (item.type == 'PRODUCT' || item.type == 'SERVICE') {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) =>
-              ButtomNavigatebar(initialIndex: 6, tittle: item.label),
+              ButtomNavigatebar(initialIndex: 6, tittle: item.label,kind: item.type,),
           // ShopsListing(),
         ),
       );

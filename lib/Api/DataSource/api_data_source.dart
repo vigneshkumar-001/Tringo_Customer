@@ -619,10 +619,12 @@ class ApiDataSource extends BaseApiDataSource {
 
   Future<Either<Failure, ProductListResponse>> productList({
     required String searchWords,
+    required String kind,
   }) async {
     try {
       AppLogger.log.i(searchWords);
       final url = ApiUrl.productList(
+        kind: kind,
         searchWords: searchWords,
         lng: 0.0,
         lat: 0.0,

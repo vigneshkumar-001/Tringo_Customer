@@ -50,6 +50,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
     final highlights = state.productDetailsResponse?.data.product.highlights;
 
     final similarProducts = state.productDetailsResponse?.data.similarProducts;
+    final hasSimilarProducts = (similarProducts?.items.isNotEmpty ?? false);
     if (productDetailData == null) {
       return const Scaffold(body: Center(child: NoDataScreen()));
     }
@@ -237,7 +238,6 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                   messageLoading: homeState.isEnquiryLoading,
                   messageDisabled: _messageDisabled,
                   messageOnTap: () {
-
                     if (_messageDisabled || homeState.isEnquiryLoading) return;
 
                     // ✅ lock this message button
@@ -403,38 +403,57 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         color: AppColor.darkBlue,
                       ),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     CommonContainer.rightSideArrowButton(onTap: () {}),
                   ],
                 ),
               ),
-              SizedBox(height: 20),
-              SizedBox(
-                height: 400,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: BouncingScrollPhysics(),
-                  itemCount: similarProducts?.items.length,
-                  itemBuilder: (context, index) {
-                    final data = similarProducts?.items[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: CommonContainer.similarFoods(
-                        Verify: shopsData?.isTrusted ?? false,
-                        doorDelivery: data?.doorDelivery ?? false,
-                        image: data?.imageUrl.toString() ?? '',
-                        foodName: data?.englishName.toString() ?? '',
-                        ratingStar: data?.rating.toString() ?? '',
-                        ratingCount: data?.ratingCount.toString() ?? '',
-                        offAmound: '₹${data?.price.toString() ?? ''}',
-                        oldAmound: '₹${data?.offerPrice}',
-                        km: '230Mts',
-                        location: 'Lakshmi Bevan',
-                      ),
-                    );
-                  },
+              if (hasSimilarProducts) ...[
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: similarProducts?.items.length ?? 0,
+                    itemBuilder: (context, index) {
+                      final data = similarProducts!.items[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: CommonContainer.similarFoods(
+                          Verify: shopsData?.isTrusted ?? false,
+                          doorDelivery: data.doorDelivery ?? false,
+                          image: data.imageUrl?.toString() ?? '',
+                          foodName: data.englishName?.toString() ?? '',
+                          ratingStar: data.rating?.toString() ?? '',
+                          ratingCount: data.ratingCount?.toString() ?? '',
+                          offAmound: '₹${data.price?.toString() ?? ''}',
+                          oldAmound: '₹${data.offerPrice?.toString() ?? ''}',
+                          km: '230Mts',
+                          location: 'Lakshmi Bevan',
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+              ] else ...[
+                // 🔹 Only a small message, no big empty space
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 10,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'No similar products found.',
+                      style: GoogleFont.Mulish(
+                        fontSize: 14,
+                        color: AppColor.lightGray3,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
 
               /*SingleChildScrollView(
                 scrollDirection: Axis.horizontal,

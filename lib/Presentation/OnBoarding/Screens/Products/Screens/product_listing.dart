@@ -15,7 +15,8 @@ import '../../No Data Screen/Screen/no_data_screen.dart';
 
 class ProductListing extends ConsumerStatefulWidget {
   final String? title;
-  const ProductListing({super.key, this.title});
+  final String? kind;
+  const ProductListing({super.key, this.title,this.kind});
 
   @override
   ConsumerState<ProductListing> createState() => _ProductListingState();
@@ -28,7 +29,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(productNotifierProvider.notifier).productList();
+      ref.read(productNotifierProvider.notifier).productList(kind: widget.kind??'');
     });
   }
 
@@ -96,44 +97,62 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                     color: AppColor.lightGray2,
                   ),
                 ),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: productListData.data?. items.length,
-                  itemBuilder: (context, index) {
-                    final data = productListData.data?.items[index];
-                    return CommonContainer.foodList(
-                      titleWeight: FontWeight.w400,
-                      locations: true,
-                      fontSize: 12,
-                      imageWidth: 130,
-                      imageHeight: 150,
-                      Ad: false,
-                      horizontalDivider: true,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProductDetails(productId: data?.id),
-                          ),
-                        );
-                      },
-                      Verify: data?.shop.isTrusted,
-                      image: data.imageUrl.toString(),
-                      foodName: data.englishName.toString(),
-                      ratingStar: data.shop.rating.toString(),
-                      ratingCount: data.shop.ratingCount.toString(),
-                      offAmound: '₹${data.price}',
-                      oldAmound: '₹3,999',
-                      km: data.shop.distanceKm.toString(),
-                      location:
-                          '${data.shop.englishName} & ${data.shop.category}',
-                    );
-                  },
-                ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: productListData.data?.items.length ?? 0,
+            itemBuilder: (context, index) {
+              final item = productListData.data?.items[index];
 
-                SizedBox(height: 10),
+              if (item == null) return const SizedBox.shrink();
+
+              final shop = item.shop;
+
+              return CommonContainer.foodList(
+                titleWeight: FontWeight.w400,
+                locations: true,
+                fontSize: 12,
+                imageWidth: 130,
+                imageHeight: 150,
+                Ad: false,
+                horizontalDivider: true,
+
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetails(productId: item.id),
+                    ),
+                  );
+                },
+
+                // BOOL? → BOOL
+                Verify: shop?.isTrusted ?? false,
+
+                // Strings with fallback
+                image: item.imageUrl ?? "",
+                foodName: item.englishName ?? "",
+
+                // Ratings
+                ratingStar: (shop?.rating ?? 0).toString(),
+                ratingCount: (shop?.ratingCount ?? 0).toString(),
+
+                // Prices
+                offAmound: "₹${item.offerPrice ?? item.price ?? 0}",
+                oldAmound: "₹${item.price ?? 0}",
+
+                // Distance
+                km: (shop?.distanceKm ?? "").toString(),
+
+                // Location
+                location: "${shop?.englishName ?? ''} & ${shop?.category ?? ''}",
+              );
+            },
+          ),
+
+
+
+          SizedBox(height: 10),
                 /*      CommonContainer.foodList(
                   titleWeight: FontWeight.w400,
                   locations: true,
