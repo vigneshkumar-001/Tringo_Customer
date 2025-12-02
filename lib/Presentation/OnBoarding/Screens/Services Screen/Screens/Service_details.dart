@@ -14,6 +14,7 @@ import '../../../../../Core/Utility/map_urls.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_product_bottombar.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../Home Screen/Controller/home_notifier.dart';
+import '../../No Data Screen/Screen/no_data_screen.dart';
 
 class ServiceDetails extends ConsumerStatefulWidget {
   final String? heroTag;
@@ -191,7 +192,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
     }
     final serviceData = state.serviceDetailsResponse;
     if (serviceData == null || serviceData.data == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
 
     final String imagePath = widget.image ?? AppImages.servicesContainer1;

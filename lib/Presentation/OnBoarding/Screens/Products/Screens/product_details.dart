@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/product_notifier.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
@@ -47,7 +48,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
 
     final similarProducts = state.productDetailsResponse?.data.similarProducts;
     if (productDetailData == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
     return Scaffold(
       body: SafeArea(

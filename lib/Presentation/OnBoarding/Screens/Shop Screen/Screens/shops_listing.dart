@@ -10,6 +10,7 @@ import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/servi
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/current_location_widget.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
 
 import '../../../../../Core/Utility/map_urls.dart';
@@ -98,7 +99,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
 
     final shopsData = state.shopsResponse;
     if (shopsData == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
 
     final shops = shopsData.data;

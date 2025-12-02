@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
@@ -188,7 +189,7 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
     }
     final productsData = state.productResponse;
     if (productsData == null || productsData.data == null) {
-      return const Scaffold(body: Center(child: Text('No data')));
+      return const Scaffold(body: Center(child: NoDataScreen()));
     }
     return Scaffold(
       body: SafeArea(
