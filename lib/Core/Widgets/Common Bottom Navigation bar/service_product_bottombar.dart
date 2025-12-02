@@ -255,181 +255,181 @@ class FigmaBottomNavBar extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _pill(
-                    context,
-                    onTap: () {},
-                    bg: Colors.transparent,
-                    border: Colors.transparent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColor.blue,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(AppImages.callImage, height: 17),
-                            SizedBox(width: 6),
-                            Text(
-                              'Call',
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColor.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColor.blue),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              AppImages.messageImage,
-                              height: 19,
-                              color: AppColor.blue,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Enquire Now',
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColor.blue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  // FILTER pill (with count)
-                  _pill(
-                    context,
-                    onTap: () => onChanged(4),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            'Filter',
-                            style: GoogleFont.Mulish(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: AppColor.lightGray2,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 18,
-                          color: Colors.black54,
-                        ),
-                        if (filterCount > 0) ...[
-                          SizedBox(width: 8),
-                          _countChip(
-                            context,
-                            value: '$filterCount',
-                            onClear: onClearFilters,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  _pill(
-                    context,
-                    onTap: () => onChanged(5),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Price',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColor.lightGray,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Low to High',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_right_rounded,
-                          size: 18,
-                          color: AppColor.lightGray,
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 8),
-
-                  // CATEGORY pills -> send index 5..7 back up
-                  _pill(
-                    context,
-                    onTap: () => onChanged(6),
-                    bg: AppColor.white,
-                    border: AppColor.borderGray,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Price',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColor.lightGray,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'High to Low',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_right_rounded,
-                          size: 18,
-                          color: AppColor.lightGray,
-                        ),
-                      ],
-                    ),
-                  ),
+                  // _pill(
+                  //   context,
+                  //   onTap: () {},
+                  //   bg: Colors.transparent,
+                  //   border: Colors.transparent,
+                  //   child: Container(
+                  //     decoration: BoxDecoration(
+                  //       color: AppColor.blue,
+                  //       borderRadius: BorderRadius.circular(30),
+                  //     ),
+                  //     child: Padding(
+                  //       padding: const EdgeInsets.symmetric(
+                  //         horizontal: 18,
+                  //         vertical: 8,
+                  //       ),
+                  //       child: Row(
+                  //         children: [
+                  //           Image.asset(AppImages.callImage, height: 17),
+                  //           SizedBox(width: 6),
+                  //           Text(
+                  //             'Call',
+                  //             style: GoogleFont.Mulish(
+                  //               fontWeight: FontWeight.bold,
+                  //               fontSize: 14,
+                  //               color: AppColor.white,
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  // InkWell(
+                  //   onTap: () {},
+                  //   child: Container(
+                  //     decoration: BoxDecoration(
+                  //       border: Border.all(color: AppColor.blue),
+                  //       borderRadius: BorderRadius.circular(30),
+                  //     ),
+                  //     child: Padding(
+                  //       padding: const EdgeInsets.symmetric(
+                  //         horizontal: 18,
+                  //         vertical: 6,
+                  //       ),
+                  //       child: Row(
+                  //         children: [
+                  //           Image.asset(
+                  //             AppImages.messageImage,
+                  //             height: 19,
+                  //             color: AppColor.blue,
+                  //           ),
+                  //           SizedBox(width: 6),
+                  //           Text(
+                  //             'Enquire Now',
+                  //             style: GoogleFont.Mulish(
+                  //               fontWeight: FontWeight.bold,
+                  //               fontSize: 14,
+                  //               color: AppColor.blue,
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  // SizedBox(width: 10),
+                  // // FILTER pill (with count)
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(4),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Padding(
+                  //         padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  //         child: Text(
+                  //           'Filter',
+                  //           style: GoogleFont.Mulish(
+                  //             fontWeight: FontWeight.w700,
+                  //             fontSize: 14,
+                  //             color: AppColor.lightGray2,
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Icon(
+                  //         Icons.keyboard_arrow_down_rounded,
+                  //         size: 18,
+                  //         color: Colors.black54,
+                  //       ),
+                  //       if (filterCount > 0) ...[
+                  //         SizedBox(width: 8),
+                  //         _countChip(
+                  //           context,
+                  //           value: '$filterCount',
+                  //           onClear: onClearFilters,
+                  //         ),
+                  //       ],
+                  //     ],
+                  //   ),
+                  // ),
+                  // SizedBox(width: 10),
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(5),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Text(
+                  //         'Price',
+                  //         style: GoogleFont.Mulish(
+                  //           fontWeight: FontWeight.w700,
+                  //           fontSize: 14,
+                  //           color: AppColor.lightGray,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Text(
+                  //         'Low to High',
+                  //         style: GoogleFont.Mulish(
+                  //           fontWeight: FontWeight.w700,
+                  //           fontSize: 14,
+                  //           color: AppColor.darkBlue,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Icon(
+                  //         Icons.keyboard_arrow_right_rounded,
+                  //         size: 18,
+                  //         color: AppColor.lightGray,
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  // SizedBox(width: 8),
+                  //
+                  // // CATEGORY pills -> send index 5..7 back up
+                  // _pill(
+                  //   context,
+                  //   onTap: () => onChanged(6),
+                  //   bg: AppColor.white,
+                  //   border: AppColor.borderGray,
+                  //   child: Row(
+                  //     mainAxisSize: MainAxisSize.min,
+                  //     children: [
+                  //       Text(
+                  //         'Price',
+                  //         style: GoogleFont.Mulish(
+                  //           fontWeight: FontWeight.w700,
+                  //           fontSize: 14,
+                  //           color: AppColor.lightGray,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Text(
+                  //         'High to Low',
+                  //         style: GoogleFont.Mulish(
+                  //           fontWeight: FontWeight.w700,
+                  //           fontSize: 14,
+                  //           color: AppColor.darkBlue,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 4),
+                  //       Icon(
+                  //         Icons.keyboard_arrow_right_rounded,
+                  //         size: 18,
+                  //         color: AppColor.lightGray,
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                 ],
               ),
             ),

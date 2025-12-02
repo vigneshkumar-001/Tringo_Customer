@@ -41,7 +41,7 @@ class _ProductDetailsBottomBarState extends State<ProductDetailsBottomBar> {
     _pages = [
       HomeScreen(), // 0
       SearchScreen(), // 1
-      _ExploreScreenStub(), // 2
+      // _ExploreScreenStub(), // 2
       ProductDetails(), // 3
     ];
   }
@@ -117,9 +117,9 @@ class _ProductDetailsBottomBarState extends State<ProductDetailsBottomBar> {
       case 1:
         openSearchShell(context);
         break; // Search
-      case 2:
-        _goTo(1);
-        break; // Magic
+      // case 2:
+      //   _goTo(1);
+      //   break; // Magic
     }
   }
 
@@ -148,284 +148,284 @@ class _ProductDetailsBottomBarState extends State<ProductDetailsBottomBar> {
   }
 }
 
-class _ExploreScreenStub extends StatelessWidget {
-  const _ExploreScreenStub();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Explore Screen', style: TextStyle(fontSize: 20)),
-      ),
-    );
-  }
-}
+// class _ExploreScreenStub extends StatelessWidget {
+//   const _ExploreScreenStub();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Scaffold(
+//       body: Center(
+//         child: Text('Explore Screen', style: TextStyle(fontSize: 20)),
+//       ),
+//     );
+//   }
+// }
 
 /// ------------------- BOTTOM BAR (Figma-style) -----------------------------------
 
-class FigmaBottomNavBar extends StatelessWidget {
-  const FigmaBottomNavBar({
-    super.key,
-    required this.selectedIndex,
-    required this.onChanged,
-    this.filterCount = 0,
-    this.onClearFilters,
-  });
-
-  final int selectedIndex;
-  final int filterCount;
-  final VoidCallback? onClearFilters;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColor.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.07),
-                blurRadius: 16,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // HOME round button (image)
-                  InkWell(
-                    onTap: () => onChanged(0),
-
-                    borderRadius: BorderRadius.circular(50),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: selectedIndex == 0
-                            ? AppColor.iceBlue.withOpacity(0.35)
-                            : AppColor.white,
-                        border: Border.all(
-                          color: selectedIndex == 0
-                              ? AppColor.darkBlue
-                              : AppColor.darkBlue,
-                        ),
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      padding: const EdgeInsets.all(10),
-                      child: Image.asset(AppImages.homeImage, height: 19),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // SEARCH pill (black)
-                  _pill(
-                    context,
-                    onTap: () => onChanged(1),
-                    bg: Colors.black,
-                    border: Colors.transparent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(7.0),
-                        child: Image.asset(
-                          AppImages.searchImage,
-                          height: 14,
-                          color: AppColor.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-
-                  // SPARKLE gradient circle
-                  _gradientCircle(
-                    size: 40,
-                    onTap: () => onChanged(2),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColor.blue),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              AppImages.locationImage,
-                              height: 20,
-                              color: AppColor.blue,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Map',
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColor.blue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColor.darkBlue),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              AppImages.roundStar,
-                              height: 19,
-                              color: AppColor.darkBlue,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Highlights',
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColor.darkBlue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColor.darkBlue),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              AppImages.reviewImage,
-                              height: 19,
-                              color: AppColor.darkBlue,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Reviews',
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColor.darkBlue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ---------- helpers ----------
-
-  static Widget _pill(
-    BuildContext context, {
-    required Widget child,
-    required VoidCallback onTap,
-    required Color bg,
-    required Color border,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: border, width: 1.2),
-        ),
-        child: child,
-      ),
-    );
-  }
-
-  static Widget _gradientCircle({
-    required double size,
-    required Widget child,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(size / 2),
-      child: Container(
-        height: size,
-        width: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(size / 2),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFF7A00), // orange
-              Color(0xFFFF2D55), // pink
-              Color(0xFF7A5CFF), // purple
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: child,
-      ),
-    );
-  }
-}
+// class FigmaBottomNavBar extends StatelessWidget {
+//   const FigmaBottomNavBar({
+//     super.key,
+//     required this.selectedIndex,
+//     required this.onChanged,
+//     this.filterCount = 0,
+//     this.onClearFilters,
+//   });
+//
+//   final int selectedIndex;
+//   final int filterCount;
+//   final VoidCallback? onClearFilters;
+//   final ValueChanged<int> onChanged;
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Material(
+//       color: Colors.transparent,
+//       child: SafeArea(
+//         top: false,
+//         child: Container(
+//           padding: const EdgeInsets.symmetric(vertical: 10),
+//           decoration: BoxDecoration(
+//             color: AppColor.white,
+//             boxShadow: [
+//               BoxShadow(
+//                 color: Colors.black.withOpacity(0.07),
+//                 blurRadius: 16,
+//                 offset: const Offset(0, -6),
+//               ),
+//             ],
+//           ),
+//           child: SingleChildScrollView(
+//             scrollDirection: Axis.horizontal,
+//             physics: const BouncingScrollPhysics(),
+//             child: Padding(
+//               padding: const EdgeInsets.symmetric(horizontal: 15),
+//               child: Row(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   // HOME round button (image)
+//                   InkWell(
+//                     onTap: () => onChanged(0),
+//
+//                     borderRadius: BorderRadius.circular(50),
+//                     child: Container(
+//                       decoration: BoxDecoration(
+//                         color: selectedIndex == 0
+//                             ? AppColor.iceBlue.withOpacity(0.35)
+//                             : AppColor.white,
+//                         border: Border.all(
+//                           color: selectedIndex == 0
+//                               ? AppColor.darkBlue
+//                               : AppColor.darkBlue,
+//                         ),
+//                         borderRadius: BorderRadius.circular(50),
+//                       ),
+//                       padding: const EdgeInsets.all(10),
+//                       child: Image.asset(AppImages.homeImage, height: 19),
+//                     ),
+//                   ),
+//                   const SizedBox(width: 10),
+//
+//                   // SEARCH pill (black)
+//                   _pill(
+//                     context,
+//                     onTap: () => onChanged(1),
+//                     bg: Colors.black,
+//                     border: Colors.transparent,
+//                     child: Container(
+//                       decoration: BoxDecoration(
+//                         borderRadius: BorderRadius.circular(50),
+//                       ),
+//                       child: Padding(
+//                         padding: const EdgeInsets.all(7.0),
+//                         child: Image.asset(
+//                           AppImages.searchImage,
+//                           height: 14,
+//                           color: AppColor.white,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   SizedBox(width: 10),
+//
+//                   // SPARKLE gradient circle
+//                   _gradientCircle(
+//                     size: 40,
+//                     onTap: () => onChanged(2),
+//                     child: Icon(
+//                       Icons.auto_awesome,
+//                       color: Colors.white,
+//                       size: 20,
+//                     ),
+//                   ),
+//                   SizedBox(width: 10),
+//                   InkWell(
+//                     onTap: () {},
+//                     child: Container(
+//                       decoration: BoxDecoration(
+//                         border: Border.all(color: AppColor.blue),
+//                         borderRadius: BorderRadius.circular(30),
+//                       ),
+//                       child: Padding(
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 18,
+//                           vertical: 6,
+//                         ),
+//                         child: Row(
+//                           children: [
+//                             Image.asset(
+//                               AppImages.locationImage,
+//                               height: 20,
+//                               color: AppColor.blue,
+//                             ),
+//                             SizedBox(width: 6),
+//                             Text(
+//                               'Map',
+//                               style: GoogleFont.Mulish(
+//                                 fontWeight: FontWeight.bold,
+//                                 fontSize: 14,
+//                                 color: AppColor.blue,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   SizedBox(width: 10),
+//                   InkWell(
+//                     onTap: () {},
+//                     child: Container(
+//                       decoration: BoxDecoration(
+//                         border: Border.all(color: AppColor.darkBlue),
+//                         borderRadius: BorderRadius.circular(30),
+//                       ),
+//                       child: Padding(
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 14,
+//                           vertical: 6,
+//                         ),
+//                         child: Row(
+//                           children: [
+//                             Image.asset(
+//                               AppImages.roundStar,
+//                               height: 19,
+//                               color: AppColor.darkBlue,
+//                             ),
+//                             SizedBox(width: 10),
+//                             Text(
+//                               'Highlights',
+//                               style: GoogleFont.Mulish(
+//                                 fontWeight: FontWeight.bold,
+//                                 fontSize: 14,
+//                                 color: AppColor.darkBlue,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   SizedBox(width: 10),
+//                   InkWell(
+//                     onTap: () {},
+//                     child: Container(
+//                       decoration: BoxDecoration(
+//                         border: Border.all(color: AppColor.darkBlue),
+//                         borderRadius: BorderRadius.circular(30),
+//                       ),
+//                       child: Padding(
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 14,
+//                           vertical: 6,
+//                         ),
+//                         child: Row(
+//                           children: [
+//                             Image.asset(
+//                               AppImages.reviewImage,
+//                               height: 19,
+//                               color: AppColor.darkBlue,
+//                             ),
+//                             SizedBox(width: 10),
+//                             Text(
+//                               'Reviews',
+//                               style: GoogleFont.Mulish(
+//                                 fontWeight: FontWeight.bold,
+//                                 fontSize: 14,
+//                                 color: AppColor.darkBlue,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   // ---------- helpers ----------
+//
+//   static Widget _pill(
+//     BuildContext context, {
+//     required Widget child,
+//     required VoidCallback onTap,
+//     required Color bg,
+//     required Color border,
+//   }) {
+//     return InkWell(
+//       onTap: onTap,
+//       borderRadius: BorderRadius.circular(24),
+//       child: Container(
+//         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+//         decoration: BoxDecoration(
+//           color: bg,
+//           borderRadius: BorderRadius.circular(50),
+//           border: Border.all(color: border, width: 1.2),
+//         ),
+//         child: child,
+//       ),
+//     );
+//   }
+//
+//   static Widget _gradientCircle({
+//     required double size,
+//     required Widget child,
+//     required VoidCallback onTap,
+//   }) {
+//     return InkWell(
+//       onTap: onTap,
+//       borderRadius: BorderRadius.circular(size / 2),
+//       child: Container(
+//         height: size,
+//         width: size,
+//         alignment: Alignment.center,
+//         decoration: BoxDecoration(
+//           borderRadius: BorderRadius.circular(size / 2),
+//           gradient: const LinearGradient(
+//             begin: Alignment.topLeft,
+//             end: Alignment.bottomRight,
+//             colors: [
+//               Color(0xFFFF7A00), // orange
+//               Color(0xFFFF2D55), // pink
+//               Color(0xFF7A5CFF), // purple
+//             ],
+//           ),
+//           boxShadow: [
+//             BoxShadow(
+//               color: Colors.black.withOpacity(0.15),
+//               blurRadius: 10,
+//               offset: const Offset(0, 4),
+//             ),
+//           ],
+//         ),
+//         child: child,
+//       ),
+//     );
+//   }
+// }
