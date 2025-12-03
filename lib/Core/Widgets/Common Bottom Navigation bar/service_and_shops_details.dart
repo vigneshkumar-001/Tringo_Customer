@@ -17,7 +17,8 @@ import '../filter_popup_screen.dart';
 class ServiceAndShopsDetails extends StatefulWidget {
   final int initialIndex;
   final String? shopId;
-  const ServiceAndShopsDetails({super.key, this.initialIndex = 0, this.shopId});
+  final String? type;
+  const ServiceAndShopsDetails({super.key, this.initialIndex = 0, this.shopId, this.type});
 
   @override
   State<ServiceAndShopsDetails> createState() => _ServiceAndShopsDetailsState();
@@ -42,7 +43,7 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
       SearchScreen(), // 1
       // _ExploreScreenStub(), // 2
       ServiceDetails(serviceID: widget.shopId), // 3
-      ShopsDetails(shopId: widget.shopId), // 4
+      ShopsDetails(shopId: widget.shopId,page : widget.type), // 4
     ];
   }
 

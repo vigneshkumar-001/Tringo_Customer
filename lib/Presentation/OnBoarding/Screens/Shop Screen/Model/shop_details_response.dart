@@ -527,8 +527,8 @@ class Service {
     id: json['id'],
     englishName: json['englishName'],
     tamilName: json['tamilName'],
-    startsAt: json['startsAt'] != null
-        ? (json['startsAt'] as num).toDouble()
+    startsAt: json['price'] != null
+        ? (json['price'] as num).toDouble()
         : null,
     offerPrice: json['offerPrice'] != null
         ? (json['offerPrice'] as num).toDouble()
@@ -538,7 +538,7 @@ class Service {
     offerValue: json['offerValue'],
     description: json['description'],
     status: json['status'],
-    primaryImageUrl: json['primaryImageUrl'],
+    primaryImageUrl: json['imageUrl'],
     category: json['category'],
     subCategory: json['subCategory'],
     rating: json['rating'] ?? 0,
@@ -549,14 +549,14 @@ class Service {
     'id': id,
     'englishName': englishName,
     'tamilName': tamilName,
-    'startsAt': startsAt,
+    'price': startsAt,
     'offerPrice': offerPrice,
     'durationMinutes': durationMinutes,
     'offerLabel': offerLabel,
     'offerValue': offerValue,
     'description': description,
     'status': status,
-    'primaryImageUrl': primaryImageUrl,
+    'imageUrl': primaryImageUrl,
     'category': category,
     'subCategory': subCategory,
     'rating': rating,

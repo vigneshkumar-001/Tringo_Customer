@@ -112,7 +112,7 @@ class ServiceItem {
       offerValue: json['offerValue'] ?? '',
       description: json['description'] ?? '',
       status: json['status'] ?? '',
-      primaryImageUrl: json['primaryImageUrl'],
+      primaryImageUrl: json['imageUrl'],
       category: json['category'] ?? '',
       subCategory: json['subCategory'] ?? '',
 

@@ -20,7 +20,8 @@ class ShopsDetails extends ConsumerStatefulWidget {
   final String? heroTag; // optional; if null/empty, no hero anim
   final String? image; // optional; falls back to AppImages.imageContainer1
   final String? shopId;
-  const ShopsDetails({super.key, this.heroTag, this.image, this.shopId});
+  final String? page;
+  const ShopsDetails( {super.key, this.heroTag, this.image, this.shopId,this.page,});
 
   @override
   ConsumerState<ShopsDetails> createState() => _ShopsDetailsState();
@@ -72,7 +73,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(shopsNotifierProvider.notifier)
-          .showSpecificShopDetails(shopId: widget.shopId ?? '');
+          .showSpecificShopDetails(shopId: widget.shopId ?? '', );
     });
 
     final curve = CurvedAnimation(
@@ -949,8 +950,20 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => ShopsProduct(
-                                            initialIndex: 2,
+                                            page: widget.page,
+                                            category: shopsData.data?.category
+                                                .toString(),
+                                            englishName: shopsData
+                                                .data
+                                                ?.englishName
+                                                .toString(),
+                                            isTrusted:
+                                            shopsData.data?.isTrusted,
+                                            shopImageUrl:
+                                            shopsData.data?.media?[0].url,
+                                            initialIndex: 3,
                                             shopId: widget.shopId,
+
                                           ),
                                           // ShopsProductList(),
                                         ),
