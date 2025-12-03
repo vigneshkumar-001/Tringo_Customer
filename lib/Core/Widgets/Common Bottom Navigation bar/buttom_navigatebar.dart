@@ -16,7 +16,12 @@ class ButtomNavigatebar extends StatefulWidget {
   final int initialIndex;
   final String? tittle;
   final String? kind;
-  const ButtomNavigatebar({super.key, this.initialIndex = 0, this.tittle,this.kind});
+  const ButtomNavigatebar({
+    super.key,
+    this.initialIndex = 0,
+    this.tittle,
+    this.kind,
+  });
 
   @override
   State<ButtomNavigatebar> createState() => _ButtomNavigatebarState();
@@ -39,11 +44,11 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
     _pages = [
       HomeScreen(), // 0
       SearchScreen(), // 1
-      _ExploreScreenStub(), // 2
-      ShopsListing(), // 3
-      ServiceListing(), // 4
-      FoodList(), // 5
-      ProductListing(title: widget.tittle,kind:widget.kind ,), // 6
+      // _ExploreScreenStub(), // 2
+      // ShopsListing(), // 3
+      // ServiceListing(), // 4
+      // FoodList(), // 5
+      // ProductListing(title: widget.tittle, kind: widget.kind), // 6
     ];
   }
 
@@ -164,18 +169,18 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
   }
 }
 
-class _ExploreScreenStub extends StatelessWidget {
-  const _ExploreScreenStub();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Explore Screen', style: TextStyle(fontSize: 20)),
-      ),
-    );
-  }
-}
+// class _ExploreScreenStub extends StatelessWidget {
+//   const _ExploreScreenStub();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Scaffold(
+//       body: Center(
+//         child: Text('Explore Screen', style: TextStyle(fontSize: 20)),
+//       ),
+//     );
+//   }
+// }
 
 /// ------------------- BOTTOM BAR (Figma-style) -----------------------------------
 

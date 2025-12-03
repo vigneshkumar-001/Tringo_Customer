@@ -956,21 +956,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             ),
                                           ],
                                         ),
-                                        child:
-                                        ListView.builder(
+                                        child: ListView.builder(
                                           shrinkWrap: true,
-                                          physics: const NeverScrollableScrollPhysics(),
-                                          itemCount: filteredServiceShops.length,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount:
+                                              filteredServiceShops.length,
                                           itemBuilder: (context, index) {
-                                            final services = filteredServiceShops[index];
+                                            final services =
+                                                filteredServiceShops[index];
                                             final isThisCardLoading =
                                                 state.isEnquiryLoading &&
                                                 state.activeEnquiryId ==
                                                     services.id;
                                             final hasMessaged =
-                                            _disabledMessageIds.contains(services.id);
+                                                _disabledMessageIds.contains(
+                                                  services.id,
+                                                );
                                             return Padding(
-                                              padding: const EdgeInsets.only(bottom: 20),
+                                              padding: const EdgeInsets.only(
+                                                bottom: 20,
+                                              ),
                                               child: Column(
                                                 children: [
                                                   CommonContainer.servicesContainer(
@@ -982,35 +988,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     },
                                                     horizontalDivider: true,
                                                     fireOnTap: () {},
-                                                    isMessageLoading: isThisCardLoading,
-                                                    messageDisabled: hasMessaged,
+                                                    isMessageLoading:
+                                                        isThisCardLoading,
+                                                    messageDisabled:
+                                                        hasMessaged,
                                                     messageOnTap: () {
-                                                      if (hasMessaged || isThisCardLoading) return;
+                                                      if (hasMessaged ||
+                                                          isThisCardLoading)
+                                                        return;
 
                                                       // lock this service message button
                                                       setState(() {
-                                                        _disabledMessageIds.add(services.id);
+                                                        _disabledMessageIds.add(
+                                                          services.id,
+                                                        );
                                                       });
 
                                                       ref
-                                                          .read(homeNotifierProvider.notifier)
+                                                          .read(
+                                                            homeNotifierProvider
+                                                                .notifier,
+                                                          )
                                                           .putEnquiry(
-                                                        context: context,
-                                                        serviceId: services.id,
-                                                        productId: '',
-                                                        message: '',
-                                                        shopId: services.id,
-                                                      );
+                                                            context: context,
+                                                            serviceId:
+                                                                services.id,
+                                                            productId: '',
+                                                            message: '',
+                                                            shopId: services.id,
+                                                          );
                                                     },
 
                                                     onTap: () {
                                                       Navigator.push(
                                                         context,
                                                         MaterialPageRoute(
-                                                          builder: (context) => ServiceAndShopsDetails(
-                                                            shopId: services.id,
-                                                            initialIndex: 3,
-                                                          ),
+                                                          builder: (context) =>
+                                                              ServiceAndShopsDetails(
+                                                                shopId:
+                                                                    services.id,
+                                                                initialIndex: 3,
+                                                              ),
                                                         ),
                                                       );
                                                     },
@@ -1018,25 +1036,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       MapUrls.openWhatsapp(
                                                         message: 'hi',
                                                         context: context,
-                                                        phone: services.primaryPhone,
+                                                        phone: services
+                                                            .primaryPhone,
                                                       );
                                                     },
                                                     Verify: services.isTrusted,
-                                                    image: services.primaryImageUrl.toString(),
+                                                    image: services
+                                                        .primaryImageUrl
+                                                        .toString(),
                                                     companyName:
-                                                    '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
+                                                        '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
                                                     location:
-                                                    '${services.city},${services.state},${services.country} ',
-                                                    fieldName: services.ownershipTypeLabel,
-                                                    ratingStar: services.rating.toString(),
-                                                    ratingCount: services.ratingCount.toString(),
+                                                        '${services.city},${services.state},${services.country} ',
+                                                    fieldName: services
+                                                        .ownershipTypeLabel,
+                                                    ratingStar: services.rating
+                                                        .toString(),
+                                                    ratingCount: services
+                                                        .ratingCount
+                                                        .toString(),
                                                     time: '9Pm',
                                                   ),
                                                 ],
                                               ),
                                             );
                                           },
-                                        )
+                                        ),
 
                                         // ListView.builder(
                                         //   shrinkWrap: true,
@@ -1376,10 +1401,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           ),
                                         ],
                                       ),
-                                      child:
-                                      ListView.builder(
+                                      child: ListView.builder(
                                         shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
+                                        physics:
+                                              NeverScrollableScrollPhysics(),
                                         itemCount: filteredShops.length,
                                         itemBuilder: (context, index) {
                                           final shops = filteredShops[index];
@@ -1393,7 +1418,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               );
 
                                           return Padding(
-                                            padding: const EdgeInsets.symmetric(vertical: 5),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 5,
+                                            ),
                                             child: Column(
                                               children: [
                                                 CommonContainer.servicesContainer(
@@ -1420,14 +1447,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           .add(shops.id);
                                                     });
                                                     ref
-                                                        .read(homeNotifierProvider.notifier)
+                                                        .read(
+                                                          homeNotifierProvider
+                                                              .notifier,
+                                                        )
                                                         .putEnquiry(
-                                                      context: context,
-                                                      serviceId: '',
-                                                      productId: '',
-                                                      message: '',
-                                                      shopId: shops.id,
-                                                    );
+                                                          context: context,
+                                                          serviceId: '',
+                                                          productId: '',
+                                                          message: '',
+                                                          shopId: shops.id,
+                                                        );
                                                   },
 
                                                   callTap: () async {
@@ -1447,20 +1477,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (context) => ServiceAndShopsDetails(
-                                                          shopId: shops.id,
-                                                          initialIndex: 4,
-                                                        ),
+                                                        builder: (context) =>
+                                                            ServiceAndShopsDetails(
+                                                              shopId: shops.id,
+                                                              initialIndex: 4,
+                                                            ),
                                                       ),
                                                     );
                                                   },
                                                   Verify: shops.isTrusted,
-                                                  image: shops.primaryImageUrl.toString(),
-                                                  companyName: shops.englishName,
-                                                  location: '${shops.city}, ${shops.state}, ${shops.country}',
-                                                  fieldName: shops.distanceKm.toString(),
-                                                  ratingStar: shops.rating.toString(),
-                                                  ratingCount: shops.ratingCount.toString(),
+                                                  image: shops.primaryImageUrl
+                                                      .toString(),
+                                                  companyName:
+                                                      shops.englishName,
+                                                  location:
+                                                      '${shops.city}, ${shops.state}, ${shops.country}',
+                                                  fieldName: shops.distanceKm
+                                                      .toString(),
+                                                  ratingStar: shops.rating
+                                                      .toString(),
+                                                  ratingCount: shops.ratingCount
+                                                      .toString(),
                                                   time: '9Pm',
                                                 ),
                                                 const SizedBox(height: 6),

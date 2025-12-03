@@ -856,20 +856,23 @@ class CommonContainer {
     // 🔹 Decide whether this is a network image or asset
     final bool isNetworkImage = image.startsWith('http');
 
-    CachedNetworkImage(
-      imageUrl: image,
-      height: 100,
-      width: 100,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => const SizedBox(
-        height: 50,
-        width: 50,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
-      errorWidget: (context, url, error) => const SizedBox(
+    ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: CachedNetworkImage(
+        imageUrl: image,
         height: 100,
         width: 100,
-        child: Icon(Icons.broken_image),
+        fit: BoxFit.cover,
+        placeholder: (context, url) => const SizedBox(
+          height: 50,
+          width: 50,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (context, url, error) => const SizedBox(
+          height: 100,
+          width: 100,
+          child: Icon(Icons.broken_image),
+        ),
       ),
     );
 
@@ -888,29 +891,54 @@ class CommonContainer {
               padding: const EdgeInsets.symmetric(vertical: 15.0),
               child: Row(
                 children: [
-                  // ClipRRect(
-                  //   clipBehavior: Clip.antiAlias,
-                  //   borderRadius: BorderRadius.circular(12),
-                  //   child: thumb,
-                  // ),
-                  CachedNetworkImage(
-                    imageUrl: image,
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const SizedBox(
-                      height: 50,
-                      width: 50,
-                      child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => const SizedBox(
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CachedNetworkImage(
+                      imageUrl: image,
                       height: 100,
                       width: 100,
-                      child: Icon(Icons.broken_image),
+                      fit: BoxFit.cover,
+
+                      placeholder: (context, url) => const SizedBox(
+                        height: 100,
+                        width: 100,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          color: Colors.grey.shade300, // background if you want
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
                     ),
                   ),
+
+                  // ClipRRect(
+                  //   borderRadius: BorderRadius.circular(16),
+                  //   child: CachedNetworkImage(
+                  //     imageUrl: image,
+                  //     height: 100,
+                  //     width: 100,
+                  //     fit: BoxFit.cover,
+                  //     placeholder: (context, url) => const SizedBox(
+                  //       height: 50,
+                  //       width: 50,
+                  //       child: Center(
+                  //         child: CircularProgressIndicator(strokeWidth: 2),
+                  //       ),
+                  //     ),
+                  //     errorWidget: (context, url, error) =>   SizedBox(
+                  //       height: 100,
+                  //       width: 100,
+                  //       child: Icon(Icons.broken_image),
+                  //     ),
+                  //   ),
+                  // ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
