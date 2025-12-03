@@ -58,27 +58,27 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
     }
   }
 
-  Future<bool?> _askToEnableLocationServices() {
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Turn on Location"),
-        content: const Text(
-          "Please enable Location Services to show your current address.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Open Settings"),
-          ),
-        ],
-      ),
-    );
-  }
+  // Future<bool?> _askToEnableLocationServices() {
+  //   return showDialog<bool>(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       title: const Text("Turn on Location"),
+  //       content: const Text(
+  //         "Please enable Location Services to show your current address.",
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context, false),
+  //           child: const Text("Cancel"),
+  //         ),
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context, true),
+  //           child: const Text("Open Settings"),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Future<bool?> _askToOpenAppSettings() {
     return showDialog<bool>(
@@ -121,79 +121,79 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
   }
 
   /// 🔹 Full flow: check service, request permission, then get position + address
-  Future<void> _initLocationFlow() async {
-    setState(() => _locBusy = true);
+  // Future<void> _initLocationFlow() async {
+  //   setState(() => _locBusy = true);
+  //
+  //   try {
+  //     // 1) Ensure service on
+  //     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //     if (!serviceEnabled) {
+  //       final enable = await _askToEnableLocationServices();
+  //       if (enable == true) {
+  //         await Geolocator.openLocationSettings();
+  //         await Future.delayed(const Duration(milliseconds: 600));
+  //         serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //       }
+  //       if (!serviceEnabled) {
+  //         setState(() {
+  //           currentAddress = "Location services disabled";
+  //           _locBusy = false;
+  //         });
+  //         return;
+  //       }
+  //     }
+  //
+  //     // 2) Ensure permission
+  //     LocationPermission perm = await Geolocator.checkPermission();
+  //     if (perm == LocationPermission.denied) {
+  //       perm = await Geolocator.requestPermission();
+  //     }
+  //     if (perm == LocationPermission.denied) {
+  //       setState(() {
+  //         currentAddress = "Location permission denied";
+  //         _locBusy = false;
+  //       });
+  //       return;
+  //     }
+  //     if (perm == LocationPermission.deniedForever) {
+  //       final open = await _askToOpenAppSettings();
+  //       if (open == true) {
+  //         await Geolocator.openAppSettings();
+  //       }
+  //       setState(() {
+  //         currentAddress = "Permission permanently denied";
+  //         _locBusy = false;
+  //       });
+  //       return;
+  //     }
+  //
+  //     // 3) Get position (with timeout + sensible accuracy)
+  //     final pos = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high,
+  //       timeLimit: const Duration(seconds: 10),
+  //     );
+  //
+  //     // 4) Reverse-geocode with fallbacks
+  //     final address = await _reverseToNiceAddress(pos);
+  //     setState(() {
+  //       currentAddress = address ?? "Unknown location";
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       currentAddress = "Unable to fetch location";
+  //     });
+  //   } finally {
+  //     if (mounted) setState(() => _locBusy = false);
+  //   }
+  // }
 
-    try {
-      // 1) Ensure service on
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        final enable = await _askToEnableLocationServices();
-        if (enable == true) {
-          await Geolocator.openLocationSettings();
-          await Future.delayed(const Duration(milliseconds: 600));
-          serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        }
-        if (!serviceEnabled) {
-          setState(() {
-            currentAddress = "Location services disabled";
-            _locBusy = false;
-          });
-          return;
-        }
-      }
-
-      // 2) Ensure permission
-      LocationPermission perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied) {
-        setState(() {
-          currentAddress = "Location permission denied";
-          _locBusy = false;
-        });
-        return;
-      }
-      if (perm == LocationPermission.deniedForever) {
-        final open = await _askToOpenAppSettings();
-        if (open == true) {
-          await Geolocator.openAppSettings();
-        }
-        setState(() {
-          currentAddress = "Permission permanently denied";
-          _locBusy = false;
-        });
-        return;
-      }
-
-      // 3) Get position (with timeout + sensible accuracy)
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      // 4) Reverse-geocode with fallbacks
-      final address = await _reverseToNiceAddress(pos);
-      setState(() {
-        currentAddress = address ?? "Unknown location";
-      });
-    } catch (e) {
-      setState(() {
-        currentAddress = "Unable to fetch location";
-      });
-    } finally {
-      if (mounted) setState(() => _locBusy = false);
-    }
-  }
-
-  void _listenServiceChanges() {
-    _serviceSub = Geolocator.getServiceStatusStream().listen((status) {
-      if (status == ServiceStatus.enabled) {
-        _initLocationFlow(); // GPS turned on → try again
-      }
-    });
-  }
+  // void _listenServiceChanges() {
+  //   _serviceSub = Geolocator.getServiceStatusStream().listen((status) {
+  //     if (status == ServiceStatus.enabled) {
+  //       _initLocationFlow(); // GPS turned on → try again
+  //     }
+  //   });
+  // }
 
   @override
   void initState() {
@@ -202,8 +202,8 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
     // Run async stuff after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _ensurePhonePermission();
-      await _initLocationFlow();
-      _listenServiceChanges();
+      // await _initLocationFlow();
+      // _listenServiceChanges();
     });
 
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (prev, next) {
