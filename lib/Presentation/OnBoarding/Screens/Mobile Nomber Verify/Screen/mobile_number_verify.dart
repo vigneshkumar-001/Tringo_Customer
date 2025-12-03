@@ -5,7 +5,6 @@ import 'package:mobile_number/mobile_number.dart';
 import 'package:mobile_number/sim_card.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 
-
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/app_go_routes.dart';
@@ -76,19 +75,28 @@ class _MobileNumberVerifyState extends ConsumerState<MobileNumberVerify> {
 
   Future<void> loadSimInfo() async {
     try {
-      if (!await MobileNumber.hasPhonePermission) {
-        await MobileNumber.requestPhonePermission;
-        if (!await MobileNumber.hasPhonePermission) {
-          if (!mounted) return;
-          setState(() {
-            loaded = true;
-            anySimHasNumber = false;
-            numberMatch = false;
-          });
-          return;
-        }
+      // 📌 IMPORTANT:
+      // Permission should already be handled in LoginMobileNumber screen.
+      // Here we ONLY CHECK, we DO NOT REQUEST again.
+
+      final hasPermission = await MobileNumber.hasPhonePermission;
+      if (!hasPermission) {
+        debugPrint(
+          "⚠️ Phone/SIM permission not granted. Skipping SIM auto-verify.",
+        );
+
+        if (!mounted) return;
+        setState(() {
+          loaded = true;
+          anySimHasNumber = false;
+          numberMatch = false;
+        });
+
+        // Directly fall back to OTP UI (text + button already there)
+        return;
       }
 
+      //  We have permission → proceed with SIM reading
       final simCards = await MobileNumber.getSimCards;
       sims = simCards ?? [];
       matchedSlotIndex = null;
@@ -127,7 +135,7 @@ Slot Index      : $slot
 
           if (norm == loginNorm) {
             matchedSlotIndex = uiIndex;
-            debugPrint("✅ MATCH FOUND → uiIndex = $matchedSlotIndex");
+            debugPrint(" MATCH FOUND → uiIndex = $matchedSlotIndex");
           }
         } else {
           debugPrint(
@@ -155,6 +163,88 @@ Slot Index      : $slot
       setState(() => loaded = true);
     }
   }
+
+  //   Future<void> loadSimInfo() async {
+  //     try {
+  //       if (!await MobileNumber.hasPhonePermission) {
+  //         await MobileNumber.requestPhonePermission;
+  //         if (!await MobileNumber.hasPhonePermission) {
+  //           if (!mounted) return;
+  //           setState(() {
+  //             loaded = true;
+  //             anySimHasNumber = false;
+  //             numberMatch = false;
+  //           });
+  //           return;
+  //         }
+  //       }
+  //
+  //       final simCards = await MobileNumber.getSimCards;
+  //       sims = simCards ?? [];
+  //       matchedSlotIndex = null;
+  //
+  //       bool localAnySimHasNumber = false;
+  //
+  //       final loginNorm = _normalizeNumber(widget.loginNumber.trim());
+  //
+  //       debugPrint("=== LOGIN NUMBER ===");
+  //       debugPrint("RAW        : ${widget.loginNumber}");
+  //       debugPrint("NORMALIZED : $loginNorm");
+  //       debugPrint("\n=== DEVICE SIM INFO ===");
+  //
+  //       for (int i = 0; i < sims.length; i++) {
+  //         final sim = sims[i];
+  //
+  //         final raw = (sim.number ?? '').trim();
+  //         final norm = _normalizeNumber(raw);
+  //         final carrier = (sim.carrierName ?? sim.displayName ?? "").trim();
+  //         final slot = sim.slotIndex;
+  //         final uiIndex = _uiIndexFromSlot(slot, i);
+  //
+  //         debugPrint("""
+  // -------------------------
+  // SIM (list index): $i
+  // UI Slot Index   : $uiIndex  (0 = SIM1 card, 1 = SIM2 card)
+  // Carrier         : $carrier
+  // RAW Number      : "$raw"
+  // Normalized      : "$norm"
+  // Slot Index      : $slot
+  // -------------------------
+  // """);
+  //
+  //         if (norm.isNotEmpty) {
+  //           localAnySimHasNumber = true;
+  //
+  //           if (norm == loginNorm) {
+  //             matchedSlotIndex = uiIndex;
+  //             debugPrint("✅ MATCH FOUND → uiIndex = $matchedSlotIndex");
+  //           }
+  //         } else {
+  //           debugPrint(
+  //             "❗ SIM uiIndex=$uiIndex has NO readable number (Number Hidden)",
+  //           );
+  //         }
+  //       }
+  //
+  //       if (!mounted) return;
+  //       setState(() {
+  //         anySimHasNumber = localAnySimHasNumber;
+  //         numberMatch =
+  //             matchedSlotIndex != null; // true only if any uiIndex matched
+  //         loaded = true;
+  //       });
+  //
+  //       // If SIM matches → call backend SIM verification
+  //       if (numberMatch) {
+  //         _triggerSimVerify();
+  //       }
+  //     } catch (e, st) {
+  //       debugPrint("❌ SIM Load Error: $e");
+  //       debugPrint("$st");
+  //       if (!mounted) return;
+  //       setState(() => loaded = true);
+  //     }
+  //   }
 
   Future<void> _triggerSimVerify() async {
     if (_simVerifyTriggered) return; // Prevent multiple calls
@@ -588,5 +678,3 @@ Slot Index      : $slot
     );
   }
 }
-
-

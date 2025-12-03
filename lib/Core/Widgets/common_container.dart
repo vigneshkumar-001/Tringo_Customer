@@ -856,20 +856,23 @@ class CommonContainer {
     // 🔹 Decide whether this is a network image or asset
     final bool isNetworkImage = image.startsWith('http');
 
-    CachedNetworkImage(
-      imageUrl: image,
-      height: 100,
-      width: 100,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => const SizedBox(
-        height: 50,
-        width: 50,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
-      errorWidget: (context, url, error) => const SizedBox(
+    ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: CachedNetworkImage(
+        imageUrl: image,
         height: 100,
         width: 100,
-        child: Icon(Icons.broken_image),
+        fit: BoxFit.cover,
+        placeholder: (context, url) => const SizedBox(
+          height: 50,
+          width: 50,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (context, url, error) => const SizedBox(
+          height: 100,
+          width: 100,
+          child: Icon(Icons.broken_image),
+        ),
       ),
     );
 
@@ -888,29 +891,54 @@ class CommonContainer {
               padding: const EdgeInsets.symmetric(vertical: 15.0),
               child: Row(
                 children: [
-                  // ClipRRect(
-                  //   clipBehavior: Clip.antiAlias,
-                  //   borderRadius: BorderRadius.circular(12),
-                  //   child: thumb,
-                  // ),
-                  CachedNetworkImage(
-                    imageUrl: image,
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const SizedBox(
-                      height: 50,
-                      width: 50,
-                      child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => const SizedBox(
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CachedNetworkImage(
+                      imageUrl: image,
                       height: 100,
                       width: 100,
-                      child: Icon(Icons.broken_image),
+                      fit: BoxFit.cover,
+
+                      placeholder: (context, url) => const SizedBox(
+                        height: 100,
+                        width: 100,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          color: Colors.grey.shade300, // background if you want
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
                     ),
                   ),
+
+                  // ClipRRect(
+                  //   borderRadius: BorderRadius.circular(16),
+                  //   child: CachedNetworkImage(
+                  //     imageUrl: image,
+                  //     height: 100,
+                  //     width: 100,
+                  //     fit: BoxFit.cover,
+                  //     placeholder: (context, url) => const SizedBox(
+                  //       height: 50,
+                  //       width: 50,
+                  //       child: Center(
+                  //         child: CircularProgressIndicator(strokeWidth: 2),
+                  //       ),
+                  //     ),
+                  //     errorWidget: (context, url, error) =>   SizedBox(
+                  //       height: 100,
+                  //       width: 100,
+                  //       child: Icon(Icons.broken_image),
+                  //     ),
+                  //   ),
+                  // ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -1055,202 +1083,7 @@ class CommonContainer {
     );
   }
 
-  // static servicesContainer({
-  //   required String image,
-  //   required String companyName,
-  //   required String location,
-  //   required String fieldName,
-  //   required String ratingStar,
-  //   required String ratingCount,
-  //   required String time,
-  //   String? heroTag,
-  //   VoidCallback? onTap,
-  //   VoidCallback? callTap,
-  //   VoidCallback? messageOnTap,
-  //   VoidCallback? whatsAppOnTap,
-  //   VoidCallback? fireOnTap, // still here, but optional
-  //   String? fireTooltip, // 👈 tooltip text comes here
-  //   bool horizontalDivider = false,
-  //   bool Verify = false,
-  //   bool isMessageLoading = false,
-  //   bool messageDisabled = false,
-  // }) {
-  //   Widget thumb = CachedNetworkImage(
-  //     imageUrl: image,
-  //     height: 100,
-  //     width: 100,
-  //     fit: BoxFit.cover,
-  //     placeholder: (context, url) => const SizedBox(
-  //       height: 50,
-  //       width: 50,
-  //       child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-  //     ),
-  //     errorWidget: (context, url, error) => const SizedBox(
-  //       height: 100,
-  //       width: 100,
-  //       child: Icon(Icons.broken_image),
-  //     ),
-  //   );
-  //
-  //   if (heroTag != null && heroTag.isNotEmpty) {
-  //     thumb = Hero(tag: heroTag, child: thumb);
-  //   }
-  //
-  //   return InkWell(
-  //     borderRadius: BorderRadius.circular(24),
-  //     onTap: onTap,
-  //     child: Padding(
-  //       padding: const EdgeInsets.symmetric(horizontal: 16),
-  //       child: Column(
-  //         children: [
-  //           Padding(
-  //             padding: const EdgeInsets.symmetric(vertical: 15.0),
-  //             child: Row(
-  //               children: [
-  //                 ClipRRect(
-  //                   clipBehavior: Clip.antiAlias,
-  //                   borderRadius: BorderRadius.circular(12),
-  //                   child: thumb,
-  //                 ),
-  //                 SizedBox(width: 12),
-  //                 Expanded(
-  //                   child: Column(
-  //                     crossAxisAlignment: CrossAxisAlignment.start,
-  //                     children: [
-  //                       if (Verify)
-  //                         Container(
-  //                           decoration: BoxDecoration(
-  //                             gradient: LinearGradient(
-  //                               colors: [
-  //                                 AppColor.blueGradient1,
-  //                                 AppColor.blueGradient2,
-  //                                 AppColor.blueGradient3,
-  //                               ],
-  //                               begin: Alignment.centerRight,
-  //                               end: Alignment.centerLeft,
-  //                             ),
-  //                             borderRadius: BorderRadius.circular(30),
-  //                           ),
-  //                           child: Padding(
-  //                             padding: const EdgeInsets.symmetric(
-  //                               horizontal: 10,
-  //                               vertical: 5,
-  //                             ),
-  //                             child: Row(
-  //                               mainAxisSize: MainAxisSize.min,
-  //                               children: [
-  //                                 Image.asset(AppImages.verifyTick, height: 14),
-  //                                 const SizedBox(width: 4),
-  //                                 Text(
-  //                                   'Trusted',
-  //                                   style: GoogleFont.Mulish(
-  //                                     fontWeight: FontWeight.w900,
-  //                                     fontSize: 10,
-  //                                     color: AppColor.white,
-  //                                   ),
-  //                                 ),
-  //                               ],
-  //                             ),
-  //                           ),
-  //                         ),
-  //                       SizedBox(height: 9),
-  //                       Text(
-  //                         companyName,
-  //                         maxLines: 1,
-  //                         overflow: TextOverflow.ellipsis,
-  //                         style: GoogleFont.Mulish(
-  //                           fontWeight: FontWeight.w800,
-  //                           fontSize: 16,
-  //                           color: AppColor.darkBlue,
-  //                         ),
-  //                       ),
-  //                       SizedBox(height: 6),
-  //                       Row(
-  //                         children: [
-  //                           Image.asset(
-  //                             AppImages.locationImage,
-  //                             height: 10,
-  //                             color: AppColor.lightGray2,
-  //                           ),
-  //                           SizedBox(width: 3),
-  //                           Flexible(
-  //                             child: Text(
-  //                               location,
-  //                               maxLines: 1,
-  //                               overflow: TextOverflow.ellipsis,
-  //                               style: GoogleFont.Mulish(
-  //                                 fontSize: 12,
-  //                                 color: AppColor.lightGray2,
-  //                               ),
-  //                             ),
-  //                           ),
-  //                           SizedBox(width: 10),
-  //                           Text(
-  //                             fieldName,
-  //                             style: GoogleFont.Mulish(
-  //                               fontWeight: FontWeight.bold,
-  //                               fontSize: 12,
-  //                               color: AppColor.lightGray3,
-  //                             ),
-  //                           ),
-  //                         ],
-  //                       ),
-  //                       SizedBox(height: 10),
-  //                       Row(
-  //                         children: [
-  //                           CommonContainer.greenStarRating(
-  //                             ratingStar: ratingStar,
-  //                             ratingCount: ratingCount,
-  //                           ),
-  //                           SizedBox(width: 10),
-  //                           Text(
-  //                             'Opens Upto ',
-  //                             style: GoogleFont.Mulish(
-  //                               fontSize: 9,
-  //                               color: AppColor.lightGray2,
-  //                             ),
-  //                           ),
-  //                           Text(
-  //                             time,
-  //                             style: GoogleFont.Mulish(
-  //                               fontSize: 9,
-  //                               color: AppColor.lightGray2,
-  //                               fontWeight: FontWeight.w800,
-  //                             ),
-  //                           ),
-  //                         ],
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //
-  //           // 🔹 CALL / MESSAGE / WHATSAPP / FIRE (with tooltip)
-  //           CommonContainer.callNowButton(
-  //             callImage: AppImages.callImage,
-  //             callIconSize: 16,
-  //             callText: 'Call Now',
-  //             MessageIcon: true,
-  //             whatsAppIcon: true,
-  //             FireIcon: true,
-  //             fireOnTap: fireOnTap, // can be null now
-  //             fireTooltip: fireTooltip, // 👈 pass tooltip here
-  //             whatsAppOnTap: whatsAppOnTap,
-  //             messageOnTap: messageOnTap,
-  //             callOnTap: callTap,
-  //             messageContainer: true,
-  //             messageLoading: isMessageLoading,
-  //             messageDisabled: messageDisabled,
-  //           ),
-  //           const SizedBox(height: 20),
-  //           if (horizontalDivider) CommonContainer.horizonalDivider(),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
+
 
   static serviceDetails({
     VoidCallback? onTap,

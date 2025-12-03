@@ -132,16 +132,16 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                         CommonContainer.leftSideArrow(
                           onTap: () => Navigator.pop(context),
                         ),
-                        const SizedBox(width: 15),
+                         SizedBox(width: 15),
                         Text(
-                          'Shops',
+                          'Products',
                           style: GoogleFont.Mulish(
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
                             color: AppColor.black,
                           ),
                         ),
-                        const SizedBox(width: 80),
+                         SizedBox(width: 50),
                         Expanded(
                           child: CurrentLocationWidget(
                             locationIcon: AppImages.locationImage,

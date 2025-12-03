@@ -41,7 +41,7 @@ class NoDataScreen extends StatelessWidget {
               CommonContainer.leftSideArrow(
                 onTap: onTopBackTap ?? () => Navigator.of(context).maybePop(),
               ),
-            SizedBox(height: 140),
+            SizedBox(height: 160),
 
             Image.asset(imagePath ?? AppImages.noDataGif),
 

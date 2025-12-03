@@ -319,7 +319,10 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       ),
                                     ),
                                     Text(
-                                      '5Kms',
+                                      shopsData.data?.distanceLabel
+                                              .toString() ??
+                                          '',
+
                                       style: GoogleFont.Mulish(
                                         fontWeight: FontWeight.w700,
                                         color: AppColor.lightGray3,
@@ -518,29 +521,80 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                             ),
                                             child: ClipRRect(
                                               borderRadius:
-                                                  BorderRadiusGeometry.circular(
-                                                    20,
-                                                  ),
+                                                  BorderRadius.circular(20),
                                               child: CachedNetworkImage(
-                                                imageUrl:
-                                                    data?.url?.toString() ?? '',
+                                                imageUrl: data?.url ?? '',
                                                 height: 250,
                                                 width: 310,
                                                 fit: BoxFit.cover,
-                                                placeholder: (context, url) =>
+                                                placeholder: (_, __) =>
                                                     Container(
                                                       height: 250,
                                                       width: 310,
                                                       color: Colors.grey
                                                           .withOpacity(0.2),
                                                     ),
-                                                errorWidget:
-                                                    (context, url, error) =>
-                                                        const Icon(
-                                                          Icons.broken_image,
-                                                        ),
+                                                errorWidget: (_, __, ___) =>
+                                                    Container(
+                                                      height: 250,
+                                                      width: 310,
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              20,
+                                                            ),
+                                                        color: Colors
+                                                            .grey
+                                                            .shade300,
+                                                      ),
+                                                      child:Icon(
+                                                        Icons.broken_image,
+                                                      ),
+                                                    ),
                                               ),
                                             ),
+
+                                            // ClipRRect(
+                                            //   borderRadius:
+                                            //       BorderRadiusGeometry.circular(
+                                            //         20,
+                                            //       ),
+                                            //   child: CachedNetworkImage(
+                                            //     imageUrl:
+                                            //         data?.url?.toString() ?? '',
+                                            //     height: 250,
+                                            //     width: 310,
+                                            //     fit: BoxFit.cover,
+                                            //     placeholder: (context, url) =>
+                                            //         Container(
+                                            //           height: 250,
+                                            //           width: 310,
+                                            //           color: Colors.grey
+                                            //               .withOpacity(0.2),
+                                            //         ),
+                                            //     errorWidget:
+                                            //         (
+                                            //           context,
+                                            //           url,
+                                            //           error,
+                                            //         ) => ClipRRect(
+                                            //           borderRadius:
+                                            //               BorderRadius.circular(
+                                            //                 16,
+                                            //               ),
+                                            //           child: Container(
+                                            //             height: 100,
+                                            //             width: 100,
+                                            //             color: Colors
+                                            //                 .grey
+                                            //                 .shade300, // background if you want
+                                            //             child: const Icon(
+                                            //               Icons.broken_image,
+                                            //             ),
+                                            //           ),
+                                            //         ),
+                                            //   ),
+                                            // ),
                                           ),
                                           if (index == 0)
                                             Positioned(
