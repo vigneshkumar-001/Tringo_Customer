@@ -154,9 +154,12 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-  Future<Either<Failure, HomeResponse>> getHomeDetails() async {
+  Future<Either<Failure, HomeResponse>> getHomeDetails({
+    required double lng,
+    required double lat,
+  }) async {
     try {
-      final url = ApiUrl.home;
+      final url = ApiUrl.home(lat: lat, lng: lng);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -217,10 +220,9 @@ class ApiDataSource extends BaseApiDataSource {
 
   Future<Either<Failure, ShopDetailsResponse>> getSpecificDetails({
     required String shopId,
-
   }) async {
     try {
-      final url = ApiUrl.shopDetails(shopId: shopId,);
+      final url = ApiUrl.shopDetails(shopId: shopId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -668,7 +670,7 @@ class ApiDataSource extends BaseApiDataSource {
       final payload = {
         'contact': "+91$contact",
         'simToken': simToken,
-        'purpose': 'owner',
+        'purpose': 'customer',
       };
 
       // Use your normal POST helper

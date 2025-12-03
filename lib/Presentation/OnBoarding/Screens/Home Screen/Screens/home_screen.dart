@@ -65,8 +65,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
 
     textController = TextEditingController();
-    Future.microtask(() {
-      ref.read(homeNotifierProvider.notifier).fetchHomeDetails();
+    Future.microtask(() async {
+      final loc = await _initLocationFlow();
+
+      ref
+          .read(homeNotifierProvider.notifier)
+          .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
     });
     _initLocationFlow();
     _listenServiceChanges();
@@ -124,8 +128,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   //     if (mounted) setState(() => _locBusy = false);
   //   }
   // }
+  Future<({double lat, double lng})> _initLocationFlow() async {
+    setState(() => _locBusy = true);
 
-  Future<void> _initLocationFlow() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        final enable = await _askToEnableLocationServices();
+        if (enable == true) {
+          await Geolocator.openLocationSettings();
+          await Future.delayed(const Duration(milliseconds: 600));
+          serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        }
+        if (!serviceEnabled) {
+          setState(() => currentAddress = "Location services disabled");
+          return (lat: 0.0, lng: 0.0);
+        }
+      }
+
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied) {
+        setState(() => currentAddress = "Location permission denied");
+        return (lat: 0.0, lng: 0.0);
+      }
+      if (perm == LocationPermission.deniedForever) {
+        await _askToOpenAppSettings();
+        setState(() => currentAddress = "Permission permanently denied");
+        return (lat: 0.0, lng: 0.0);
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      final address = await _reverseToNiceAddress(pos);
+      setState(() => currentAddress = address ?? "Unknown location");
+
+      return (lat: pos.latitude, lng: pos.longitude);
+    } catch (e) {
+      setState(() => currentAddress = "Unable to fetch location");
+      return (lat: 0.0, lng: 0.0);
+    } finally {
+      if (mounted) setState(() => _locBusy = false);
+    }
+  }
+
+  /* Future<void> _initLocationFlow() async {
     setState(() => _locBusy = true);
 
     try {
@@ -190,7 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } finally {
       if (mounted) setState(() => _locBusy = false);
     }
-  }
+  }*/
 
   Future<String?> _reverseToNiceAddress(Position pos) async {
     try {
@@ -412,7 +464,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: () async {
-              await ref.read(homeNotifierProvider.notifier).fetchHomeDetails();
+              final loc = await _initLocationFlow();
+              AppLogger.log.i(loc.lat);
+              AppLogger.log.i(loc.lng);
+              await ref
+                  .read(homeNotifierProvider.notifier)
+                  .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
             },
             child: SingleChildScrollView(
               controller: _homeScrollCtrl,
@@ -1153,8 +1210,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                                 .putEnquiry(
                                                                   context:
                                                                       context,
-                                                                  serviceId:
-                                                                      '',
+                                                                  serviceId: '',
                                                                   productId: '',
                                                                   message: '',
                                                                   shopId:
@@ -1169,7 +1225,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                               MaterialPageRoute(
                                                                 builder: (context) =>
                                                                     ServiceAndShopsDetails(
-                                                                      type: 'services',
+                                                                      type:
+                                                                          'services',
                                                                       shopId:
                                                                           services
                                                                               .id,
@@ -1204,9 +1261,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           ratingCount: services
                                                               .ratingCount
                                                               .toString(),
-                                                          time: services. closeTime.toString(),
-
-
+                                                          time: services
+                                                              .closeTime
+                                                              .toString(),
                                                         ),
                                                       ],
                                                     ),
@@ -1588,7 +1645,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   ratingCount: shops.ratingCount
                                                       .toString(),
                                                   time:
-                                                      shops.weeklyHours
+                                                      shops. closeTime
                                                           .toString() ??
                                                       '',
                                                 ),

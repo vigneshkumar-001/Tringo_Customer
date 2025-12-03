@@ -536,7 +536,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
 
                                     await notifier.verifyWhatsappNumber(
                                       contact: rawPhone,
-                                      purpose: 'owner',
+                                      purpose: 'customer',
                                     );
                                   },
                             text: 'Verify Now',

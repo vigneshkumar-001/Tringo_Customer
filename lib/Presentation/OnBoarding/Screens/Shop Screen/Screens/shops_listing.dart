@@ -132,7 +132,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                         CommonContainer.leftSideArrow(
                           onTap: () => Navigator.pop(context),
                         ),
-                         SizedBox(width: 15),
+                        SizedBox(width: 15),
                         Text(
                           'Products',
                           style: GoogleFont.Mulish(
@@ -141,7 +141,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                             color: AppColor.black,
                           ),
                         ),
-                         SizedBox(width: 50),
+                        SizedBox(width: 50),
                         Expanded(
                           child: CurrentLocationWidget(
                             locationIcon: AppImages.locationImage,
@@ -255,7 +255,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                             fieldName: data.distanceLabel ?? 'Nearby',
                             ratingStar: (data.rating ?? 0).toString(),
                             ratingCount: (data.ratingCount ?? 0).toString(),
-                            time: data.openLabel ?? 'Timing info',
+                            time: data.closeTime ?? 'Timing info',
                           );
 
                           // Wrap with Hero only if we have a valid tag

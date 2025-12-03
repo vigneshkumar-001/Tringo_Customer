@@ -231,7 +231,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                             fieldName: 'Company',
                             ratingStar: data.rating.toString(),
                             ratingCount: data.ratingCount.toString(),
-                            time: '9Pm',
+                            time: data.closeTime ,
                           );
                         },
                       ),

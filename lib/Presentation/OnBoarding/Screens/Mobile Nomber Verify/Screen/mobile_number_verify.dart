@@ -24,7 +24,7 @@ class MobileNumberVerify extends ConsumerStatefulWidget {
 }
 
 class _MobileNumberVerifyState extends ConsumerState<MobileNumberVerify> {
-  bool numberMatch = false;
+  bool numberMatch = false; // true => SIM in this device matches loginNumber
   bool loaded = false;
 
   List<SimCard> sims = [];
@@ -96,7 +96,7 @@ class _MobileNumberVerifyState extends ConsumerState<MobileNumberVerify> {
         return;
       }
 
-      //  We have permission → proceed with SIM reading
+      // ✅ We have permission → proceed with SIM reading
       final simCards = await MobileNumber.getSimCards;
       sims = simCards ?? [];
       matchedSlotIndex = null;
@@ -273,22 +273,11 @@ Slot Index      : $slot
     }
 
     final simResponse = state.simVerifyResponse;
-    if (simResponse != null) {
-      final data = simResponse.data;
-
-      // If SIM is verified
-      if (data.simVerified == true) {
-        if (data.isNewOwner == true) {
-          context.go(AppRoutes.privacyPolicyPath);
-        } else {
-          context.go(AppRoutes.homePath);
-        }
-      } else {
-        context.pushNamed(AppRoutes.otp, extra: widget.loginNumber);
-      }
-    }
-
-    else {
+    if (simResponse != null && simResponse.data.simVerified) {
+      // SIM verified successfully → go to Privacy Policy
+      context.go(AppRoutes.privacyPolicyPath);
+    } else {
+      // Backend says SIM not verified → fallback to OTP screen
       context.pushNamed(AppRoutes.otp, extra: widget.loginNumber);
     }
   }
