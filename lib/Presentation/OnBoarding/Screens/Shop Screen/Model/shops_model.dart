@@ -2,17 +2,15 @@ class ShopsResponse {
   final bool status;
   final List<Shop> data;
 
-  ShopsResponse({
-    required this.status,
-    required this.data,
-  });
+  ShopsResponse({required this.status, required this.data});
 
   factory ShopsResponse.fromJson(Map<String, dynamic> json) {
     return ShopsResponse(
       status: json['status'] ?? false,
-      data: (json['data'] as List<dynamic>?)
-          ?.map((e) => Shop.fromJson(e as Map<String, dynamic>))
-          .toList() ??
+      data:
+          (json['data'] as List<dynamic>?)
+              ?.map((e) => Shop.fromJson(e as Map<String, dynamic>))
+              .toList() ??
           [],
     );
   }
@@ -43,6 +41,7 @@ class Shop {
   final String? openLabel;
   final bool isOpen;
   final String? primaryImageUrl;
+  final List<ShopWeeklyHour> weeklyHours;
 
   Shop({
     required this.id,
@@ -64,6 +63,7 @@ class Shop {
     this.openLabel,
     required this.isOpen,
     this.primaryImageUrl,
+    this.weeklyHours = const [],
   });
 
   factory Shop.fromJson(Map<String, dynamic> json) {
@@ -91,6 +91,11 @@ class Shop {
       openLabel: json['openLabel'],
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
+      weeklyHours:
+          (json['weeklyHours'] as List<dynamic>?)
+              ?.map((e) => ShopWeeklyHour.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 
@@ -114,5 +119,51 @@ class Shop {
     'openLabel': openLabel,
     'isOpen': isOpen,
     'primaryImageUrl': primaryImageUrl,
+    'weeklyHours': weeklyHours.map((e) => e.toJson()).toList(),
   };
+}
+
+class ShopWeeklyHour {
+  final String? day;
+  final String? opensAt;
+  final String? closesAt;
+  final bool? closed;
+
+  const ShopWeeklyHour({this.day, this.opensAt, this.closesAt, this.closed});
+
+  factory ShopWeeklyHour.fromJson(Map<String, dynamic> json) {
+    return ShopWeeklyHour(
+      day: json['day'],
+      opensAt: json['opensAt'],
+      closesAt: json['closesAt'],
+      closed: _parseBool(json['closed']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'day': day,
+      'opensAt': opensAt,
+      'closesAt': closesAt,
+      'closed': closed,
+    };
+  }
+}
+
+bool? _parseBool(dynamic value) {
+  if (value == null) return null;
+  if (value is bool) return value;
+
+  if (value is num) {
+    if (value == 1) return true;
+    if (value == 0) return false;
+  }
+
+  if (value is String) {
+    final lower = value.toLowerCase().trim();
+    if (lower == 'true' || lower == 'yes' || lower == '1') return true;
+    if (lower == 'false' || lower == 'no' || lower == '0') return false;
+  }
+
+  return null;
 }

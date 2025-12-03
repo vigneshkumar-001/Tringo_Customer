@@ -127,7 +127,16 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                           Navigator.pop(context);
                         },
                       ),
-                      const Spacer(),
+                      SizedBox(width: 15),
+                      Text(
+                        'Services',
+                        style: GoogleFont.Mulish(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 24,
+                          color: AppColor.black,
+                        ),
+                      ),
+                      SizedBox(width: 50),
                       Expanded(
                         child: CurrentLocationWidget(
                           locationIcon: AppImages.locationImage,
@@ -153,21 +162,6 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                 ),
               ),
 
-              // Title
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: _fadeSlide(
-                  aTitle,
-                  Text(
-                    'Electricians Services',
-                    style: GoogleFont.Mulish(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 24,
-                      color: AppColor.black,
-                    ),
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 12),
 

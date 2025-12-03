@@ -81,6 +81,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  // Future<void> _initLocationFlow() async {
+  //   setState(() => _locBusy = true);
+  //
+  //   try {
+  //     // 1) Ensure service on
+  //     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //     if (!serviceEnabled) {
+  //       final enable = await _askToEnableLocationServices();
+  //       if (enable == true) {
+  //         await Geolocator.openLocationSettings();
+  //         await Future.delayed(const Duration(milliseconds: 600));
+  //         serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //       }
+  //       if (!serviceEnabled) {
+  //         setState(() {
+  //           currentAddress = "Location services disabled";
+  //           _locBusy = false;
+  //         });
+  //         return;
+  //       }
+  //     }
+  //
+  //     // 🔹 NO permission request/check here now – assume login screen already did it
+  //
+  //     // 2) Get position (if permission denied, this will throw and go to catch)
+  //     final pos = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high,
+  //       timeLimit: const Duration(seconds: 10),
+  //     );
+  //
+  //     // 3) Reverse-geocode
+  //     final address = await _reverseToNiceAddress(pos);
+  //     setState(() {
+  //       currentAddress = address ?? "Unknown location";
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       currentAddress = "Unable to fetch location";
+  //     });
+  //   } finally {
+  //     if (mounted) setState(() => _locBusy = false);
+  //   }
+  // }
+
   Future<void> _initLocationFlow() async {
     setState(() => _locBusy = true);
 
@@ -258,7 +302,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(homeNotifierProvider);
+    /* final state = ref.watch(homeNotifierProvider);
 
     if (state.isLoading) {
       return Scaffold(
@@ -295,6 +339,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedServiceSlug =
         selectedServiceCategory.slug; // "all", "shop-electronics", etc.
 
+    final filteredShops = selectedSlug == 'all'
+        ? trendingShops
+        : trendingShops.where((s) => s.category == selectedSlug).toList();
+
+    final filteredServiceShops = selectedServiceSlug == 'all'
+        ? servicesList
+        : servicesList.where((s) => s.category == selectedServiceSlug).toList();
+*/
+
+    final state = ref.watch(homeNotifierProvider);
+
+    if (state.isLoading) {
+      return Scaffold(
+        body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
+      );
+    }
+
+    final home = state.homeResponse;
+    if (home == null) {
+      return const Scaffold(
+        body: Center(
+          child: NoDataScreen(showBottomButton: false, showTopBackArrow: false),
+        ),
+      );
+    }
+
+    // Always treat them as non-null lists
+    final categories = home.data.shopCategories; // products
+    final serviceCategories = home.data.categories; // services
+    final trendingShops = home.data.trendingShops;
+    final servicesList = home.data.services;
+
+    // ---- SAFE INDEXING ----
+    final bool hasShopCategories = categories.isNotEmpty;
+    final bool hasServiceCategories = serviceCategories.isNotEmpty;
+
+    // Only compute safe indexes if list is not empty
+    final int? safeIndex = hasShopCategories
+        ? selectedIndex.clamp(0, categories.length - 1)
+        : null;
+
+    final int? safeServiceIndex = hasServiceCategories
+        ? selectedServiceIndex.clamp(0, serviceCategories.length - 1)
+        : null;
+
+    // ---- SELECTED ITEMS ----
+    final selectedCategory = safeIndex != null ? categories[safeIndex] : null;
+
+    final selectedServiceCategory = safeServiceIndex != null
+        ? serviceCategories[safeServiceIndex]
+        : null;
+
+    // ---- SLUGS (SAFE) ----
+    final selectedSlug = selectedCategory?.slug ?? 'all';
+    final selectedServiceSlug = selectedServiceCategory?.slug ?? 'all';
+
+    // ---- FILTERED LISTS ----
     final filteredShops = selectedSlug == 'all'
         ? trendingShops
         : trendingShops.where((s) => s.category == selectedSlug).toList();
@@ -731,137 +832,430 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           child: Column(
                             children: [
-                              CarouselSlider(
-                                options: CarouselOptions(
-                                  height: 131,
-                                  enlargeCenterPage: false,
-                                  enableInfiniteScroll: true,
-                                  autoPlay: true,
-                                  autoPlayInterval: Duration(seconds: 4),
-                                  viewportFraction: 0.9,
-                                  padEnds: true, // Still safe to keep off
+                              if (imageList.isNotEmpty)
+                                CarouselSlider(
+                                  options: CarouselOptions(
+                                    height: 131,
+                                    enlargeCenterPage: false,
+                                    enableInfiniteScroll: true,
+                                    autoPlay: true,
+                                    autoPlayInterval: Duration(seconds: 4),
+                                    viewportFraction: 0.9,
+                                    padEnds: true, // Still safe to keep off
+                                  ),
+                                  items: imageList.map((imagePath) {
+                                    return Builder(
+                                      builder: (BuildContext context) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: Image.asset(
+                                              imagePath,
+                                              width: double.infinity,
+                                              fit: BoxFit.fill,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }).toList(),
                                 ),
-                                items: imageList.map((imagePath) {
-                                  return Builder(
-                                    builder: (BuildContext context) {
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          child: Image.asset(
-                                            imagePath,
-                                            width: double.infinity,
-                                            fit: BoxFit.fill,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }).toList(),
-                              ),
                             ],
                           ),
                         ),
                         SizedBox(height: 57),
-
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColor.white2.withOpacity(0.5),
-                                AppColor.white2.withOpacity(0.5),
-                                AppColor.white2.withOpacity(0.9),
-                                AppColor.white2.withOpacity(0.5),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // HEADER (title + arrow + floating right icon box)
-                              Padding(
+                        filteredServiceShops.isEmpty
+                            ? Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 15,
-                                  vertical: 14,
+                                  vertical: 20,
                                 ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
+                                child: Center(
+                                  child: Text(
+                                    "No Services Available",
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColor.deepTeaBlue,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColor.white2.withOpacity(0.5),
+                                      AppColor.white2.withOpacity(0.5),
+                                      AppColor.white2.withOpacity(0.9),
+                                      AppColor.white2.withOpacity(0.5),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // row with title + arrow; give right padding so it doesn't hide under the floating box
+                                    // HEADER (title + arrow + floating right icon box)
                                     Padding(
-                                      padding: const EdgeInsets.only(
-                                        right: 120,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 15,
+                                        vertical: 14,
                                       ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
                                         children: [
-                                          Text(
-                                            'Services',
-                                            style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 22,
-                                              color: AppColor.darkBlue,
+                                          // row with title + arrow; give right padding so it doesn't hide under the floating box
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 120,
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  'Services',
+                                                  style: GoogleFont.Mulish(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 22,
+                                                    color: AppColor.darkBlue,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                CommonContainer.rightSideArrowButton(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            ButtomNavigatebar(
+                                                              initialIndex: 4,
+                                                            ),
+                                                        // ServiceListing(),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
-                                          CommonContainer.rightSideArrowButton(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ButtomNavigatebar(
-                                                        initialIndex: 4,
+
+                                          Positioned(
+                                            right: 0,
+                                            bottom: -38,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColor.iceBlue,
+                                                borderRadius:
+                                                    const BorderRadius.only(
+                                                      topLeft: Radius.circular(
+                                                        30,
                                                       ),
-                                                  // ServiceListing(),
+                                                      topRight: Radius.circular(
+                                                        30,
+                                                      ),
+                                                    ),
+                                                boxShadow: [
+                                                  // subtle lift for depth
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.05),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 28,
+                                                      vertical: 20,
+                                                    ),
+                                                child: Center(
+                                                  child: Image.asset(
+                                                    AppImages.servicesImage,
+                                                    height: 58,
+                                                    color: AppColor.deepTeaBlue,
+                                                  ),
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
                                     ),
 
-                                    Positioned(
-                                      right: 0,
-                                      bottom: -38,
-                                      child: Container(
+                                    SizedBox(height: 8),
+                                    if (serviceCategories.isEmpty)
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        child: Center(
+                                          child: Text('No service categories'),
+                                        ),
+                                      )
+                                    else
+                                      Container(
+                                        width: double.infinity,
                                         decoration: BoxDecoration(
                                           color: AppColor.iceBlue,
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(30),
-                                            topRight: Radius.circular(30),
-                                          ),
-                                          boxShadow: [
-                                            // subtle lift for depth
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.05,
-                                              ),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
                                         ),
-                                        child: Padding(
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          physics: BouncingScrollPhysics(),
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 28,
+                                            horizontal: 15,
                                             vertical: 20,
                                           ),
-                                          child: Center(
-                                            child: Image.asset(
-                                              AppImages.servicesImage,
-                                              height: 58,
-                                              color: AppColor.deepTeaBlue,
+                                          child: Row(
+                                            children: List.generate(
+                                              serviceCategories.length,
+                                              (index) {
+                                                final isSelected =
+                                                    selectedServiceIndex ==
+                                                    index;
+                                                final category =
+                                                    serviceCategories[index];
+
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        right: 8,
+                                                      ),
+                                                  child: CommonContainer.categoryChip(
+                                                    ContainerColor: isSelected
+                                                        ? AppColor.iceBlue
+                                                        : Colors.transparent,
+                                                    BorderColor: isSelected
+                                                        ? AppColor.deepTeaBlue
+                                                        : AppColor.frostBlue,
+                                                    TextColor: isSelected
+                                                        ? AppColor.darkBlue
+                                                        : AppColor.deepTeaBlue,
+                                                    category.name,
+                                                    isSelected: isSelected,
+                                                    onTap: () {
+                                                      setState(
+                                                        () =>
+                                                            selectedServiceIndex =
+                                                                index,
+                                                      );
+                                                    },
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
+                                        ),
+                                      ),
+                                    // Wrap the whole section with the gradient, not each item
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColor.iceBlue,
+                                            AppColor.iceBlue,
+                                            AppColor.iceBlue,
+                                            AppColor.iceBlue,
+                                            AppColor.iceBlue,
+                                            AppColor.iceBlue.withOpacity(0.99),
+                                            AppColor.iceBlue.withOpacity(0.50),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 15,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColor.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.04),
+                                                    blurRadius: 10,
+                                                    offset: Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: ListView.builder(
+                                                shrinkWrap: true,
+                                                physics:
+                                                    const NeverScrollableScrollPhysics(),
+                                                itemCount:
+                                                    filteredServiceShops.length,
+                                                itemBuilder: (context, index) {
+                                                  final services =
+                                                      filteredServiceShops[index];
+                                                  final isThisCardLoading =
+                                                      state.isEnquiryLoading &&
+                                                      state.activeEnquiryId ==
+                                                          services.id;
+                                                  final hasMessaged =
+                                                      _disabledMessageIds
+                                                          .contains(
+                                                            services.id,
+                                                          );
+                                                  return Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          bottom: 20,
+                                                        ),
+                                                    child: Column(
+                                                      children: [
+                                                        CommonContainer.servicesContainer(
+                                                          callTap: () async {
+                                                            await MapUrls.openDialer(
+                                                              context,
+                                                              services
+                                                                  .primaryPhone,
+                                                            );
+                                                          },
+                                                          horizontalDivider:
+                                                              true,
+                                                          fireOnTap: () {},
+                                                          isMessageLoading:
+                                                              isThisCardLoading,
+                                                          messageDisabled:
+                                                              hasMessaged,
+                                                          messageOnTap: () {
+                                                            if (hasMessaged ||
+                                                                isThisCardLoading)
+                                                              return;
+
+                                                            // lock this service message button
+                                                            setState(() {
+                                                              _disabledMessageIds
+                                                                  .add(
+                                                                    services.id,
+                                                                  );
+                                                            });
+
+                                                            ref
+                                                                .read(
+                                                                  homeNotifierProvider
+                                                                      .notifier,
+                                                                )
+                                                                .putEnquiry(
+                                                                  context:
+                                                                      context,
+                                                                  serviceId:
+                                                                      services
+                                                                          .id,
+                                                                  productId: '',
+                                                                  message: '',
+                                                                  shopId:
+                                                                      services
+                                                                          .id,
+                                                                );
+                                                          },
+
+                                                          onTap: () {
+                                                            Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                builder: (context) =>
+                                                                    ServiceAndShopsDetails(
+                                                                      shopId:
+                                                                          services
+                                                                              .id,
+                                                                      initialIndex:
+                                                                          3,
+                                                                    ),
+                                                              ),
+                                                            );
+                                                          },
+                                                          whatsAppOnTap: () {
+                                                            MapUrls.openWhatsapp(
+                                                              message: 'hi',
+                                                              context: context,
+                                                              phone: services
+                                                                  .primaryPhone,
+                                                            );
+                                                          },
+                                                          Verify: services
+                                                              .isTrusted,
+                                                          image: services
+                                                              .primaryImageUrl
+                                                              .toString(),
+                                                          companyName:
+                                                              '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
+                                                          location:
+                                                              '${services.city},${services.state},${services.country} ',
+                                                          fieldName: services
+                                                              .ownershipTypeLabel,
+                                                          ratingStar: services
+                                                              .rating
+                                                              .toString(),
+                                                          ratingCount: services
+                                                              .ratingCount
+                                                              .toString(),
+                                                          time: services
+                                                              .weeklyHours
+                                                              .toString(),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+
+                                            SizedBox(height: 20),
+
+                                            filteredServiceShops.isEmpty
+                                                ? SizedBox.shrink()
+                                                : Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Text(
+                                                        'View All Services',
+                                                        style:
+                                                            GoogleFont.Mulish(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14,
+                                                              color: AppColor
+                                                                  .darkBlue,
+                                                            ),
+                                                      ),
+                                                      SizedBox(width: 12),
+                                                      CommonContainer.rightSideArrowButton(
+                                                        onTap: () {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  ButtomNavigatebar(
+                                                                    initialIndex:
+                                                                        4,
+                                                                  ),
+                                                              // ServiceListing(),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
+                                            SizedBox(height: 30),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -869,360 +1263,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ),
 
-                              SizedBox(height: 8),
-
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: AppColor.iceBlue,
+                        filteredShops.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 20,
                                 ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 15,
-                                    vertical: 20,
-                                  ),
-                                  child: Row(
-                                    children: List.generate(
-                                      home.data.categories.length,
-                                      (index) {
-                                        final isSelected =
-                                            selectedServiceIndex == index;
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          child: CommonContainer.categoryChip(
-                                            ContainerColor: isSelected
-                                                ? AppColor.iceBlue
-                                                : Colors.transparent,
-                                            BorderColor: isSelected
-                                                ? AppColor.deepTeaBlue
-                                                : AppColor.frostBlue,
-                                            TextColor: isSelected
-                                                ? AppColor.darkBlue
-                                                : AppColor.deepTeaBlue,
-                                            home.data.categories[index].name,
-                                            isSelected: isSelected,
-                                            onTap: () {
-                                              setState(
-                                                () => selectedServiceIndex =
-                                                    index,
-                                              );
-                                            },
-                                          ),
-                                        );
-                                      },
+                                child: Center(
+                                  child: Text(
+                                    "No Products Available",
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColor.deepTeaBlue,
                                     ),
                                   ),
                                 ),
-                              ),
-                              // Wrap the whole section with the gradient, not each item
-                              Container(
+                              )
+                            : Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      AppColor.iceBlue,
-                                      AppColor.iceBlue,
-                                      AppColor.iceBlue,
-                                      AppColor.iceBlue,
-                                      AppColor.iceBlue,
-                                      AppColor.iceBlue.withOpacity(0.99),
-                                      AppColor.iceBlue.withOpacity(0.50),
+                                      AppColor.white3,
+                                      AppColor.white3,
+                                      AppColor.white3,
+                                      AppColor.white.withOpacity(0.2),
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   ),
                                 ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 15,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: AppColor.white,
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.04,
-                                              ),
-                                              blurRadius: 10,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: ListView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          itemCount:
-                                              filteredServiceShops.length,
-                                          itemBuilder: (context, index) {
-                                            final services =
-                                                filteredServiceShops[index];
-                                            final isThisCardLoading =
-                                                state.isEnquiryLoading &&
-                                                state.activeEnquiryId ==
-                                                    services.id;
-                                            final hasMessaged =
-                                                _disabledMessageIds.contains(
-                                                  services.id,
-                                                );
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 20,
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  CommonContainer.servicesContainer(
-                                                    callTap: () async {
-                                                      await MapUrls.openDialer(
-                                                        context,
-                                                        services.primaryPhone,
-                                                      );
-                                                    },
-                                                    horizontalDivider: true,
-                                                    fireOnTap: () {},
-                                                    isMessageLoading:
-                                                        isThisCardLoading,
-                                                    messageDisabled:
-                                                        hasMessaged,
-                                                    messageOnTap: () {
-                                                      if (hasMessaged ||
-                                                          isThisCardLoading)
-                                                        return;
-
-                                                      // lock this service message button
-                                                      setState(() {
-                                                        _disabledMessageIds.add(
-                                                          services.id,
-                                                        );
-                                                      });
-
-                                                      ref
-                                                          .read(
-                                                            homeNotifierProvider
-                                                                .notifier,
-                                                          )
-                                                          .putEnquiry(
-                                                            context: context,
-                                                            serviceId:
-                                                                services.id,
-                                                            productId: '',
-                                                            message: '',
-                                                            shopId: services.id,
-                                                          );
-                                                    },
-
-                                                    onTap: () {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              ServiceAndShopsDetails(
-                                                                shopId:
-                                                                    services.id,
-                                                                initialIndex: 3,
-                                                              ),
-                                                        ),
-                                                      );
-                                                    },
-                                                    whatsAppOnTap: () {
-                                                      MapUrls.openWhatsapp(
-                                                        message: 'hi',
-                                                        context: context,
-                                                        phone: services
-                                                            .primaryPhone,
-                                                      );
-                                                    },
-                                                    Verify: services.isTrusted,
-                                                    image: services
-                                                        .primaryImageUrl
-                                                        .toString(),
-                                                    companyName:
-                                                        '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
-                                                    location:
-                                                        '${services.city},${services.state},${services.country} ',
-                                                    fieldName: services
-                                                        .ownershipTypeLabel,
-                                                    ratingStar: services.rating
-                                                        .toString(),
-                                                    ratingCount: services
-                                                        .ratingCount
-                                                        .toString(),
-                                                    time: '9Pm',
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-
-                                        // ListView.builder(
-                                        //   shrinkWrap: true,
-                                        //   physics:
-                                        //       const NeverScrollableScrollPhysics(),
-                                        //   itemCount:
-                                        //       filteredServiceShops.length,
-                                        //   itemBuilder: (context, index) {
-                                        //     final services =
-                                        //         filteredServiceShops[index];
-                                        //     final isThisCardLoading =
-                                        //         state.isEnquiryLoading &&
-                                        //         state.activeEnquiryId ==
-                                        //             services.id;
-                                        //
-                                        //     return Padding(
-                                        //       padding: const EdgeInsets.only(
-                                        //         bottom: 20,
-                                        //       ),
-                                        //       child: Column(
-                                        //         children: [
-                                        //           CommonContainer.servicesContainer(
-                                        //             callTap: () async {
-                                        //               await MapUrls.openDialer(
-                                        //                 context,
-                                        //                 services.primaryPhone,
-                                        //               );
-                                        //             },
-                                        //             horizontalDivider: true,
-                                        //             fireOnTap: () {},
-                                        //
-                                        //             messageOnTap: () {
-                                        //
-                                        //               ref
-                                        //                   .read(
-                                        //                     homeNotifierProvider
-                                        //                         .notifier,
-                                        //                   )
-                                        //                   .putEnquiry(
-                                        //                     context: context,
-                                        //                     serviceId:
-                                        //                         services.id,
-                                        //                     productId: '',
-                                        //                     message: '',
-                                        //                     shopId: services.id,
-                                        //                   );
-                                        //             },
-                                        //
-                                        //             isMessageLoading:
-                                        //                 isThisCardLoading,
-                                        //
-                                        //             onTap: () {
-                                        //               Navigator.push(
-                                        //                 context,
-                                        //                 MaterialPageRoute(
-                                        //                   builder: (context) =>
-                                        //                       ServiceAndShopsDetails(
-                                        //                         shopId:
-                                        //                             services.id,
-                                        //                         initialIndex: 3,
-                                        //                       ),
-                                        //                 ),
-                                        //               );
-                                        //             },
-                                        //             whatsAppOnTap: () {
-                                        //               MapUrls.openWhatsapp(
-                                        //                 message: 'hi',
-                                        //                 context: context,
-                                        //                 phone: services
-                                        //                     .primaryPhone,
-                                        //               );
-                                        //             },
-                                        //             Verify: services.isTrusted,
-                                        //             image: services
-                                        //                 .primaryImageUrl
-                                        //                 .toString(),
-                                        //             companyName:
-                                        //                 '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
-                                        //             location:
-                                        //                 '${services.city},${services.state},${services.country} ',
-                                        //             fieldName: services
-                                        //                 .ownershipTypeLabel,
-                                        //             ratingStar: services.rating
-                                        //                 .toString(),
-                                        //             ratingCount: services
-                                        //                 .ratingCount
-                                        //                 .toString(),
-                                        //             time: '9Pm',
-                                        //           ),
-                                        //           // SizedBox(height: 6),
-                                        //         ],
-                                        //       ),
-                                        //     );
-                                        //   },
-                                        // ),
+                                child: Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
                                       ),
-
-                                      SizedBox(height: 20),
-
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'View All Services',
-                                            style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                              color: AppColor.darkBlue,
-                                            ),
-                                          ),
-                                          SizedBox(width: 12),
-                                          CommonContainer.rightSideArrowButton(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ButtomNavigatebar(
-                                                        initialIndex: 4,
-                                                      ),
-                                                  // ServiceListing(),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 30),
-                                    ],
-                                  ),
+                                      child: Image.asset(AppImages.addImage),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColor.white3,
-                                AppColor.white3,
-                                AppColor.white3,
-                                AppColor.white.withOpacity(0.2),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                ),
-                                child: Image.asset(AppImages.addImage),
-                              ),
-                            ],
-                          ),
-                        ),
                         SizedBox(height: 57),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1315,52 +1395,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             SizedBox(height: 8),
 
                             // CATEGORY CHIPS
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColor.lowLightGreen,
-                              ),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 15,
-                                  vertical: 20,
+                            if (categories.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Center(
+                                  child: Text('No product categories'),
                                 ),
-                                child: Row(
-                                  children: List.generate(
-                                    home.data.shopCategories.length,
-                                    (index) {
-                                      final isSelected = selectedIndex == index;
-                                      final category =
-                                          home.data.shopCategories[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
-                                        ),
-                                        child: CommonContainer.categoryChip(
-                                          ContainerColor: isSelected
-                                              ? AppColor.lowLightGreen
-                                              : Colors.transparent,
-                                          BorderColor: isSelected
-                                              ? AppColor.lightGreen
-                                              : AppColor.lowLightGreen2,
-                                          TextColor: isSelected
-                                              ? AppColor.lightGreen
-                                              : AppColor.lowLightGreen3,
-                                          category.name,
-                                          isSelected: isSelected,
-                                          onTap: () {
-                                            setState(
-                                              () => selectedIndex = index,
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
+                              )
+                            else
+                              Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: AppColor.lowLightGreen,
+                                ),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                    vertical: 20,
+                                  ),
+                                  child: Row(
+                                    children: List.generate(
+                                      home.data.shopCategories.length,
+                                      (index) {
+                                        final isSelected =
+                                            selectedIndex == index;
+                                        final category =
+                                            home.data.shopCategories[index];
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: CommonContainer.categoryChip(
+                                            ContainerColor: isSelected
+                                                ? AppColor.lowLightGreen
+                                                : Colors.transparent,
+                                            BorderColor: isSelected
+                                                ? AppColor.lightGreen
+                                                : AppColor.lowLightGreen2,
+                                            TextColor: isSelected
+                                                ? AppColor.lightGreen
+                                                : AppColor.lowLightGreen3,
+                                            category.name,
+                                            isSelected: isSelected,
+                                            onTap: () {
+                                              setState(
+                                                () => selectedIndex = index,
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
 
                             Container(
                               decoration: BoxDecoration(
@@ -1403,8 +1493,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                       child: ListView.builder(
                                         shrinkWrap: true,
-                                        physics:
-                                              NeverScrollableScrollPhysics(),
+                                        physics: NeverScrollableScrollPhysics(),
                                         itemCount: filteredShops.length,
                                         itemBuilder: (context, index) {
                                           final shops = filteredShops[index];
@@ -1492,110 +1581,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       shops.englishName,
                                                   location:
                                                       '${shops.city}, ${shops.state}, ${shops.country}',
-                                                  fieldName: shops.distanceKm
+                                                  fieldName: shops.distanceLabel
                                                       .toString(),
                                                   ratingStar: shops.rating
                                                       .toString(),
                                                   ratingCount: shops.ratingCount
                                                       .toString(),
-                                                  time: '9Pm',
+                                                  time:
+                                                      shops.weeklyHours
+                                                          .toString() ??
+                                                      '',
                                                 ),
-                                                const SizedBox(height: 6),
+                                                SizedBox(height: 6),
                                               ],
                                             ),
                                           );
                                         },
                                       ),
-
-                                      // ListView.builder(
-                                      //   shrinkWrap: true,
-                                      //   physics: NeverScrollableScrollPhysics(),
-                                      //   itemCount: filteredShops.length,
-                                      //   itemBuilder: (context, index) {
-                                      //     final shops = filteredShops[index];
-                                      //     final isThisCardLoading =
-                                      //         state.isEnquiryLoading &&
-                                      //         state.activeEnquiryId == shops.id;
-                                      //     return Padding(
-                                      //       padding: const EdgeInsets.symmetric(
-                                      //         vertical: 5,
-                                      //       ),
-                                      //       child: Column(
-                                      //         children: [
-                                      //           CommonContainer.servicesContainer(
-                                      //             whatsAppOnTap: () {
-                                      //               MapUrls.openWhatsapp(
-                                      //                 message: 'hi',
-                                      //                 context: context,
-                                      //                 phone: shops.primaryPhone,
-                                      //               );
-                                      //             },
-                                      //             fireTooltip: 'App Offer 5%',
-                                      //
-                                      //             isMessageLoading:
-                                      //                 isThisCardLoading,
-                                      //             messageOnTap: () {
-                                      //               ref
-                                      //                   .read(
-                                      //                     homeNotifierProvider
-                                      //                         .notifier,
-                                      //                   )
-                                      //                   .putEnquiry(
-                                      //                     context: context,
-                                      //                     serviceId: '',
-                                      //                     productId: '',
-                                      //                     message: '',
-                                      //                     shopId: shops.id,
-                                      //                   );
-                                      //             },
-                                      //             callTap: () async {
-                                      //               await MapUrls.openDialer(
-                                      //                 context,
-                                      //                 shops.primaryPhone,
-                                      //               );
-                                      //             },
-                                      //
-                                      //             horizontalDivider: true,
-                                      //             heroTag: shopHeroTag(
-                                      //               0,
-                                      //               'Sri Krishna Sweets Private Limited',
-                                      //               section: 'shops-list',
-                                      //             ),
-                                      //             onTap: () {
-                                      //               Navigator.push(
-                                      //                 context,
-                                      //                 MaterialPageRoute(
-                                      //                   builder: (context) =>
-                                      //                       ServiceAndShopsDetails(
-                                      //                         shopId: shops.id,
-                                      //                         initialIndex: 4,
-                                      //                       ),
-                                      //                 ),
-                                      //               );
-                                      //             },
-                                      //             Verify: shops.isTrusted,
-                                      //             image: shops.primaryImageUrl
-                                      //                 .toString(),
-                                      //             companyName:
-                                      //                 shops.englishName,
-                                      //             location:
-                                      //                 '${shops.city}, ${shops.state}, ${shops.country}',
-                                      //             fieldName:
-                                      //                 shops.distanceKm
-                                      //                     .toString() ??
-                                      //                 '',
-                                      //             ratingStar: shops.rating
-                                      //                 .toString(),
-                                      //             ratingCount: shops.ratingCount
-                                      //                 .toString(),
-                                      //             time: '9Pm',
-                                      //           ),
-                                      //           SizedBox(height: 6),
-                                      //         ],
-                                      //       ),
-                                      //     );
-                                      //   },
-                                      // ),
                                     ),
 
                                     SizedBox(height: 25),
