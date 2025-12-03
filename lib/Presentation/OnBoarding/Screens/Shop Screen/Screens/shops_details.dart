@@ -21,7 +21,13 @@ class ShopsDetails extends ConsumerStatefulWidget {
   final String? image; // optional; falls back to AppImages.imageContainer1
   final String? shopId;
   final String? page;
-  const ShopsDetails( {super.key, this.heroTag, this.image, this.shopId,this.page,});
+  const ShopsDetails({
+    super.key,
+    this.heroTag,
+    this.image,
+    this.shopId,
+    this.page,
+  });
 
   @override
   ConsumerState<ShopsDetails> createState() => _ShopsDetailsState();
@@ -73,7 +79,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(shopsNotifierProvider.notifier)
-          .showSpecificShopDetails(shopId: widget.shopId ?? '', );
+          .showSpecificShopDetails(shopId: widget.shopId ?? '');
     });
 
     final curve = CurvedAnimation(
@@ -958,12 +964,11 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                 ?.englishName
                                                 .toString(),
                                             isTrusted:
-                                            shopsData.data?.isTrusted,
+                                                shopsData.data?.isTrusted,
                                             shopImageUrl:
-                                            shopsData.data?.media?[0].url,
+                                                shopsData.data?.media?[0].url,
                                             initialIndex: 3,
                                             shopId: widget.shopId,
-
                                           ),
                                           // ShopsProductList(),
                                         ),
@@ -1100,9 +1105,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       ratingCount:
                                           data?.ratingCount.toString() ?? '',
                                       offAmound:
-                                          '₹${data?.price.toString() ?? ''}',
-                                      oldAmound:
                                           '₹${data?.offerPrice.toString() ?? ''}',
+                                      oldAmound:
+                                          '₹${data?.price.toString() ?? ''}',
                                       km: '',
                                       location: '',
                                       Verify: false,
