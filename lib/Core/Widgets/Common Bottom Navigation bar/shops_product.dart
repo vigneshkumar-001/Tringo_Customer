@@ -21,6 +21,7 @@ class ShopsProduct extends StatefulWidget {
   final String? shopImageUrl;
   final String? category;
   final String? englishName;
+  final String? page;
   final bool? isTrusted;
   const ShopsProduct({
     super.key,
@@ -29,6 +30,7 @@ class ShopsProduct extends StatefulWidget {
     this.shopImageUrl,
     this.category,
     this.englishName,
+    this.page,
     this.isTrusted,
   });
 
@@ -54,13 +56,18 @@ class _ShopsProductState extends State<ShopsProduct> {
       HomeScreen(), // 0
       SearchScreen(), // 1
       ShopsProductList(
+
         shopId: widget.shopId,
         shopImgUrl: widget.shopImageUrl,
         isTrusted: widget.isTrusted,
         englishName: widget.englishName,
         category: widget.category,
       ), // 2
-      ServiceSingleCompanyList(), // 3
+      ServiceSingleCompanyList(  shopId: widget.shopId,
+        shopImgUrl: widget.shopImageUrl,
+        isTrusted: widget.isTrusted,
+        englishName: widget.englishName,
+        category: widget.category,), // 3
     ];
   }
 

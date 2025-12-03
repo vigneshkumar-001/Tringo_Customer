@@ -235,6 +235,7 @@ class ListingItem {
   final bool isOpen;
   final String? primaryImageUrl;
   final String ownershipType;
+  final String? closeTime;
   final List<ShopWeeklyHour> weeklyHours;
 
   const ListingItem({
@@ -257,6 +258,7 @@ class ListingItem {
     required this.openLabel,
     required this.isOpen,
     required this.primaryImageUrl,
+      this.closeTime,
     required this.ownershipType,
     this.weeklyHours = const [],
   });
@@ -283,10 +285,11 @@ class ListingItem {
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
       ownershipType: json['ownershipType'] as String? ?? '',
+      closeTime: json['closeTime'] as String? ?? '',
       weeklyHours:
-          (json['weeklyHours'] as List<dynamic>?)
-              ?.map((e) => ShopWeeklyHour.fromJson(e as Map<String, dynamic>))
-              .toList() ??
+      (json['weeklyHours'] as List<dynamic>?)
+          ?.map((e) => ShopWeeklyHour.fromJson(e as Map<String, dynamic>))
+          .toList() ??
           const [],
     );
   }
@@ -312,6 +315,7 @@ class ListingItem {
       'openLabel': openLabel,
       'isOpen': isOpen,
       'primaryImageUrl': primaryImageUrl,
+      'closeTime': closeTime,
       'ownershipType': ownershipType,
       'weeklyHours': weeklyHours.map((e) => e.toJson()).toList(),
     };
@@ -322,6 +326,10 @@ class ListingItem {
     if (ownershipType == 'INDIVIDUAL') return 'Individual';
     return ownershipType;
   }
+
+  /// Label for UI: uses today's weeklyHours + open state
+  /// Examples: "Closes at 9:30 PM", "Closed today", "Open", "Closed"
+
 }
 
 class ShopWeeklyHour {
@@ -351,7 +359,7 @@ class ShopWeeklyHour {
   }
 }
 
-/// Helper for dynamic → bool
+
 bool? _parseBool(dynamic value) {
   if (value == null) return null;
   if (value is bool) return value;
@@ -369,3 +377,5 @@ bool? _parseBool(dynamic value) {
 
   return null;
 }
+
+
