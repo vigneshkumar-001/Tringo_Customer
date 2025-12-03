@@ -123,7 +123,7 @@ class LoginNotifier extends Notifier<LoginState> {
     required String contact,
     required String purpose,
   }) async {
-    state = const LoginState(isLoading: true);
+    state = LoginState(isLoading: true); // start loader
 
     try {
       final result = await api.whatsAppNumberVerify(
@@ -132,10 +132,12 @@ class LoginNotifier extends Notifier<LoginState> {
       );
 
       result.fold(
-        (Failure failure) {
+            (failure) {
+          // API failed
           state = LoginState(isLoading: false, error: failure.message);
         },
-        (WhatsappResponse response) {
+            (response) {
+          // API success
           state = LoginState(isLoading: false, whatsappResponse: response);
         },
       );

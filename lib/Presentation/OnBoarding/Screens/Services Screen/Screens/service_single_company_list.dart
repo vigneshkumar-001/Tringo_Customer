@@ -65,6 +65,11 @@ class _ServiceSingleCompanyListState
       reverseDuration: const Duration(milliseconds: 1000),
     );
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+      ref.watch(shopServicesProvider(widget.shopId ?? ''));
+    });
+
     final curve = CurvedAnimation(
       parent: _ac,
       curve: Curves.easeOutCubic,
@@ -162,7 +167,7 @@ class _ServiceSingleCompanyListState
 
   @override
   Widget build(BuildContext context) {
-    // 🔹 Watch the per-shop services future
+
     final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
 
     return Scaffold(

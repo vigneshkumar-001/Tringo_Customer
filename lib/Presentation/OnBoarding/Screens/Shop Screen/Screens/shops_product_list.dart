@@ -435,7 +435,6 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                           ),
                         ),
 
-
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),

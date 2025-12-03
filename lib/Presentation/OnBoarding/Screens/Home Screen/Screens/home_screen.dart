@@ -841,7 +841,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     autoPlay: true,
                                     autoPlayInterval: Duration(seconds: 4),
                                     viewportFraction: 0.9,
-                                    padEnds: true, // Still safe to keep off
+                                    padEnds: true,
                                   ),
                                   items: imageList.map((imagePath) {
                                     return Builder(
@@ -1154,8 +1154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                                   context:
                                                                       context,
                                                                   serviceId:
-                                                                      services
-                                                                          .id,
+                                                                      '',
                                                                   productId: '',
                                                                   message: '',
                                                                   shopId:
@@ -1170,6 +1169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                               MaterialPageRoute(
                                                                 builder: (context) =>
                                                                     ServiceAndShopsDetails(
+                                                                      type: 'services',
                                                                       shopId:
                                                                           services
                                                                               .id,
@@ -1204,9 +1204,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           ratingCount: services
                                                               .ratingCount
                                                               .toString(),
-                                                          time: services
-                                                              .weeklyHours
-                                                              .toString(),
+                                                          time: services. closeTime.toString(),
+
+
                                                         ),
                                                       ],
                                                     ),

@@ -584,7 +584,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                           ),
                           SizedBox(width: 10),
                           Text(
-                            'Services in Offer ',
+                            'Services in Offers',
                             style: GoogleFont.Mulish(
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
