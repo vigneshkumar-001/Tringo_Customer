@@ -548,7 +548,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                             .grey
                                                             .shade300,
                                                       ),
-                                                      child:Icon(
+                                                      child: Icon(
                                                         Icons.broken_image,
                                                       ),
                                                     ),
@@ -1260,7 +1260,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                   //   CommonContainer.horizonalDivider(),
                   // ),
                   // SizedBox(height: 45),
-                  Padding(
+                  /*    Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1333,7 +1333,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                         SizedBox(height: 78),
                       ],
                     ),
-                  ),
+                  ),*/
                 ],
               ),
             ],
