@@ -826,80 +826,80 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                     CommonContainer.horizonalDivider(),
                   ),*/
                   SizedBox(height: 45),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _staggerFromTop(
-                          aReviewText,
-                          Row(
-                            children: [
-                              Image.asset(
-                                AppImages.reviewImage,
-                                height: 27.08,
-                                width: 26,
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                'Reviews',
-                                style: GoogleFont.Mulish(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColor.darkBlue,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: 21),
-                        _staggerFromTop(
-                          aRating,
-                          Row(
-                            children: [
-                              Text(
-                                '4.5',
-                                style: GoogleFont.Mulish(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 33,
-                                  color: AppColor.darkBlue,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Image.asset(
-                                AppImages.starImage,
-                                height: 30,
-                                color: AppColor.green,
-                              ),
-                            ],
-                          ),
-                        ),
-                        _staggerFromTop(
-                          aTotalReviewText,
-                          Text(
-                            'Based on 58 reviews',
-                            style: GoogleFont.Mulish(
-                              color: AppColor.lightGray3,
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 20),
-                        _staggerFromTop(
-                          aReviewBox,
-                          CommonContainer.reviewBox(),
-                        ),
-
-                        SizedBox(height: 17),
-                        _staggerFromTop(
-                          aReviewBox,
-                          CommonContainer.reviewBox(),
-                        ),
-                        SizedBox(height: 78),
-                      ],
-                    ),
-                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 15),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       _staggerFromTop(
+                  //         aReviewText,
+                  //         Row(
+                  //           children: [
+                  //             Image.asset(
+                  //               AppImages.reviewImage,
+                  //               height: 27.08,
+                  //               width: 26,
+                  //             ),
+                  //             SizedBox(width: 10),
+                  //             Text(
+                  //               'Reviews',
+                  //               style: GoogleFont.Mulish(
+                  //                 fontSize: 18,
+                  //                 fontWeight: FontWeight.bold,
+                  //                 color: AppColor.darkBlue,
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //
+                  //       SizedBox(height: 21),
+                  //       _staggerFromTop(
+                  //         aRating,
+                  //         Row(
+                  //           children: [
+                  //             Text(
+                  //               '4.5',
+                  //               style: GoogleFont.Mulish(
+                  //                 fontWeight: FontWeight.bold,
+                  //                 fontSize: 33,
+                  //                 color: AppColor.darkBlue,
+                  //               ),
+                  //             ),
+                  //             SizedBox(width: 10),
+                  //             Image.asset(
+                  //               AppImages.starImage,
+                  //               height: 30,
+                  //               color: AppColor.green,
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //       _staggerFromTop(
+                  //         aTotalReviewText,
+                  //         Text(
+                  //           'Based on 58 reviews',
+                  //           style: GoogleFont.Mulish(
+                  //             color: AppColor.lightGray3,
+                  //           ),
+                  //         ),
+                  //       ),
+                  //
+                  //       SizedBox(height: 20),
+                  //       _staggerFromTop(
+                  //         aReviewBox,
+                  //         CommonContainer.reviewBox(),
+                  //       ),
+                  //
+                  //       SizedBox(height: 17),
+                  //       _staggerFromTop(
+                  //         aReviewBox,
+                  //         CommonContainer.reviewBox(),
+                  //       ),
+                  //       SizedBox(height: 78),
+                  //     ],
+                  //   ),
+                  // ),
                 ],
               ),
             ],

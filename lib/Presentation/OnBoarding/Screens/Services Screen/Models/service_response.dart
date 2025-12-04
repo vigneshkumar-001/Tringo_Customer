@@ -34,6 +34,7 @@ class ServiceItem {
   final String? openLabel;
   final bool isOpen;
   final String? primaryImageUrl;
+  final String? closeTime;
 
   ServiceItem({
     required this.id,
@@ -55,6 +56,7 @@ class ServiceItem {
     this.openLabel,
     required this.isOpen,
     this.primaryImageUrl,
+    this.closeTime,
   });
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
@@ -80,6 +82,7 @@ class ServiceItem {
       openLabel: json['openLabel'],
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
+      closeTime: json['closeTime']?? '',
     );
   }
 }

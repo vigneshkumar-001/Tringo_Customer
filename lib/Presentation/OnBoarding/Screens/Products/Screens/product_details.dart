@@ -410,7 +410,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
               ),
               if (hasSimilarProducts) ...[
                 SizedBox(
-                  height: 300,
+                  height: 400,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
@@ -426,8 +426,8 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                           foodName: data.englishName?.toString() ?? '',
                           ratingStar: data.rating?.toString() ?? '',
                           ratingCount: data.ratingCount?.toString() ?? '',
-                          offAmound: '₹${data.price?.toString() ?? ''}',
-                          oldAmound: '₹${data.offerPrice?.toString() ?? ''}',
+                          offAmound: '₹${data.offerPrice?.toString() ?? ''}',
+                          oldAmound: '₹${data.price?.toString() ?? ''}',
                           km: '230Mts',
                           location: 'Lakshmi Bevan',
                         ),
@@ -510,7 +510,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         ),
                       ],
                     ),
-
+                    SizedBox(height: 20),
                     /*Container(
                       decoration: BoxDecoration(
                         color: AppColor.whiteSmoke,
@@ -604,51 +604,51 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                           );
                         },
                       ),
-                    SizedBox(height: 52),
-                    Row(
-                      children: [
-                        Image.asset(
-                          AppImages.reviewImage,
-                          height: 27.08,
-                          width: 26,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Reviews',
-                          style: GoogleFont.Mulish(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Text(
-                          '4.5',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 33,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Image.asset(
-                          AppImages.starImage,
-                          height: 30,
-                          color: AppColor.green,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'Based on 58 reviews',
-                      style: GoogleFont.Mulish(color: AppColor.lightGray3),
-                    ),
-                    SizedBox(height: 20),
-                    CommonContainer.reviewBox(),
-                    SizedBox(height: 35),
+                    // SizedBox(height: 52),
+                    // Row(
+                    //   children: [
+                    //     Image.asset(
+                    //       AppImages.reviewImage,
+                    //       height: 27.08,
+                    //       width: 26,
+                    //     ),
+                    //     SizedBox(width: 10),
+                    //     Text(
+                    //       'Reviews',
+                    //       style: GoogleFont.Mulish(
+                    //         fontSize: 18,
+                    //         fontWeight: FontWeight.bold,
+                    //         color: AppColor.darkBlue,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
+                    // SizedBox(height: 20),
+                    // Row(
+                    //   children: [
+                    //     Text(
+                    //       '4.5',
+                    //       style: GoogleFont.Mulish(
+                    //         fontWeight: FontWeight.bold,
+                    //         fontSize: 33,
+                    //         color: AppColor.darkBlue,
+                    //       ),
+                    //     ),
+                    //     SizedBox(width: 10),
+                    //     Image.asset(
+                    //       AppImages.starImage,
+                    //       height: 30,
+                    //       color: AppColor.green,
+                    //     ),
+                    //   ],
+                    // ),
+                    // Text(
+                    //   'Based on 58 reviews',
+                    //   style: GoogleFont.Mulish(color: AppColor.lightGray3),
+                    // ),
+                    // SizedBox(height: 20),
+                    // CommonContainer.reviewBox(),
+                    // SizedBox(height: 35),
                   ],
                 ),
               ),

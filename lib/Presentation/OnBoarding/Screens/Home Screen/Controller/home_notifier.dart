@@ -58,11 +58,12 @@ class HomeNotifier extends Notifier<homeState> {
     return homeState.initial();
   }
 
-  Future<void> fetchHomeDetails() async {
+  Future<void> fetchHomeDetails({    required double lng,
+    required double lat,}) async {
     // keep old enquiryResponse if any, just show loading and clear error
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await api.getHomeDetails();
+    final result = await api.getHomeDetails(lng:lng,lat: lat );
 
     result.fold(
       (failure) {
