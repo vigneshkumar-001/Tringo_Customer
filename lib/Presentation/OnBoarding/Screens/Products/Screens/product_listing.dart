@@ -149,7 +149,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                       ratingCount: (shop?.ratingCount ?? 0).toString(),
 
                       // Prices
-                      offAmound: "₹${item.offerPrice ?? item.offerPrice ?? 0}",
+                      offAmound: "₹${item.offerPrice ?? item.price ?? 0}",
                       oldAmound: "₹${item.price ?? 0}",
 
                       // Distance

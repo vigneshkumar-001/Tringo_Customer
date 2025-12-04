@@ -39,79 +39,41 @@ abstract class BaseApiDataSource {
 
 class ApiDataSource extends BaseApiDataSource {
   @override
-  // Future<Either<Failure, LoginResponse>> mobileNumberLogin(
-  //   String phone,
-  //   String simToken, {
-  //   String page = "",
-  // }) async {
-  //   String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
-  //
-  //   final response = await Request.sendRequest(
-  //     url,
-  //     {"contact": "+91$phone", "purpose": "customer"},
-  //     'Post',
-  //     false,
-  //   );
-  //
-  //   if (response is! DioException) {
-  //     if (response.statusCode == 200 || response.statusCode == 201) {
-  //       if (response.data['status'] == true) {
-  //         return Right(LoginResponse.fromJson(response.data));
-  //       } else {
-  //         return Left(
-  //           ServerFailure(response.data['message'] ?? "Login failed"),
-  //         );
-  //       }
-  //     } else {
-  //       return Left(
-  //         ServerFailure(response.data['message'] ?? "Something went wrong"),
-  //       );
-  //     }
-  //   } else {
-  //     final errorData = response.response?.data;
-  //     if (errorData is Map && errorData.containsKey('message')) {
-  //       return Left(ServerFailure(errorData['message']));
-  //     }
-  //     return Left(ServerFailure(response.message ?? "Unknown Dio error"));
-  //   }
-  // }
   Future<Either<Failure, LoginResponse>> mobileNumberLogin(
     String phone,
     String simToken, {
     String page = "",
   }) async {
-    final cleaned = phone.replaceAll(RegExp(r'\D'), ''); // remove spaces
-    final fullContact = "+91$cleaned";
-
-    final url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
+    String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
 
     final response = await Request.sendRequest(
       url,
-      {"contact": fullContact, "purpose": "customer"},
+      {"contact": "+91$phone", "purpose": "customer"},
       'Post',
       false,
     );
 
     if (response is! DioException) {
-      final status = response.statusCode ?? 0;
-
-      if (status == 200 || status == 201) {
-        final body = response.data;
-
-        if (body["status"] == true) {
-          return Right(LoginResponse.fromJson(body));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(LoginResponse.fromJson(response.data));
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Login failed"),
+          );
         }
-        return Left(ServerFailure(body["message"] ?? "Login failed"));
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
       }
-
-      return Left(ServerFailure("Unexpected status: $status"));
+    } else {
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
     }
-
-    final data = response.response?.data;
-    if (data is Map && data.containsKey("message")) {
-      return Left(ServerFailure(data["message"]));
-    }
-    return Left(ServerFailure(response.message ?? "Unknown Dio error"));
   }
 
   Future<Either<Failure, OtpResponse>> otp({
