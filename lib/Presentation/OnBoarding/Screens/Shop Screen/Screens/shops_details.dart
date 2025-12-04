@@ -892,9 +892,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       ratingCount:
                                           data?.reviewCount.toString() ?? '',
                                       offAmound:
-                                          '₹${data?.startsAt.toString() ?? ''}',
-                                      oldAmound:
                                           '₹${data?.offerPrice.toString() ?? ''}',
+                                      oldAmound:
+                                          '₹${data?.startsAt.toString() ?? ''}',
                                       km: '',
                                       location: '',
                                       Verify: false,
@@ -1195,10 +1195,10 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                     ),
 
                     SizedBox(height: 40),
-                    _staggerFromTop(
-                      aHorizonalDivider,
-                      CommonContainer.horizonalDivider(),
-                    ),
+                    // _staggerFromTop(
+                    //   aHorizonalDivider,
+                    //   CommonContainer.horizonalDivider(),
+                    // ),
                   ],
 
                   SizedBox(height: 30),
@@ -1265,7 +1265,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                   //   CommonContainer.horizonalDivider(),
                   // ),
                   // SizedBox(height: 45),
-                  /*    Padding(
+                  /* Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

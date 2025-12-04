@@ -157,7 +157,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                     Row(
                       children: [
                         Text(
-                          '₹${productDetailData.data.service.startsAt}',
+                          '₹${productDetailData.data.service.offerPrice}',
                           style: GoogleFont.Mulish(
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
@@ -169,7 +169,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                           alignment: Alignment.center,
                           children: [
                             Text(
-                              '₹${productDetailData.data.service.offerPrice}',
+                              '₹${productDetailData.data.service.startsAt}',
                               style: GoogleFont.Mulish(
                                 fontSize: 14,
                                 color: AppColor.lightGray3,
@@ -257,8 +257,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       message: 'hi',
                       context: context,
                       phone:
-                      productDetailData.data.shop.primaryPhone
-                          .toString() ??
+                          productDetailData.data.shop.primaryPhone.toString() ??
                           '',
                     );
                   },
@@ -330,7 +329,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                 ),
                                 SizedBox(width: 10),
                                 Text(
-                                  '5Kms',
+                                  shopsData?.distanceLabel.toString() ?? '',
                                   style: GoogleFont.Mulish(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12,
@@ -432,9 +431,9 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               foodName: data.englishName ?? '',
                               ratingStar: data.rating?.toString() ?? '',
                               ratingCount: data.ratingCount?.toString() ?? '',
-                              offAmound: '₹${data.startsAt?.toString() ?? ''}',
-                              oldAmound:
+                              offAmound:
                                   '₹${data.offerPrice?.toString() ?? ''}',
+                              oldAmound: '₹${data.startsAt?.toString() ?? ''}',
                               km: '230Mts',
                               location: 'Lakshmi Bevan',
                             ),
@@ -455,7 +454,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         ),
                       ),
                     ),
-
+              SizedBox(height: 28),
               CommonContainer.horizonalDivider(),
               SizedBox(height: 28),
               Padding(
@@ -477,7 +476,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         ),
                       ],
                     ),
-
+                    SizedBox(height: 20),
                     if (productDetailData.data.service.highlights.isNotEmpty)
                       ListView.builder(
                         shrinkWrap: true,
@@ -548,50 +547,50 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       ),
 
                     SizedBox(height: 52),
-                    Row(
-                      children: [
-                        Image.asset(
-                          AppImages.reviewImage,
-                          height: 27.08,
-                          width: 26,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Reviews',
-                          style: GoogleFont.Mulish(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Text(
-                          '4.5',
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 33,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Image.asset(
-                          AppImages.starImage,
-                          height: 30,
-                          color: AppColor.green,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'Based on 58 reviews',
-                      style: GoogleFont.Mulish(color: AppColor.lightGray3),
-                    ),
-                    SizedBox(height: 20),
-                    CommonContainer.reviewBox(),
-                    SizedBox(height: 35),
+                    // Row(
+                    //   children: [
+                    //     Image.asset(
+                    //       AppImages.reviewImage,
+                    //       height: 27.08,
+                    //       width: 26,
+                    //     ),
+                    //     SizedBox(width: 10),
+                    //     Text(
+                    //       'Reviews',
+                    //       style: GoogleFont.Mulish(
+                    //         fontSize: 18,
+                    //         fontWeight: FontWeight.bold,
+                    //         color: AppColor.darkBlue,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
+                    // SizedBox(height: 20),
+                    // Row(
+                    //   children: [
+                    //     Text(
+                    //       '4.5',
+                    //       style: GoogleFont.Mulish(
+                    //         fontWeight: FontWeight.bold,
+                    //         fontSize: 33,
+                    //         color: AppColor.darkBlue,
+                    //       ),
+                    //     ),
+                    //     SizedBox(width: 10),
+                    //     Image.asset(
+                    //       AppImages.starImage,
+                    //       height: 30,
+                    //       color: AppColor.green,
+                    //     ),
+                    //   ],
+                    // ),
+                    // Text(
+                    //   'Based on 58 reviews',
+                    //   style: GoogleFont.Mulish(color: AppColor.lightGray3),
+                    // ),
+                    // SizedBox(height: 20),
+                    // CommonContainer.reviewBox(),
+                    // SizedBox(height: 35),
                   ],
                 ),
               ),

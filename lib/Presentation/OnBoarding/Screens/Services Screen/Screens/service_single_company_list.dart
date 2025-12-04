@@ -390,6 +390,7 @@ class _ServiceSingleCompanyListState
 
                       // FILTERED SERVICES LIST
                       ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredServices.length,

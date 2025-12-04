@@ -1,11 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
+import '../../../../Core/app_go_routes.dart';
 import '../Login Screen/login_mobile_number.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -59,13 +63,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => LoginMobileNumber()),
-                  (route) => false,
-                );
+              onPressed: () async {
+                // Navigator.pop(context);
+                // Navigator.pushAndRemoveUntil(
+                //   context,
+                //   MaterialPageRoute(builder: (_) => LoginMobileNumber()),
+                //   (route) => false,
+                // );
+                final prefs = await SharedPreferences.getInstance();
+                // prefs.remove('token');
+                // prefs.remove('isProfileCompleted');
+                // prefs.remove('isNewOwner');
+                await prefs.clear();
+
+                // Then navigate
+                context.goNamed(AppRoutes.login);
               },
               child: Text(
                 "Logout",
@@ -154,15 +166,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.name.toString()?? '',
+                              widget.name.toString() ?? '',
                               style: GoogleFont.Mulish(
-                                fontSize: 25,
+                                fontSize: 23,
                                 fontWeight: FontWeight.w700,
                                 color: AppColor.white,
                               ),
                             ),
                             Text(
-                              widget.phnNumber.toString()?? '',
+                              widget.phnNumber.toString() ?? '',
                               style: GoogleFont.Mulish(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -196,26 +208,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 12,
+                        ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          child: widget.url == null
-                              ? Image.asset(
-                            AppImages.avatarImage1,
-                            height: 170,
-                            width: 170,
-                            fit: BoxFit.cover,
-                          )
-                              : Image.network(
-                            widget.url.toString(),
+                          child: CachedNetworkImage(
+                            imageUrl: widget.url ?? '',
                             height: 120,
                             width: 120,
                             fit: BoxFit.cover,
+
+                            placeholder: (context, url) => Container(
+                              height: 120,
+                              width: 120,
+                              color: Colors.grey.withOpacity(0.2),
+                            ),
+
+                            errorWidget: (context, url, error) => Container(
+                              height: 120,
+                              width: 120,
+                              color: Colors.grey.withOpacity(0.2),
+                              child: const Icon(Icons.broken_image, size: 28),
+                            ),
                           ),
                         ),
-                      )
-                      ,
-
+                      ),
 
                       // CommonContainer.glowAvatarUniversal(
                       //   image: AssetImage(AppImages.avatarImage1),

@@ -41,6 +41,7 @@ class Shop {
   final String? openLabel;
   final bool isOpen;
   final String? primaryImageUrl;
+  final String? closeTime;
   final List<ShopWeeklyHour> weeklyHours;
 
   Shop({
@@ -63,6 +64,7 @@ class Shop {
     this.openLabel,
     required this.isOpen,
     this.primaryImageUrl,
+    this.closeTime,
     this.weeklyHours = const [],
   });
 
@@ -91,6 +93,7 @@ class Shop {
       openLabel: json['openLabel'],
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
+      closeTime: json['closeTime']?? '',
       weeklyHours:
           (json['weeklyHours'] as List<dynamic>?)
               ?.map((e) => ShopWeeklyHour.fromJson(e as Map<String, dynamic>))
