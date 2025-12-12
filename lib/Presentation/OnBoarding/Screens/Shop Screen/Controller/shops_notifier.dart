@@ -66,12 +66,12 @@ class ShopsNotifier extends Notifier<ShopsState> {
     return ShopsState.initial();
   }
 
-  Future<void> fetchShopsDetails({bool force = false}) async {
+  Future<void> fetchShopsDetails({bool force = false,required String highlightId}) async {
     if (!force && state.shopsResponse != null) return;
 
     state = state.copyWith(isLoading: true);
 
-    final result = await api.getShopDetails();
+    final result = await api.getShopDetails(highlightId: highlightId);
 
     result.fold(
       (failure) {

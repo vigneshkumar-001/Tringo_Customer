@@ -15,7 +15,8 @@ import '../../No Data Screen/Screen/no_data_screen.dart';
 class ProductListing extends ConsumerStatefulWidget {
   final String? title;
   final String? kind;
-  const ProductListing({super.key, this.title, this.kind});
+  final String? highlightId;
+  const ProductListing({super.key, this.title, this.kind,this.highlightId});
 
   @override
   ConsumerState<ProductListing> createState() => _ProductListingState();
@@ -28,7 +29,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(productNotifierProvider.notifier)
-          .productList(kind: widget.kind ?? '');
+          .productList(kind: widget.kind ?? '',highlightId: widget.highlightId?? '');
     });
   }
 

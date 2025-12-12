@@ -164,7 +164,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                     Row(
                       children: [
                         Text(
-                          '₹${productDetailData.data.product.price}',
+                          '₹${productDetailData.data.product.offerPrice}',
                           style: GoogleFont.Mulish(
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
@@ -176,7 +176,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                           alignment: Alignment.center,
                           children: [
                             Text(
-                              '₹${productDetailData.data.product.offerPrice}',
+                              '₹${productDetailData.data.product.price}',
                               style: GoogleFont.Mulish(
                                 fontSize: 14,
                                 color: AppColor.lightGray3,
@@ -324,7 +324,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                                 ),
                                 SizedBox(width: 10),
                                 Text(
-                                  '5Kms',
+                                  shopsData?.distanceLabel ?? '',
                                   style: GoogleFont.Mulish(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12,
@@ -351,7 +351,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                                   ),
                                 ),
                                 Text(
-                                  '9Pm',
+                                  shopsData?.closeTime ??'',
                                   style: GoogleFont.Mulish(
                                     fontSize: 10,
                                     color: AppColor.lightGray2,
@@ -408,6 +408,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                   ],
                 ),
               ),
+              SizedBox(height: 20),
               if (hasSimilarProducts) ...[
                 SizedBox(
                   height: 400,
@@ -418,7 +419,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                     itemBuilder: (context, index) {
                       final data = similarProducts!.items[index];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: CommonContainer.similarFoods(
                           Verify: shopsData?.isTrusted ?? false,
                           doorDelivery: data.doorDelivery ?? false,
@@ -428,8 +429,12 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                           ratingCount: data.ratingCount?.toString() ?? '',
                           offAmound: '₹${data.offerPrice?.toString() ?? ''}',
                           oldAmound: '₹${data.price?.toString() ?? ''}',
-                          km: '230Mts',
-                          location: 'Lakshmi Bevan',
+                          km:
+                          data.distanceLabel ??
+                              (shopsData?.distanceLabel ?? ''),
+                          location:
+                          data.shopName ??
+                              (shopsData?.englishName ?? ''),
                         ),
                       );
                     },

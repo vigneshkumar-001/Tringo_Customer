@@ -15,6 +15,9 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Control
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Screens/shops_product_list.dart';
 
 import '../../Products/Screens/product_details.dart';
+import '../../Services Screen/Controller/service_notifier.dart';
+import '../../Services Screen/Screens/Service_details.dart';
+import '../../Services Screen/Screens/search_service_data.dart';
 
 class ShopsDetails extends ConsumerStatefulWidget {
   final String? heroTag; // optional; if null/empty, no hero anim
@@ -41,7 +44,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     {"label": "Badam Sweets"},
     {"label": "Milk Sweets"},
   ];
-  int selectedIndex = 0;
+  int? selectedIndex;
   int selectedWeight = 0; // default
 
   bool _enquiryDisabled = false;
@@ -184,6 +187,8 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   Widget build(BuildContext context) {
     final state = ref.watch(shopsNotifierProvider);
     final stateS = ref.watch(homeNotifierProvider);
+
+    final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
 
     if (state.isLoading) {
       return Scaffold(
@@ -803,7 +808,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               height: 35,
                               color: AppColor.darkBlue,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Text(
                               'Offer Services',
                               style: GoogleFont.Mulish(
@@ -816,6 +821,10 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                         ),
                       ),
                     ),
+
+                    // -----------------------------
+                    // TAG FILTER CHIPS
+                    // -----------------------------
                     _staggerFromTop(
                       aSnacksFliter,
                       SingleChildScrollView(
@@ -826,169 +835,461 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                           vertical: 20,
                         ),
                         child: Row(
-                          children: List.generate(
-                            shopsData.data?.serviceTags?.length ?? 0,
-                            (index) {
-                              final isSelected = selectedIndex == index;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: CommonContainer.categoryChip(
-                                  rightSideArrow: true,
-                                  ContainerColor: isSelected
-                                      ? AppColor.white
-                                      : Colors.transparent,
-                                  BorderColor: isSelected
-                                      ? AppColor.brightGray
-                                      : AppColor.brightGray,
-                                  TextColor: isSelected
-                                      ? AppColor.lightGray2
-                                      : AppColor.lightGray2,
-                                  shopsData.data?.serviceTags?[index].label ??
-                                      '',
-                                  isSelected: isSelected,
-                                  onTap: () {
-                                    setState(() => selectedIndex = index);
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+                          children: [
+                            ...List.generate(
+                              shopsData.data?.serviceTags?.length ?? 0,
+                              (index) {
+                                final tag = shopsData.data!.serviceTags![index];
+                                final isSelected = selectedIndex == index;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: CommonContainer.categoryChip(
+                                    tag.label ?? '',
+                                    rightSideArrow: true,
+                                    ContainerColor: isSelected
+                                        ? AppColor.white
+                                        : Colors.transparent,
+                                    BorderColor: AppColor.brightGray,
+                                    TextColor: AppColor.lightGray2,
+                                    isSelected: isSelected,
+                                    onTap: () {
+                                      setState(() => selectedIndex = index);
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ),
+
+                    // -----------------------------
+                    // FILTERED SERVICES LIST
+                    // -----------------------------
                     _staggerFromTop(
                       aSnacksBox,
-                      Stack(
-                        children: [
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: shopsData.data?.services?.length,
-                            itemBuilder: (context, index) {
-                              final data = shopsData.data?.services?[index];
-                              return Container(
-                                padding: EdgeInsets.symmetric(horizontal: 15),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColor.white.withOpacity(0.5),
-                                      AppColor.white.withOpacity(0.3),
-                                      AppColor.white,
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    CommonContainer.foodList(
-                                      imageWidth: 130,
-                                      image:
-                                          data?.primaryImageUrl.toString() ??
-                                          '',
-                                      foodName:
-                                          data?.englishName.toString() ?? '',
-                                      ratingStar: data?.rating.toString() ?? '',
-                                      ratingCount:
-                                          data?.reviewCount.toString() ?? '',
-                                      offAmound:
-                                          '₹${data?.offerPrice.toString() ?? ''}',
-                                      oldAmound:
-                                          '₹${data?.startsAt.toString() ?? ''}',
-                                      km: '',
-                                      location: '',
-                                      Verify: false,
-                                      locations: false,
-                                      weight: true,
-                                      horizontalDivider: true,
-                                      // weightOptions: const ['300Gm', '500Gm'],
-                                      selectedWeightIndex: selectedWeight,
-                                      onWeightChanged: (i) =>
-                                          setState(() => selectedWeight = i),
-                                    ),
+                      Builder(
+                        builder: (context) {
+                          final allServices = shopsData.data?.services ?? [];
+                          final tags = shopsData.data?.serviceTags ?? [];
 
-                                    SizedBox(height: 35),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                          //  Get selected slug based on selectedIndex
+                          String? selectedSlug;
+                          if (selectedIndex != null &&
+                              selectedIndex! >= 0 &&
+                              selectedIndex! < tags.length) {
+                            selectedSlug = tags[selectedIndex!].slug;
+                          }
 
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20,
-                                horizontal: 20,
-                              ),
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColor.white.withOpacity(
-                                      0.9,
-                                    ), // white shadow
-                                    blurRadius: 80,
-                                    spreadRadius: 40,
-                                    offset: const Offset(
-                                      0,
-                                      0,
-                                    ), // shadow on all sides
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'View All',
-                                    style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: AppColor.darkBlue,
+                          //FILTER LOGIC
+                          final filteredServices =
+                              (selectedSlug == null || selectedSlug.isEmpty)
+                              ? allServices
+                              : allServices.where((service) {
+                                  final cat = service.category;
+                                  final subCat = service.subCategory;
+                                  return cat == selectedSlug ||
+                                      subCat == selectedSlug;
+                                }).toList();
+
+                          return Stack(
+                            children: [
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: filteredServices.length + 1,
+                                itemBuilder: (context, index) {
+                                  if (index == filteredServices.length) {
+                                    // extra spacing at the bottom
+                                    return const SizedBox(height: 100);
+                                  }
+                                  final data = filteredServices[index];
+
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 15,
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  CommonContainer.rightSideArrowButton(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ShopsProduct(
-                                            page: widget.page,
-                                            category: shopsData.data?.category
-                                                .toString(),
-                                            englishName: shopsData
-                                                .data
-                                                ?.englishName
-                                                .toString(),
-                                            isTrusted:
-                                                shopsData.data?.isTrusted,
-                                            shopImageUrl:
-                                                shopsData.data?.media?[0].url,
-                                            initialIndex: 3,
-                                            shopId: widget.shopId,
-                                          ),
-                                          // ShopsProductList(),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          AppColor.white.withOpacity(0.5),
+                                          AppColor.white.withOpacity(0.3),
+                                          AppColor.white,
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        CommonContainer.serviceDetails(
+                                          filedName:
+                                              data.englishName?.toString() ??
+                                              '',
+                                          imageWidth: 130,
+                                          image:
+                                              data.primaryImageUrl
+                                                  ?.toString() ??
+                                              '',
+                                          ratingStar:
+                                              data.rating?.toString() ?? '',
+                                          ratingCount:
+                                              data.reviewCount?.toString() ??
+                                              '',
+                                          offAmound:
+                                              '₹${data.offerPrice?.toString() ?? ''}',
+                                          horizontalDivider: true,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    SearchServiceData(
+                                                      serviceId: data.id,
+                                                    ),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                                        const SizedBox(height: 35),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                        ],
+
+                              // View All button (unchanged)
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                    horizontal: 20,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColor.white.withOpacity(0.9),
+                                        blurRadius: 80,
+                                        spreadRadius: 40,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'View All',
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: AppColor.darkBlue,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      CommonContainer.rightSideArrowButton(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ShopsProduct(
+                                                    page: widget.page,
+                                                    category: shopsData
+                                                        .data
+                                                        ?.category
+                                                        ?.toString(),
+                                                    englishName: shopsData
+                                                        .data
+                                                        ?.englishName
+                                                        ?.toString(),
+                                                    isTrusted: shopsData
+                                                        .data
+                                                        ?.isTrusted,
+                                                    shopImageUrl: shopsData
+                                                        .data
+                                                        ?.media?[0]
+                                                        .url,
+                                                    initialIndex: 3,
+                                                    shopId: widget.shopId,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
 
-                    SizedBox(height: 40),
+                    const SizedBox(height: 40),
                     _staggerFromTop(
                       aHorizonalDivider,
                       CommonContainer.horizonalDivider(),
                     ),
-                  ] else if (hasProducts) ...[
+                  ]
+                  // if (hasServices) ...[
+                  //   _staggerFromTop(
+                  //     aOfferProducts,
+                  //     Padding(
+                  //       padding: const EdgeInsets.symmetric(
+                  //         horizontal: 15,
+                  //         vertical: 5,
+                  //       ),
+                  //       child: Row(
+                  //         children: [
+                  //           Image.asset(
+                  //             AppImages.fireImage,
+                  //             height: 35,
+                  //             color: AppColor.darkBlue,
+                  //           ),
+                  //           SizedBox(width: 10),
+                  //           Text(
+                  //             'Offer Services',
+                  //             style: GoogleFont.Mulish(
+                  //               fontWeight: FontWeight.bold,
+                  //               fontSize: 22,
+                  //               color: AppColor.darkBlue,
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ),
+                  //
+                  //   _staggerFromTop(
+                  //     aSnacksFliter,
+                  //     SingleChildScrollView(
+                  //       scrollDirection: Axis.horizontal,
+                  //       physics: const BouncingScrollPhysics(),
+                  //       padding: const EdgeInsets.symmetric(
+                  //         horizontal: 15,
+                  //         vertical: 20,
+                  //       ),
+                  //       child: Row(
+                  //         children: List.generate(
+                  //           shopsData.data?.serviceTags?.length ?? 0,
+                  //           (index) {
+                  //             final isSelected = selectedIndex == index;
+                  //             return Padding(
+                  //               padding: const EdgeInsets.only(right: 8),
+                  //
+                  //               child: CommonContainer.categoryChip(
+                  //                 rightSideArrow: true,
+                  //                 ContainerColor: isSelected
+                  //                     ? AppColor.white
+                  //                     : Colors.transparent,
+                  //                 BorderColor: isSelected
+                  //                     ? AppColor.brightGray
+                  //                     : AppColor.brightGray,
+                  //                 TextColor: isSelected
+                  //                     ? AppColor.lightGray2
+                  //                     : AppColor.lightGray2,
+                  //                 shopsData.data?.serviceTags?[index].label ??
+                  //                     '',
+                  //                 isSelected: isSelected,
+                  //                 onTap: () {
+                  //                   setState(() => selectedIndex = index);
+                  //                 },
+                  //               ),
+                  //             );
+                  //           },
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  //   _staggerFromTop(
+                  //     aSnacksBox,
+                  //     Stack(
+                  //       children: [
+                  //         ListView.builder(
+                  //           shrinkWrap: true,
+                  //           physics: NeverScrollableScrollPhysics(),
+                  //           itemCount: shopsData.data?.services?.length,
+                  //           itemBuilder: (context, index) {
+                  //             final data = shopsData.data?.services?[index];
+                  //             return Container(
+                  //               padding: EdgeInsets.symmetric(horizontal: 15),
+                  //               decoration: BoxDecoration(
+                  //                 gradient: LinearGradient(
+                  //                   colors: [
+                  //                     AppColor.white.withOpacity(0.5),
+                  //                     AppColor.white.withOpacity(0.3),
+                  //                     AppColor.white,
+                  //                   ],
+                  //                   begin: Alignment.topCenter,
+                  //                   end: Alignment.bottomCenter,
+                  //                 ),
+                  //               ),
+                  //               child: Column(
+                  //                 children: [
+                  //                   CommonContainer.serviceDetails(
+                  //                     filedName:
+                  //                         data?.englishName.toString() ?? '',
+                  //                     imageWidth: 130,
+                  //                     image:
+                  //                         data?.primaryImageUrl.toString() ??
+                  //                         '',
+                  //                     ratingStar: data?.rating.toString() ?? '',
+                  //                     onTap: () {
+                  //                       Navigator.push(
+                  //                         context,
+                  //                         MaterialPageRoute(
+                  //                           builder: (context) =>
+                  //                               SearchServiceData(
+                  //                                 serviceId: data?.id,
+                  //                               ),
+                  //                         ),
+                  //                       );
+                  //                     },
+                  //                     ratingCount:
+                  //                         data?.reviewCount.toString() ?? '',
+                  //                     offAmound:
+                  //                         '₹${data?.offerPrice.toString() ?? ''}',
+                  //                     horizontalDivider: true,
+                  //                   ),
+                  //
+                  //                   // CommonContainer.foodList(
+                  //                   //   onTap: () {
+                  //                   //     Navigator.push(
+                  //                   //       context,
+                  //                   //       MaterialPageRoute(
+                  //                   //         builder: (context) =>
+                  //                   //             SearchServiceData(
+                  //                   //               serviceId: data?.id,
+                  //                   //             ),
+                  //                   //       ),
+                  //                   //     );
+                  //                   //     // Navigator.push(
+                  //                   //     //   context,
+                  //                   //     //   MaterialPageRoute(
+                  //                   //     //     builder: (context) =>
+                  //                   //     //         SearchServiceData(
+                  //                   //     //           serviceId: data?.id,
+                  //                   //     //         ),
+                  //                   //     //   ),
+                  //                   //     // );
+                  //                   //   },
+                  //                   //   imageWidth: 130,
+                  //                   //   image:
+                  //                   //       data?.primaryImageUrl.toString() ??
+                  //                   //       '',
+                  //                   //   foodName:
+                  //                   //       data?.englishName.toString() ?? '',
+                  //                   //   ratingStar: data?.rating.toString() ?? '',
+                  //                   //   ratingCount:
+                  //                   //       data?.reviewCount.toString() ?? '',
+                  //                   //   offAmound:
+                  //                   //       '₹${data?.offerPrice.toString() ?? ''}',
+                  //                   //   oldAmound:
+                  //                   //       '₹${data?.startsAt.toString() ?? ''}',
+                  //                   //   km: '',
+                  //                   //   location: '',
+                  //                   //   Verify: false,
+                  //                   //   locations: false,
+                  //                   //   weight: true,
+                  //                   //   horizontalDivider: true,
+                  //                   //   // weightOptions: const ['300Gm', '500Gm'],
+                  //                   //   selectedWeightIndex: selectedWeight,
+                  //                   //   onWeightChanged: (i) =>
+                  //                   //       setState(() => selectedWeight = i),
+                  //                   // ),
+                  //                   SizedBox(height: 35),
+                  //                 ],
+                  //               ),
+                  //             );
+                  //           },
+                  //         ),
+                  //
+                  //         Positioned(
+                  //           bottom: 0,
+                  //           left: 0,
+                  //           right: 0,
+                  //           child: Container(
+                  //             padding: const EdgeInsets.symmetric(
+                  //               vertical: 20,
+                  //               horizontal: 20,
+                  //             ),
+                  //             decoration: BoxDecoration(
+                  //               boxShadow: [
+                  //                 BoxShadow(
+                  //                   color: AppColor.white.withOpacity(
+                  //                     0.9,
+                  //                   ), // white shadow
+                  //                   blurRadius: 80,
+                  //                   spreadRadius: 40,
+                  //                   offset: const Offset(
+                  //                     0,
+                  //                     0,
+                  //                   ), // shadow on all sides
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //             child: Row(
+                  //               mainAxisAlignment: MainAxisAlignment.center,
+                  //               children: [
+                  //                 Text(
+                  //                   'View All',
+                  //                   style: GoogleFont.Mulish(
+                  //                     fontWeight: FontWeight.bold,
+                  //                     fontSize: 16,
+                  //                     color: AppColor.darkBlue,
+                  //                   ),
+                  //                 ),
+                  //                 const SizedBox(width: 10),
+                  //                 CommonContainer.rightSideArrowButton(
+                  //                   onTap: () {
+                  //                     Navigator.push(
+                  //                       context,
+                  //                       MaterialPageRoute(
+                  //                         builder: (context) => ShopsProduct(
+                  //                           page: widget.page,
+                  //                           category: shopsData.data?.category
+                  //                               .toString(),
+                  //                           englishName: shopsData
+                  //                               .data
+                  //                               ?.englishName
+                  //                               .toString(),
+                  //                           isTrusted:
+                  //                               shopsData.data?.isTrusted,
+                  //                           shopImageUrl:
+                  //                               shopsData.data?.media?[0].url,
+                  //                           initialIndex: 3,
+                  //                           shopId: widget.shopId,
+                  //                         ),
+                  //                         // ShopsProductList(),
+                  //                       ),
+                  //                     );
+                  //                   },
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  //
+                  //   SizedBox(height: 40),
+                  //   _staggerFromTop(
+                  //     aHorizonalDivider,
+                  //     CommonContainer.horizonalDivider(),
+                  //   ),
+                  // ]
+                  else if (hasProducts) ...[
+                    // -----------------------------
+                    // OFFER PRODUCTS TITLE
+                    // -----------------------------
                     _staggerFromTop(
                       aOfferProducts,
                       Padding(
@@ -1003,7 +1304,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               height: 35,
                               color: AppColor.darkBlue,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Text(
                               'Offer Products',
                               style: GoogleFont.Mulish(
@@ -1016,6 +1317,10 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                         ),
                       ),
                     ),
+
+                    // -----------------------------
+                    // PRODUCT FILTER CHIPS
+                    // -----------------------------
                     _staggerFromTop(
                       aSnacksFliter,
                       SingleChildScrollView(
@@ -1030,25 +1335,20 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                             shopsData.data?.productCategories?.length ?? 0,
                             (index) {
                               final isSelected = selectedIndex == index;
+                              final tag =
+                                  shopsData.data!.productCategories![index];
+
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: CommonContainer.categoryChip(
+                                  tag.label ??
+                                      '', // label as positional (same as services section)
                                   rightSideArrow: true,
                                   ContainerColor: isSelected
                                       ? AppColor.white
                                       : Colors.transparent,
-                                  BorderColor: isSelected
-                                      ? AppColor.brightGray
-                                      : AppColor.brightGray,
-                                  TextColor: isSelected
-                                      ? AppColor.lightGray2
-                                      : AppColor.lightGray2,
-                                  shopsData
-                                          .data
-                                          ?.productCategories?[index]
-                                          .label
-                                          .toString() ??
-                                      '',
+                                  BorderColor: AppColor.brightGray,
+                                  TextColor: AppColor.lightGray2,
                                   isSelected: isSelected,
                                   onTap: () {
                                     setState(() => selectedIndex = index);
@@ -1060,145 +1360,180 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                         ),
                       ),
                     ),
+
+                    // -----------------------------
+                    // FILTERED PRODUCTS LIST
+                    // -----------------------------
                     _staggerFromTop(
                       aSnacksBox,
-                      Stack(
-                        children: [
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: shopsData.data?.products?.length,
-                            itemBuilder: (context, index) {
-                              final data = shopsData.data?.products?[index];
-                              return Container(
-                                padding: EdgeInsets.symmetric(horizontal: 15),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColor.white.withOpacity(0.5),
-                                      AppColor.white.withOpacity(0.3),
-                                      AppColor.white,
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    CommonContainer.foodList(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ProductDetails(
-                                                  productId: data?.id,
-                                                ),
-                                          ),
-                                        );
-                                      },
-                                      imageWidth: 130,
-                                      image: data?.imageUrl.toString() ?? '',
-                                      foodName:
-                                          data?.englishName.toString() ?? '',
-                                      ratingStar: data?.rating.toString() ?? '',
-                                      ratingCount:
-                                          data?.ratingCount.toString() ?? '',
-                                      offAmound:
-                                          '₹${data?.offerPrice.toString() ?? ''}',
-                                      oldAmound:
-                                          '₹${data?.price.toString() ?? ''}',
-                                      km: '',
-                                      location: '',
-                                      Verify: false,
-                                      locations: false,
-                                      weight: true,
-                                      horizontalDivider: true,
-                                      // weightOptions: const ['300Gm', '500Gm'],
-                                      selectedWeightIndex: selectedWeight,
-                                      onWeightChanged: (i) =>
-                                          setState(() => selectedWeight = i),
-                                    ),
+                      Builder(
+                        builder: (context) {
+                          final allProducts = shopsData.data?.products ?? [];
+                          final tags = shopsData.data?.productCategories ?? [];
 
-                                    SizedBox(height: 35),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20,
-                                horizontal: 20,
-                              ),
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColor.white.withOpacity(
-                                      0.9,
-                                    ), // white shadow
-                                    blurRadius: 80,
-                                    spreadRadius: 40,
-                                    offset: const Offset(
-                                      0,
-                                      0,
-                                    ), // shadow on all sides
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'View All',
-                                    style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: AppColor.darkBlue,
+                          // 1) Get selected slug from chip
+                          String? selectedSlug;
+                          if (selectedIndex != null &&
+                              selectedIndex! >= 0 &&
+                              selectedIndex! < tags.length) {
+                            selectedSlug = tags[selectedIndex!].slug;
+                          }
+
+                          // 2) Filter products by category / subCategory
+                          final filteredProducts =
+                              (selectedSlug == null || selectedSlug.isEmpty)
+                              ? allProducts
+                              : allProducts.where((product) {
+                                  //  adjust these fields if your model uses different names
+                                  final cat = product.category;
+                                  final subCat = product.subCategory;
+                                  return cat == selectedSlug ||
+                                      subCat == selectedSlug;
+                                }).toList();
+
+                          return Stack(
+                            children: [
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: filteredProducts.length,
+                                itemBuilder: (context, index) {
+                                  final data = filteredProducts[index];
+
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 15,
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  CommonContainer.rightSideArrowButton(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ShopsProduct(
-                                            category: shopsData.data?.category
-                                                .toString(),
-                                            englishName: shopsData
-                                                .data
-                                                ?.englishName
-                                                .toString(),
-                                            isTrusted:
-                                                shopsData.data?.isTrusted,
-                                            shopImageUrl:
-                                                shopsData.data?.media?[0].url,
-                                            initialIndex: 2,
-                                            shopId: widget.shopId,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          AppColor.white.withOpacity(0.5),
+                                          AppColor.white.withOpacity(0.3),
+                                          AppColor.white,
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        CommonContainer.foodList(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ProductDetails(
+                                                      productId: data.id,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          imageWidth: 130,
+                                          image:
+                                              data.imageUrl?.toString() ?? '',
+                                          foodName:
+                                              data.englishName?.toString() ??
+                                              '',
+                                          ratingStar:
+                                              data.rating?.toString() ?? '',
+                                          ratingCount:
+                                              data.ratingCount?.toString() ??
+                                              '',
+                                          offAmound:
+                                              '₹${data.offerPrice?.toString() ?? ''}',
+                                          oldAmound:
+                                              '₹${data.price?.toString() ?? ''}',
+                                          km: '',
+                                          location: '',
+                                          Verify: false,
+                                          locations: false,
+                                          weight: true,
+                                          horizontalDivider: true,
+                                          selectedWeightIndex: selectedWeight,
+                                          onWeightChanged: (i) => setState(
+                                            () => selectedWeight = i,
                                           ),
-                                          // ShopsProductList(),
                                         ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                                        const SizedBox(height: 35),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                        ],
+
+                              // View All button (unchanged)
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                    horizontal: 20,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColor.white.withOpacity(0.9),
+                                        blurRadius: 80,
+                                        spreadRadius: 40,
+                                        offset: Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'View All',
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: AppColor.darkBlue,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      CommonContainer.rightSideArrowButton(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ShopsProduct(
+                                                    category: shopsData
+                                                        .data
+                                                        ?.category
+                                                        ?.toString(),
+                                                    englishName: shopsData
+                                                        .data
+                                                        ?.englishName
+                                                        ?.toString(),
+                                                    isTrusted: shopsData
+                                                        .data
+                                                        ?.isTrusted,
+                                                    shopImageUrl: shopsData
+                                                        .data
+                                                        ?.media?[0]
+                                                        .url,
+                                                    initialIndex: 2,
+                                                    shopId: widget.shopId,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
 
                     SizedBox(height: 40),
-                    // _staggerFromTop(
-                    //   aHorizonalDivider,
-                    //   CommonContainer.horizonalDivider(),
-                    // ),
                   ],
 
                   SizedBox(height: 30),

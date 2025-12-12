@@ -16,11 +16,13 @@ class ButtomNavigatebar extends StatefulWidget {
   final int initialIndex;
   final String? tittle;
   final String? kind;
+  final String? highlightId;
   const ButtomNavigatebar({
     super.key,
     this.initialIndex = 0,
     this.tittle,
     this.kind,
+    this.highlightId,
   });
 
   @override
@@ -45,10 +47,14 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
       HomeScreen(), // 0
       SearchScreen(), // 1
       _ExploreScreenStub(), // 2
-      ShopsListing(), // 3
-      ServiceListing(), // 4
+      ShopsListing(highlightId: widget.highlightId), // 3
+      ServiceListing(highlightId: widget.highlightId), // 4
       FoodList(), // 5
-      ProductListing(title: widget.tittle, kind: widget.kind), // 6
+      ProductListing(
+        title: widget.tittle,
+        kind: widget.kind,
+        highlightId: widget.highlightId,
+      ),
     ];
   }
 

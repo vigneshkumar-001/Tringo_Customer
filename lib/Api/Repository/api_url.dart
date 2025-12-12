@@ -14,16 +14,12 @@ class ApiUrl {
     return "${base}api/v1/public/shops/$shopId";
   }
 
-  static String home({
-    required double lng,
-    required double lat,
-
-  }) {
+  static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lat";
   }
 
-  static String shopList({required String kind}) {
-    return "${base}api/v1/public/shops?kind=$kind";
+  static String shopList({required String kind,required String highlightId}) {
+    return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";
   }
 
   static String viewAllProducts({required String shopId}) {
@@ -40,6 +36,10 @@ class ApiUrl {
 
   static String viewAllDetailedProducts({required String productId}) {
     return "${base}api/v1/public/products/$productId";
+  }
+
+  static String viewAllDetailedService({required String serviceId}) {
+    return "${base}api/v1/public/services/$serviceId";
   }
 
   static String viewAllDetailedServices({required String serviceId}) {
@@ -59,8 +59,9 @@ class ApiUrl {
     required double lat,
     required String kind,
     required String searchWords,
+    required String highlightId,
   }) {
-    return "${base}api/v1/public/listings?type=$kind&page=1&limit=2";
+    return "${base}api/v1/public/listings?type=$kind&page=1&limit=0&highlightId=$highlightId";
   }
 
   // static String productList({

@@ -66,7 +66,6 @@ class _ServiceSingleCompanyListState
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-
       ref.watch(shopServicesProvider(widget.shopId ?? ''));
     });
 
@@ -167,7 +166,6 @@ class _ServiceSingleCompanyListState
 
   @override
   Widget build(BuildContext context) {
-
     final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
 
     return Scaffold(
@@ -282,13 +280,12 @@ class _ServiceSingleCompanyListState
                             ],
                           ),
                         ),
+                        const SizedBox(height: 18),
                       ],
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 15),
 
               // =========== BODY: LOADER + CATEGORIES + SERVICES ===========
               asyncServices.when(
@@ -400,9 +397,9 @@ class _ServiceSingleCompanyListState
                           final title = service.englishName ?? 'Service';
                           final rating = service.rating ?? 'Service';
                           final ratingCount = service.ratingCount ?? 'Service';
-                          final image =
-                              service.primaryImageUrl?.toString() ?? '';
-                          final startsAt = service.startsAt;
+                          final image = service.imageUrl?.toString() ?? '';
+                          final startsAt = service.price;
+                          final offerPrice = service.offerPrice;
 
                           return CommonContainer.serviceDetails(
                             onTap: () {
@@ -419,7 +416,7 @@ class _ServiceSingleCompanyListState
                             image: image,
                             ratingStar: rating.toString() ?? '',
                             ratingCount: ratingCount.toString() ?? '',
-                            offAmound: startsAt != null ? '₹$startsAt' : '',
+                            offAmound: offerPrice != null ? '₹$offerPrice' : '',
                             horizontalDivider:
                                 index != filteredServices.length - 1,
                           );

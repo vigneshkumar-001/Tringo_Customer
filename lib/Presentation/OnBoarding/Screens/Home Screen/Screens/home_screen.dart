@@ -315,12 +315,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  final List<String> imageList = [
-    AppImages.homeScreenScroll2,
-    AppImages.homeScreenScroll1,
-    AppImages.homeScreenScroll3,
-    // Add more images here
-  ];
+  // final List<String> imageList = [
+  //   AppImages.homeScreenScroll2,
+  //   AppImages.homeScreenScroll1,
+  //   AppImages.homeScreenScroll3,
+  //   // Add more images here
+  // ];
 
   void onChangeLocation() {
     // open map picker, show bottom sheet, etc.
@@ -401,15 +401,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 */
 
     final state = ref.watch(homeNotifierProvider);
+    final home = state.homeResponse;
 
-    if (state.isLoading) {
+    if (state.isLoading && home == null) {
       return Scaffold(
         body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
       );
     }
 
-    final home = state.homeResponse;
-    if (home == null) {
+    if (!state.isLoading && home == null) {
       return const Scaffold(
         body: Center(
           child: NoDataScreen(showBottomButton: false, showTopBackArrow: false),
@@ -417,12 +417,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
-    // Always treat them as non-null lists
-    final categories = home.data.shopCategories; // products
-    final serviceCategories = home.data.categories; // services
+    final categories = home!.data.shopCategories;
+    final serviceCategories = home.data.categories;
     final trendingShops = home.data.trendingShops;
     final servicesList = home.data.services;
+    final banners = home.data.banners; // List<HomeBanner>
 
+    final bool hasAnyData =
+        categories.isNotEmpty ||
+        serviceCategories.isNotEmpty ||
+        trendingShops.isNotEmpty ||
+        servicesList.isNotEmpty;
+
+    if (!hasAnyData) {
+      return const Scaffold(
+        body: Center(
+          child: NoDataScreen(showBottomButton: false, showTopBackArrow: false),
+        ),
+      );
+    }
     // ---- SAFE INDEXING ----
     final bool hasShopCategories = categories.isNotEmpty;
     final bool hasServiceCategories = serviceCategories.isNotEmpty;
@@ -889,18 +902,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           child: Column(
                             children: [
-                              if (imageList.isNotEmpty)
+                              if (banners.isNotEmpty)
                                 CarouselSlider(
                                   options: CarouselOptions(
                                     height: 131,
                                     enlargeCenterPage: false,
                                     enableInfiniteScroll: true,
                                     autoPlay: true,
-                                    autoPlayInterval: Duration(seconds: 4),
+                                    autoPlayInterval: const Duration(
+                                      seconds: 4,
+                                    ),
                                     viewportFraction: 0.9,
                                     padEnds: true,
                                   ),
-                                  items: imageList.map((imagePath) {
+                                  items: banners.map((banner) {
                                     return Builder(
                                       builder: (BuildContext context) {
                                         return Padding(
@@ -911,19 +926,199 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             borderRadius: BorderRadius.circular(
                                               16,
                                             ),
-                                            child: Image.asset(
-                                              imagePath,
-                                              width: double.infinity,
-                                              fit: BoxFit.fill,
+                                            child: Stack(
+                                              fit: StackFit.expand,
+                                              children: [
+                                                //  Banner background image
+                                                CachedNetworkImage(
+                                                  imageUrl: banner.imageUrl,
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (context, url) =>
+                                                      Container(
+                                                        color: Colors.grey
+                                                            .withOpacity(0.2),
+                                                      ),
+                                                  errorWidget:
+                                                      (
+                                                        context,
+                                                        url,
+                                                        error,
+                                                      ) => Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade300,
+                                                        child: const Icon(
+                                                          Icons.broken_image,
+                                                        ),
+                                                      ),
+                                                ),
+
+                                                //  Gradient overlay at bottom
+                                                Container(
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          begin: Alignment
+                                                              .bottomCenter,
+                                                          end: Alignment
+                                                              .topCenter,
+                                                          colors: [
+                                                            Colors.black54,
+                                                            Colors.transparent,
+                                                          ],
+                                                        ),
+                                                      ),
+                                                ),
+
+                                                // Title + subtitle + CTA
+                                                Positioned(
+                                                  left: 12,
+                                                  right: 12,
+                                                  bottom: 10,
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        banner.title,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            GoogleFont.Mulish(
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                      ),
+                                                      if ((banner.subtitle ??
+                                                              '')
+                                                          .isNotEmpty)
+                                                        Text(
+                                                          banner.subtitle!,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style:
+                                                              GoogleFont.Mulish(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .white
+                                                                    .withOpacity(
+                                                                      0.9,
+                                                                    ),
+                                                              ),
+                                                        ),
+                                                      if ((banner.ctaLabel ??
+                                                              '')
+                                                          .isNotEmpty)
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                top: 6,
+                                                              ),
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal:
+                                                                      10,
+                                                                  vertical: 4,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors
+                                                                  .white
+                                                                  .withOpacity(
+                                                                    0.9,
+                                                                  ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    20,
+                                                                  ),
+                                                            ),
+                                                            child: Text(
+                                                              banner.ctaLabel!,
+                                                              style: GoogleFont.Mulish(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: AppColor
+                                                                    .darkBlue,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+
+                                                // Tap full banner
+                                                Positioned.fill(
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        // TODO: handle deep link from banner.ctaLink if needed
+                                                        // e.g. open "tringo://..." with your navigation
+                                                        // print(banner.ctaLink);
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         );
                                       },
                                     );
                                   }).toList(),
-                                ),
+                                )
+                              else
+                                const SizedBox.shrink(), // no banners → show nothing
                             ],
                           ),
+
+                          // Column(
+                          //   children: [
+                          //     if (imageList.isNotEmpty)
+                          //       CarouselSlider(
+                          //         options: CarouselOptions(
+                          //           height: 131,
+                          //           enlargeCenterPage: false,
+                          //           enableInfiniteScroll: true,
+                          //           autoPlay: true,
+                          //           autoPlayInterval: Duration(seconds: 4),
+                          //           viewportFraction: 0.9,
+                          //           padEnds: true,
+                          //         ),
+                          //         items: imageList.map((imagePath) {
+                          //           return Builder(
+                          //             builder: (BuildContext context) {
+                          //               return Padding(
+                          //                 padding: const EdgeInsets.symmetric(
+                          //                   horizontal: 6,
+                          //                 ),
+                          //                 child: ClipRRect(
+                          //                   borderRadius: BorderRadius.circular(
+                          //                     16,
+                          //                   ),
+                          //                   child: Image.asset(
+                          //                     imagePath,
+                          //                     width: double.infinity,
+                          //                     fit: BoxFit.fill,
+                          //                   ),
+                          //                 ),
+                          //               );
+                          //             },
+                          //           );
+                          //         }).toList(),
+                          //       ),
+                          //   ],
+                          // ),
                         ),
                         SizedBox(height: 57),
                         filteredServiceShops.isEmpty
@@ -1645,7 +1840,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   ratingCount: shops.ratingCount
                                                       .toString(),
                                                   time:
-                                                      shops. closeTime
+                                                      shops.closeTime
                                                           .toString() ??
                                                       '',
                                                 ),

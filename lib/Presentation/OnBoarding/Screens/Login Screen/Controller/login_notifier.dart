@@ -52,6 +52,36 @@ class LoginNotifier extends Notifier<LoginState> {
     api = ref.read(apiDataSourceProvider);
     return LoginState.initial();
   }
+  //
+  // Future<void> loginUser({
+  //   required String phoneNumber,
+  //   String? simToken,
+  //   String? page,
+  // }) async {
+  //   state = state.copyWith(isLoading: true, error: null);
+  //
+  //   final result = await api.mobileNumberLogin(
+  //     phoneNumber,
+  //     simToken ?? "",
+  //     page: page ?? "",
+  //   );
+  //
+  //   result.fold(
+  //         (failure) {
+  //       state = state.copyWith(
+  //         isLoading: false,
+  //         error: failure.message,
+  //       );
+  //     },
+  //         (response) {
+  //       state = state.copyWith(
+  //         isLoading: false,
+  //         loginResponse: response,
+  //       );
+  //     },
+  //   );
+  // }
+  //
 
   Future<void> loginUser({
     required String phoneNumber,
@@ -67,37 +97,33 @@ class LoginNotifier extends Notifier<LoginState> {
     );
 
     result.fold(
-          (failure) {
+      (failure) {
         state = state.copyWith(
           isLoading: false,
           error: failure.message,
+          loginResponse: null,
         );
       },
-          (response) {
+      (response) {
         state = state.copyWith(
           isLoading: false,
           loginResponse: response,
+          error: null,
         );
       },
     );
   }
 
-  Future<void> verifyOtp({
-    required String contact,
-    required String otp,
-  }) async {
+  Future<void> verifyOtp({required String contact, required String otp}) async {
     state = state.copyWith(isLoading: true, error: null);
 
     final result = await api.otp(contact: contact, otp: otp);
 
     result.fold(
-          (failure) {
-        state = state.copyWith(
-          isLoading: false,
-          error: failure.message,
-        );
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
       },
-          (response) async {
+      (response) async {
         final prefs = await SharedPreferences.getInstance();
 
         final data = response.data;
@@ -106,10 +132,7 @@ class LoginNotifier extends Notifier<LoginState> {
         await prefs.setString('sessionToken', data?.sessionToken ?? '');
         await prefs.setString('role', data?.role ?? '');
 
-        state = state.copyWith(
-          isLoading: false,
-          otpResponse: response,
-        );
+        state = state.copyWith(isLoading: false, otpResponse: response);
       },
     );
   }
@@ -126,26 +149,54 @@ class LoginNotifier extends Notifier<LoginState> {
     );
 
     result.fold(
-          (failure) {
+      (failure) {
         state = state.copyWith(
           isLoading: false,
           error: failure.message,
+          whatsappResponse: null, // clear old success
         );
       },
-          (response) {
+      (response) {
         state = state.copyWith(
           isLoading: false,
           whatsappResponse: response,
+          error: null, // clear old error
         );
       },
     );
   }
 
+  // Future<void> verifyWhatsappNumber({
+  //   required String contact,
+  //   required String purpose,
+  // }) async {
+  //   state = state.copyWith(isLoading: true, error: null);
+  //
+  //   final result = await api.whatsAppNumberVerify(
+  //     contact: contact,
+  //     purpose: purpose,
+  //   );
+  //
+  //   result.fold(
+  //         (failure) {
+  //       state = state.copyWith(
+  //         isLoading: false,
+  //         error: failure.message,
+  //       );
+  //     },
+  //         (response) {
+  //       state = state.copyWith(
+  //         isLoading: false,
+  //         whatsappResponse: response,
+  //       );
+  //     },
+  //   );
+  // }
+
   void resetState() {
     state = LoginState.initial();
   }
 }
-
 
 /// --- PROVIDERS ---
 final apiDataSourceProvider = Provider<ApiDataSource>((ref) {
@@ -153,7 +204,7 @@ final apiDataSourceProvider = Provider<ApiDataSource>((ref) {
 });
 
 final loginNotifierProvider =
-NotifierProvider.autoDispose<LoginNotifier, LoginState>(LoginNotifier.new);
+    NotifierProvider.autoDispose<LoginNotifier, LoginState>(LoginNotifier.new);
 
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:shared_preferences/shared_preferences.dart';

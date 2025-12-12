@@ -365,17 +365,24 @@ class Request {
     }
   }
 
+
   static Future<Response?> sendGetRequest(
-    String url,
-    Map<String, dynamic> queryParams,
-    String method,
-    bool isTokenRequired,
-  ) async {
+      String url,
+      Map<String, dynamic> queryParams,
+      String method,
+      bool isTokenRequired,
+      ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
+    String? sessionToken = prefs.getString('sessionToken');
     String? userId = prefs.getString('userId');
 
-    Dio dio = Dio();
+    Dio dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+      ),
+    );
 
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -384,38 +391,39 @@ class Request {
         },
         onResponse:
             (Response<dynamic> response, ResponseInterceptorHandler handler) {
-              AppLogger.log.i(queryParams);
-              AppLogger.log.i(
-                "GET Request \n API: $url \n Token: $token \n RESPONSE: ${response.toString()}",
-              );
-              return handler.next(response);
-            },
+          AppLogger.log.i(queryParams);
+          AppLogger.log.i(
+            "RESPONSE \n API: $url \n Token : $token \n session Token : $sessionToken \n Headers : headers \n RESPONSE: ${response.toString()}",
+          );
+          return handler.next(response);
+        },
         onError: (DioException error, ErrorInterceptorHandler handler) async {
-          if (error.response?.statusCode == 402) {
+          final status = error.response?.statusCode;
+          if (status == 402) {
             return handler.reject(error);
-          } else if (error.response?.statusCode == 406 ||
-              error.response?.statusCode == 401) {
+          } else if (status == 406 || status == 401) {
             return handler.reject(error);
-          } else if (error.response?.statusCode == 429) {
+          } else if (status == 429) {
             return handler.reject(error);
-          } else if (error.response?.statusCode == 409) {
+          } else if (status == 409) {
             return handler.reject(error);
           }
           return handler.next(error);
         },
       ),
     );
-
+    final headers = <String, dynamic>{
+      "Content-Type": "application/json",
+      if (token != null && isTokenRequired) "Authorization": "Bearer $token",
+      if (sessionToken != null && isTokenRequired)
+        "x-session-token": sessionToken,
+    };
     try {
       Response response = await dio.get(
         url,
         queryParameters: queryParams,
         options: Options(
-          headers: {
-            "Authorization": token != null
-                ? "Bearer $token"
-                : "", // Only the token in the header
-          },
+          headers: headers,
           validateStatus: (status) {
             return status != null && status < 500;
           },

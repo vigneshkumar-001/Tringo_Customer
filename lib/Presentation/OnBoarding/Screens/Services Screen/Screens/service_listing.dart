@@ -18,7 +18,8 @@ import 'Service_details.dart';
 
 class ServiceListing extends ConsumerStatefulWidget {
   final String? title;
-  const ServiceListing({super.key, this.title});
+  final String? highlightId;
+  const ServiceListing({super.key, this.title,this.highlightId});
 
   @override
   ConsumerState<ServiceListing> createState() => _ServiceListingState();
@@ -44,7 +45,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(serviceNotifierProvider.notifier)
-          .fetchServiceDetails(force: true);
+          .fetchServiceDetails(force: true,highlightId: widget.highlightId?? '');
       _ac.forward();
     });
     final curve = CurvedAnimation(parent: _ac, curve: Curves.easeOutCubic);

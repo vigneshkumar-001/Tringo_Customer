@@ -56,12 +56,12 @@ class ServiceNotifier extends Notifier<ServiceState> {
     return ServiceState.initial();
   }
 
-  Future<void> fetchServiceDetails({bool force = false}) async {
+  Future<void> fetchServiceDetails({bool force = false,required String highlightId}) async {
     if (!force && state.serviceResponse != null) return;
 
     state = state.copyWith(isLoading: true);
 
-    final result = await api.getServiceDetails();
+    final result = await api.getServiceDetails(highlightId: highlightId);
 
     result.fold(
           (failure) {
