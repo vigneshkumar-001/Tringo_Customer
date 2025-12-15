@@ -1208,13 +1208,17 @@ class CommonContainer {
                         'Starts at',
                         style: GoogleFont.Mulish(color: AppColor.lightGray3),
                       ),
-                      Text(
-                        offAmound,
-                        style: GoogleFont.Mulish(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 22,
-                          color: AppColor.darkBlue,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            offAmound,
+                            style: GoogleFont.Mulish(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 22,
+                              color: AppColor.darkBlue,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

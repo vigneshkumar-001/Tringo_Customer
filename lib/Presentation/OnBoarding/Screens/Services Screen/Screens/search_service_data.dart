@@ -43,12 +43,12 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
         body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
       );
     }
-    final productDetailData = state.serviceDataResponse;
+    final serviceDetailData = state.serviceDataResponse;
     final shopsData = state.serviceDataResponse?.data.shop;
     final highlights = state.serviceDataResponse?.data.service.highlights;
 
     final similarProducts = state.serviceDataResponse?.data.similarServices;
-    if (productDetailData == null) {
+    if (serviceDetailData == null) {
       return const Scaffold(body: Center(child: NoDataScreen()));
     }
     return Scaffold(
@@ -92,10 +92,10 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                           vertical: 8,
                         ),
                         scrollDirection: Axis.horizontal,
-                        itemCount: productDetailData.data.service.media.length,
+                        itemCount: serviceDetailData.data.service.media.length,
                         itemBuilder: (context, index) {
                           final data =
-                              productDetailData.data.service.media[index];
+                              serviceDetailData.data.service.media[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8.0,
@@ -131,14 +131,14 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                   children: [
                     Row(
                       children: [
-                        productDetailData.data.shop.isTrusted == true
+                        serviceDetailData.data.shop.isTrusted == true
                             ? CommonContainer.verifyTick()
                             : SizedBox.shrink(),
                       ],
                     ),
                     SizedBox(height: 12),
                     Text(
-                      productDetailData.data.service.englishName.toString() ??
+                      serviceDetailData.data.service.englishName.toString() ??
                           '',
                       style: GoogleFont.Mulish(
                         fontSize: 18,
@@ -147,9 +147,9 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                     ),
                     SizedBox(height: 9),
                     CommonContainer.greenStarRating(
-                      ratingCount: productDetailData.data.service.rating
+                      ratingCount: serviceDetailData.data.service.rating
                           .toString(),
-                      ratingStar: productDetailData.data.service.reviewCount
+                      ratingStar: serviceDetailData.data.service.reviewCount
                           .toString(),
                     ),
 
@@ -157,7 +157,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                     Row(
                       children: [
                         Text(
-                          '₹${productDetailData.data.service.offerPrice}',
+                          '₹${serviceDetailData.data.service.offerPrice}',
                           style: GoogleFont.Mulish(
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
@@ -165,26 +165,26 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                           ),
                         ),
                         SizedBox(width: 10),
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Text(
-                              '₹${productDetailData.data.service.startsAt}',
-                              style: GoogleFont.Mulish(
-                                fontSize: 14,
-                                color: AppColor.lightGray3,
-                              ),
-                            ),
-                            Transform.rotate(
-                              angle: -0.1,
-                              child: Container(
-                                height: 1.5,
-                                width: 40,
-                                color: AppColor.lightGray3,
-                              ),
-                            ),
-                          ],
-                        ),
+                        // Stack(
+                        //   alignment: Alignment.center,
+                        //   children: [
+                        //     Text(
+                        //       '₹${serviceDetailData.data.service.startsAt}',
+                        //       style: GoogleFont.Mulish(
+                        //         fontSize: 14,
+                        //         color: AppColor.lightGray3,
+                        //       ),
+                        //     ),
+                        //     Transform.rotate(
+                        //       angle: -0.1,
+                        //       child: Container(
+                        //         height: 1.5,
+                        //         width: 40,
+                        //         color: AppColor.lightGray3,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                       ],
                     ),
                   ],
@@ -199,7 +199,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                   callOnTap: () {
                     MapUrls.openDialer(
                       context,
-                      productDetailData.data.shop.primaryPhone,
+                      serviceDetailData.data.shop.primaryPhone,
                     );
                   },
                   mapBox: true,
@@ -207,11 +207,11 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                     MapUrls.openMap(
                       context: context,
                       latitude:
-                          productDetailData.data.shop.coordinates.latitude
+                          serviceDetailData.data.shop.coordinates.latitude
                               .toString() ??
                           '',
                       longitude:
-                          productDetailData.data.shop.coordinates.longitude
+                          serviceDetailData.data.shop.coordinates.longitude
                               .toString() ??
                           '',
                     );
@@ -245,11 +245,11 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         .read(homeNotifierProvider.notifier)
                         .putEnquiry(
                           context: context,
-                          serviceId: productDetailData.data.service.id,
+                          serviceId: serviceDetailData.data.service.id,
                           productId: '',
                           message: '',
                           shopId:
-                              productDetailData.data.shop.id.toString() ?? '',
+                              serviceDetailData.data.shop.id.toString() ?? '',
                         );
                   },
                   whatsAppOnTap: () {
@@ -257,7 +257,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       message: 'hi',
                       context: context,
                       phone:
-                          productDetailData.data.shop.primaryPhone.toString() ??
+                          serviceDetailData.data.shop.primaryPhone.toString() ??
                           '',
                     );
                   },
@@ -283,7 +283,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            productDetailData.data.shop.isTrusted == true
+                            serviceDetailData.data.shop.isTrusted == true
                                 ? CommonContainer.verifyTick()
                                 : SizedBox.shrink(),
                             SizedBox(height: 6),
@@ -329,7 +329,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                 ),
                                 SizedBox(width: 10),
                                 Text(
-                                  shopsData?.distanceLabel.toString() ?? '',
+                                  shopsData?.distanceLabel ?? '',
                                   style: GoogleFont.Mulish(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12,
@@ -348,15 +348,16 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                       shopsData?.ratingCount.toString() ?? '',
                                 ),
                                 SizedBox(width: 8),
+
                                 Text(
-                                  'Opens Upto ',
+                                  'Opens upto ',
                                   style: GoogleFont.Mulish(
                                     fontSize: 10,
                                     color: AppColor.lightGray2,
                                   ),
                                 ),
                                 Text(
-                                  '9Pm',
+                                  shopsData?.closeTime ?? '',
                                   style: GoogleFont.Mulish(
                                     fontSize: 10,
                                     color: AppColor.lightGray2,
@@ -385,7 +386,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               color: Colors.grey.withOpacity(0.2),
                             ),
                             errorWidget: (context, url, error) =>
-                                const Icon(Icons.broken_image),
+                                Icon(Icons.broken_image),
                           ),
                         ),
                       ),
@@ -401,7 +402,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                 child: Row(
                   children: [
                     Text(
-                      'Similar Products',
+                      'Similar Services',
                       style: GoogleFont.Mulish(
                         fontWeight: FontWeight.bold,
                         fontSize: 22,
@@ -416,8 +417,9 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
               SizedBox(height: 20),
               similarProducts != null && similarProducts.items.isNotEmpty
                   ? SizedBox(
-                      height: 400,
+                      height: 340,
                       child: ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
                         scrollDirection: Axis.horizontal,
                         physics: BouncingScrollPhysics(),
                         itemCount: similarProducts.items.length,
@@ -432,10 +434,15 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               ratingStar: data.rating?.toString() ?? '',
                               ratingCount: data.ratingCount?.toString() ?? '',
                               offAmound:
-                                  '₹${data.offerPrice?.toString() ?? ''}',
-                              oldAmound: '₹${data.startsAt?.toString() ?? ''}',
-                              km: '230Mts',
-                              location: 'Lakshmi Bevan',
+                               '₹${data.offerPrice?.toString() ?? ''}',
+                              oldAmound: '',
+                                  // '₹${data.offerPrice?.toString() ?? ''}',
+                              km:
+                                  data.distanceLabel ??
+                                  (shopsData?.distanceLabel ?? ''),
+                              location:
+                                  data.shopName ??
+                                  (shopsData?.englishName ?? ''),
                             ),
                           );
                         },
@@ -477,7 +484,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       ],
                     ),
                     SizedBox(height: 20),
-                    if (productDetailData.data.service.highlights.isNotEmpty)
+                    if (serviceDetailData.data.service.highlights.isNotEmpty)
                       ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),

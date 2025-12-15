@@ -447,9 +447,10 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                           final rating = service.rating?.toString() ?? '';
                           final ratingCount =
                               service.ratingCount?.toString() ?? '';
-                          final startsAt = service.price;
+                          final price = service.price;
+                          final offerPrice = service.offerPrice;
 
-                          return CommonContainer.serviceDetails(
+                          return CommonContainer.foodList(
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -459,14 +460,24 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                                 ),
                               );
                             },
-                            filedName: title,
                             imageWidth: 130,
                             image: image,
+                            foodName: title,
                             ratingStar: rating,
                             ratingCount: ratingCount,
-                            offAmound: startsAt != null ? '₹$startsAt' : '',
+                            offAmound: offerPrice != null ? '₹$offerPrice' : '',
+                            oldAmound: price != null ? '₹$price' : '',
+                            km: '',
+                            location: '',
+                            Verify: false,
+                            locations: false,
+                            weight: true,
                             horizontalDivider:
                                 index != filteredServices.length - 1,
+                            // weightOptions: const ['300Gm', '500Gm'],
+                            // selectedWeightIndex: selectedWeight,
+                            // onWeightChanged: (i) =>
+                            //     setState(() => selectedWeight = i),
                           );
                         },
                       ),

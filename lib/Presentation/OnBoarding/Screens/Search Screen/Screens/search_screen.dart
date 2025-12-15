@@ -3,6 +3,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
@@ -267,14 +268,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (item.type == 'PRODUCT_SHOP') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ButtomNavigatebar(initialIndex: 3)),
+        MaterialPageRoute(builder: (_) => ButtomNavigatebar(initialIndex: 3,highlightId: item.id,)),
       );
     } else if (item.type == 'PRODUCT' || item.type == 'SERVICE') {
+      AppLogger.log.i(item.id);
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) =>
-              ButtomNavigatebar(initialIndex: 6, tittle: item.label,kind: item.type,),
+              ButtomNavigatebar(initialIndex: 6, tittle: item.label,kind: item.type,highlightId: item.id,),
           // ShopsListing(),
         ),
       );
@@ -282,7 +284,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ButtomNavigatebar(initialIndex: 4),
+          builder: (context) => ButtomNavigatebar(initialIndex: 4,highlightId: item.id,),
           // ServiceListing(),
         ),
       );

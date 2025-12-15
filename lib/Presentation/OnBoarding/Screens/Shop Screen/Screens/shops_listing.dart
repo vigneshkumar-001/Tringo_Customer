@@ -16,7 +16,8 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Control
 import '../../../../../Core/Utility/map_urls.dart';
 
 class ShopsListing extends ConsumerStatefulWidget {
-  const ShopsListing({super.key});
+  final String? highlightId;
+  const ShopsListing({super.key,this.highlightId});
 
   @override
   ConsumerState<ShopsListing> createState() => _ShopsListingState();
@@ -57,7 +58,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shopsNotifierProvider.notifier).fetchShopsDetails(force: true);
+      ref.read(shopsNotifierProvider.notifier).fetchShopsDetails(force: true,highlightId: widget.highlightId??'');
       _ac.forward();
     });
   }
@@ -113,7 +114,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
           onRefresh: () async {
             await ref
                 .read(shopsNotifierProvider.notifier)
-                .fetchShopsDetails(force: true);
+                .fetchShopsDetails(force: true,highlightId: widget.highlightId?? '');
           },
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),

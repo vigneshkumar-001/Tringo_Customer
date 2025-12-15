@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -39,40 +40,98 @@ abstract class BaseApiDataSource {
 
 class ApiDataSource extends BaseApiDataSource {
   @override
+  // Future<Either<Failure, LoginResponse>> mobileNumberLogin(
+  //   String phone,
+  //   String simToken, {
+  //   String page = "",
+  // }) async {
+  //   String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
+  //
+  //   final response = await Request.sendRequest(
+  //     url,
+  //     {"contact": "+91$phone", "purpose": "customer"},
+  //     'Post',
+  //     false,
+  //   );
+  //
+  //   if (response is! DioException) {
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       if (response.data['status'] == true) {
+  //         return Right(LoginResponse.fromJson(response.data));
+  //       } else {
+  //         return Left(
+  //           ServerFailure(response.data['message'] ?? "Login failed"),
+  //         );
+  //       }
+  //     } else {
+  //       return Left(
+  //         ServerFailure(response.data['message'] ?? "Something went wrong"),
+  //       );
+  //     }
+  //   } else {
+  //     final errorData = response.response?.data;
+  //     if (errorData is Map && errorData.containsKey('message')) {
+  //       return Left(ServerFailure(errorData['message']));
+  //     }
+  //     return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+  //   }
+  // }
   Future<Either<Failure, LoginResponse>> mobileNumberLogin(
     String phone,
     String simToken, {
     String page = "",
   }) async {
-    String url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
+    try {
+      // You can pass `page` later if backend needs it (resend / register etc)
+      final String url = page == "resendOtp"
+          ? ApiUrl.resendOtp
+          : ApiUrl.register;
 
-    final response = await Request.sendRequest(
-      url,
-      {"contact": "+91$phone", "purpose": "customer"},
-      'Post',
-      false,
-    );
+      final response = await Request.sendRequest(
+        url,
+        {
+          "contact": "+91$phone", // NOTE: still hard-coded to +91
+          "purpose": "customer",
+          "sim_token": simToken,
+        },
+        'Post',
+        false,
+      );
 
-    if (response is! DioException) {
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (response.data['status'] == true) {
-          return Right(LoginResponse.fromJson(response.data));
+      // If your Request.sendRequest returns DioException on error:
+      if (response is DioException) {
+        final errorData = response.response?.data;
+
+        if (errorData is Map && errorData['message'] != null) {
+          return Left(ServerFailure(errorData['message']));
+        }
+
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+
+      // Normal HTTP response
+      final statusCode = response.statusCode ?? 0;
+      final data = response.data;
+
+      if (statusCode == 200 || statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(LoginResponse.fromJson(data));
         } else {
-          return Left(
-            ServerFailure(response.data['message'] ?? "Login failed"),
-          );
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
         }
       } else {
-        return Left(
-          ServerFailure(response.data['message'] ?? "Something went wrong"),
-        );
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
       }
-    } else {
-      final errorData = response.response?.data;
-      if (errorData is Map && errorData.containsKey('message')) {
+    } on TimeoutException catch (_) {
+      return Left(ServerFailure("Request timed out, please try again."));
+    } on DioException catch (e) {
+      final errorData = e.response?.data;
+      if (errorData is Map && errorData['message'] != null) {
         return Left(ServerFailure(errorData['message']));
       }
-      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      return Left(ServerFailure(e.message ?? "Network error"));
+    } catch (e) {
+      return Left(ServerFailure("Unexpected error: $e"));
     }
   }
 
@@ -188,9 +247,9 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-  Future<Either<Failure, ShopsResponse>> getShopDetails() async {
+  Future<Either<Failure, ShopsResponse>> getShopDetails({required String highlightId}) async {
     try {
-      final url = ApiUrl.shopList(kind: 'RETAIL');
+      final url = ApiUrl.shopList(kind: 'RETAIL',highlightId: highlightId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -284,9 +343,9 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-  Future<Either<Failure, ServiceResponse>> getServiceDetails() async {
+  Future<Either<Failure, ServiceResponse>> getServiceDetails({required String highlightId}) async {
     try {
-      final url = ApiUrl.shopList(kind: 'SERVICE');
+      final url = ApiUrl.shopList(kind: 'SERVICE',highlightId: highlightId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -623,10 +682,12 @@ class ApiDataSource extends BaseApiDataSource {
   Future<Either<Failure, ProductListResponse>> productList({
     required String searchWords,
     required String kind,
+    required String highlightId,
   }) async {
     try {
       AppLogger.log.i(searchWords);
       final url = ApiUrl.productList(
+        highlightId: highlightId,
         kind: kind,
         searchWords: searchWords,
         lng: 0.0,

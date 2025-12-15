@@ -56,7 +56,6 @@ class _ShopsProductState extends State<ShopsProduct> {
       HomeScreen(), // 0
       SearchScreen(), // 1
       ShopsProductList(
-
         shopId: widget.shopId,
         shopImgUrl: widget.shopImageUrl,
         isTrusted: widget.isTrusted,

@@ -86,10 +86,10 @@ class ProductNotifier extends Notifier<ProductState> {
     );
   }
 
-  Future<void> productList({required String kind}) async {
+  Future<void> productList({required String kind,required String highlightId}) async {
     state = state.copyWith(isLoading: true, productListResponse: null);
 
-    final result = await api.productList(searchWords: '',kind:kind);
+    final result = await api.productList(searchWords: '',kind:kind,highlightId : highlightId);
 
     result.fold(
       (failure) {

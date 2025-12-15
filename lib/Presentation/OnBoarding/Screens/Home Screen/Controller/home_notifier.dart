@@ -17,7 +17,7 @@ class homeState {
   final EnquiryResponse? enquiryResponse;
 
   const homeState({
-    this.isLoading = false,
+    this.isLoading = true,
     this.isEnquiryLoading = false,
     this.error,
     this.homeResponse,
@@ -44,7 +44,8 @@ class homeState {
       homeResponse: homeResponse ?? this.homeResponse,
       // keep existing enquiryResponse unless explicitly replaced
       enquiryResponse: enquiryResponse ?? this.enquiryResponse,
-      activeEnquiryId: activeEnquiryId,
+      activeEnquiryId: activeEnquiryId ?? this.activeEnquiryId,
+      // activeEnquiryId: activeEnquiryId,
     );
   }
 }
