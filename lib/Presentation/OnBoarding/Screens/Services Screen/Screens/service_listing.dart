@@ -19,7 +19,7 @@ import 'Service_details.dart';
 class ServiceListing extends ConsumerStatefulWidget {
   final String? title;
   final String? highlightId;
-  const ServiceListing({super.key, this.title,this.highlightId});
+  const ServiceListing({super.key, this.title, this.highlightId});
 
   @override
   ConsumerState<ServiceListing> createState() => _ServiceListingState();
@@ -45,7 +45,10 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(serviceNotifierProvider.notifier)
-          .fetchServiceDetails(force: true,highlightId: widget.highlightId?? '');
+          .fetchServiceDetails(
+            force: true,
+            highlightId: widget.highlightId ?? '',
+          );
       _ac.forward();
     });
     final curve = CurvedAnimation(parent: _ac, curve: Curves.easeOutCubic);
@@ -163,7 +166,6 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                 ),
               ),
 
-
               const SizedBox(height: 12),
 
               // Service Cards
@@ -228,16 +230,16 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                             image: data.primaryImageUrl.toString(),
                             companyName: data.englishName.toString(),
                             location:
-                                '${data.city},${data.state}${data.country} ',
+                                '${data.addressEn},${data.city}${data.state} ',
                             fieldName: 'Company',
                             ratingStar: data.rating.toString(),
                             ratingCount: data.ratingCount.toString(),
-                            time: data.closeTime ,
+                            time: data.closeTime,
                           );
                         },
                       ),
 
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                     ],
                   ),
                 ),

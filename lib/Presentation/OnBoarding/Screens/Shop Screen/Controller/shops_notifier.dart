@@ -124,7 +124,7 @@ final shopsNotifierProvider = NotifierProvider<ShopsNotifier, ShopsState>(
   ShopsNotifier.new,
 );
 
-/// 🔥 NEW: Per-shop FutureProvider used by ServiceSingleCompanyList
+/// NEW: Per-shop FutureProvider used by ServiceSingleCompanyList
 final shopProductsProvider =
 FutureProvider.family<ProductResponse, String>((ref, String shopId) async {
   final api = ref.watch(apiDataSourceProvider);
