@@ -291,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 20),
                 CommonContainer.profileList(
                   onTap: () {},
-                  label: 'Account Related',
+                  label: 'Delete Account',
                   iconPath: AppImages.accountRelated,
                   iconHeight: 25,
                   iconWidth: 19,
