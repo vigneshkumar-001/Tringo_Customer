@@ -527,7 +527,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 6),
+                                      //SizedBox(width: 6),
                                       // if (_locBusy)
                                       //   SizedBox(
                                       //     height: 14,
@@ -538,10 +538,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       //     ),
                                       //   )
                                       // else
-                                      Image.asset(
-                                        AppImages.drapDownImage,
-                                        height: 11,
-                                      ),
+                                      // Image.asset(
+                                      //   AppImages.drapDownImage,
+                                      //   height: 11,
+                                      // ),
                                     ],
                                   ),
                                 ),
@@ -1078,7 +1078,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   }).toList(),
                                 )
                               else
-                                const SizedBox.shrink(), // no banners → show nothing
+                                SizedBox.shrink(), // no banners → show nothing
                             ],
                           ),
 
@@ -1447,7 +1447,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           companyName:
                                                               '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
                                                           location:
-                                                              '${services.city},${services.state},${services.country} ',
+                                                              '${services.addressEn},'
+                                                           '${services.city},${services.state} ',
                                                           fieldName: services
                                                               .ownershipTypeLabel,
                                                           ratingStar: services
@@ -1832,7 +1833,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   companyName:
                                                       shops.englishName,
                                                   location:
-                                                      '${shops.city}, ${shops.state}, ${shops.country}',
+                                                      '${shops.addressEn}, ${shops.city}, ${shops.state}',
                                                   fieldName: shops.distanceLabel
                                                       .toString(),
                                                   ratingStar: shops.rating

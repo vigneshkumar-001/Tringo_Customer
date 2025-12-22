@@ -17,7 +17,7 @@ import '../../../../../Core/Utility/map_urls.dart';
 
 class ShopsListing extends ConsumerStatefulWidget {
   final String? highlightId;
-  const ShopsListing({super.key,this.highlightId});
+  const ShopsListing({super.key, this.highlightId});
 
   @override
   ConsumerState<ShopsListing> createState() => _ShopsListingState();
@@ -58,7 +58,12 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shopsNotifierProvider.notifier).fetchShopsDetails(force: true,highlightId: widget.highlightId??'');
+      ref
+          .read(shopsNotifierProvider.notifier)
+          .fetchShopsDetails(
+            force: true,
+            highlightId: widget.highlightId ?? '',
+          );
       _ac.forward();
     });
   }
@@ -114,7 +119,10 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
           onRefresh: () async {
             await ref
                 .read(shopsNotifierProvider.notifier)
-                .fetchShopsDetails(force: true,highlightId: widget.highlightId?? '');
+                .fetchShopsDetails(
+                  force: true,
+                  highlightId: widget.highlightId ?? '',
+                );
           },
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -252,7 +260,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                                 : AppImages.imageContainer1,
                             companyName: data.englishName,
                             location:
-                                '${data.city}, ${data.state}, ${data.country}',
+                                '${data.addressEn},${data.city}${data.state} ',
                             fieldName: data.distanceLabel ?? 'Nearby',
                             ratingStar: (data.rating ?? 0).toString(),
                             ratingCount: (data.ratingCount ?? 0).toString(),

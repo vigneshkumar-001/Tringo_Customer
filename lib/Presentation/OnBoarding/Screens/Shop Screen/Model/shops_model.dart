@@ -27,6 +27,8 @@ class Shop {
   final String tamilName;
   final String category;
   final String subCategory;
+  final String addressEn;
+  final String addressTa;
   final String city;
   final String state;
   final String country;
@@ -50,6 +52,8 @@ class Shop {
     required this.tamilName,
     required this.category,
     required this.subCategory,
+    required this.addressEn,
+    required this.addressTa,
     required this.city,
     required this.state,
     required this.country,
@@ -75,6 +79,8 @@ class Shop {
       tamilName: json['tamilName'] ?? '',
       category: json['category'] ?? '',
       subCategory: json['subCategory'] ?? '',
+      addressEn: json['addressEn'] ?? '',
+      addressTa: json['addressTa'] ?? '',
       city: json['city'] ?? '',
       state: json['state'] ?? '',
       country: json['country'] ?? '',
@@ -93,7 +99,7 @@ class Shop {
       openLabel: json['openLabel'],
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'],
-      closeTime: json['closeTime']?? '',
+      closeTime: json['closeTime'] ?? '',
       weeklyHours:
           (json['weeklyHours'] as List<dynamic>?)
               ?.map((e) => ShopWeeklyHour.fromJson(e as Map<String, dynamic>))
@@ -108,6 +114,8 @@ class Shop {
     'tamilName': tamilName,
     'category': category,
     'subCategory': subCategory,
+    'addressEn': addressEn,
+    'addressTa': addressTa,
     'city': city,
     'state': state,
     'country': country,

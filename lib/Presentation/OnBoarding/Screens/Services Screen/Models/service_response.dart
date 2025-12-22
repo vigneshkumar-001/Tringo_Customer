@@ -20,6 +20,7 @@ class ServiceItem {
   final String? tamilName;
   final String? category;
   final String? subCategory;
+  final String? addressEn;
   final String? city;
   final String? state;
   final String? country;
@@ -42,6 +43,7 @@ class ServiceItem {
     this.tamilName,
     this.category,
     this.subCategory,
+    this.addressEn,
     this.city,
     this.state,
     this.country,
@@ -66,6 +68,7 @@ class ServiceItem {
       tamilName: json['tamilName'],
       category: json['category'],
       subCategory: json['subCategory'],
+      addressEn: json['addressEn'],
       city: json['city'],
       state: json['state'],
       country: json['country'],

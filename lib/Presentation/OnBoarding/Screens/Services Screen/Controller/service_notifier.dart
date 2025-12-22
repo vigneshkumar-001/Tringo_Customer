@@ -119,7 +119,7 @@ final serviceNotifierProvider = NotifierProvider<ServiceNotifier, ServiceState>(
   ServiceNotifier.new,
 );
 
-/// 🔥 NEW: Per-shop FutureProvider used by ServiceSingleCompanyList
+/// NEW: Per-shop FutureProvider used by ServiceSingleCompanyList
 final shopServicesProvider =
 FutureProvider.family<ServicesListResponse, String>((ref, String shopId) async {
   final api = ref.watch(apiDataSourceProvider);

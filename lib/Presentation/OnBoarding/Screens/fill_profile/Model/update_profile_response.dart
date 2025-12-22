@@ -51,7 +51,6 @@ class UserProfileData {
     required this.gender,
     required this.dateOfBirth,
   });
-
   factory UserProfileData.fromJson(Map<String, dynamic> json) {
     return UserProfileData(
       id: json['id'] ?? "",
@@ -65,13 +64,38 @@ class UserProfileData {
       coins: json['coins'] ?? 0,
       tier: json['tier'] ?? "",
       referralCode: json['referralCode'] ?? "",
-      lastKnownLatitude: json['lastKnownLatitude']?.toDouble(),
-      lastKnownLongitude: json['lastKnownLongitude']?.toDouble(),
+      lastKnownLatitude:
+      double.tryParse(json['lastKnownLatitude']?.toString() ?? '0'),
+      lastKnownLongitude:
+      double.tryParse(json['lastKnownLongitude']?.toString() ?? '0'),
       savedLocations: json['savedLocations'],
       gender: json['gender'] ?? "",
       dateOfBirth: json['dateOfBirth'] ?? "",
     );
   }
+
+
+
+// factory UserProfileData.fromJson(Map<String, dynamic> json) {
+  //   return UserProfileData(
+  //     id: json['id'] ?? "",
+  //     createdAt: json['createdAt'] ?? "",
+  //     updatedAt: json['updatedAt'] ?? "",
+  //     user: UserInfo.fromJson(json['user'] ?? {}),
+  //     displayName: json['displayName'] ?? "",
+  //     avatarUrl: json['avatarUrl'],
+  //     primaryCity: json['primaryCity'],
+  //     primaryState: json['primaryState'],
+  //     coins: json['coins'] ?? 0,
+  //     tier: json['tier'] ?? "",
+  //     referralCode: json['referralCode'] ?? "",
+  //     lastKnownLatitude: json['lastKnownLatitude']?.toDouble(),
+  //     lastKnownLongitude: json['lastKnownLongitude']?.toDouble(),
+  //     savedLocations: json['savedLocations'],
+  //     gender: json['gender'] ?? "",
+  //     dateOfBirth: json['dateOfBirth'] ?? "",
+  //   );
+  // }
 }
 
 class UserInfo {

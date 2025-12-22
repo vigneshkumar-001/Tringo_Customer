@@ -18,7 +18,7 @@ class ApiUrl {
     return "${base}api/v1/public/home?lat=$lat&lng=$lat";
   }
 
-  static String shopList({required String kind,required String highlightId}) {
+  static String shopList({required String kind, required String highlightId}) {
     return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";
   }
 

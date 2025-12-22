@@ -1,6 +1,4 @@
-// -----------------------------------------------------------------------------
-// ROOT RESPONSE
-// -----------------------------------------------------------------------------
+
 class HomeResponse {
   final bool status;
   final HomeData data;
@@ -289,6 +287,8 @@ class ListingItem {
   final String tamilName;
   final String category;
   final String subCategory;
+  final String addressEn;
+  final String addressTa;
   final String city;
   final String state;
   final String country;
@@ -319,6 +319,8 @@ class ListingItem {
     required this.tamilName,
     required this.category,
     required this.subCategory,
+    required this.addressEn,
+    required this.addressTa,
     required this.city,
     required this.state,
     required this.country,
@@ -350,6 +352,8 @@ class ListingItem {
       tamilName: json['tamilName'] ?? '',
       category: json['category'] ?? '',
       subCategory: json['subCategory'] ?? '',
+      addressEn: json['addressEn'] ?? '',
+      addressTa: json['addressTa'] ?? '',
       city: json['city'] ?? '',
       state: json['state'] ?? '',
       country: json['country'] ?? '',
@@ -383,6 +387,8 @@ class ListingItem {
       'tamilName': tamilName,
       'category': category,
       'subCategory': subCategory,
+      'addressEn': addressEn,
+      'addressTa': addressTa,
       'city': city,
       'state': state,
       'country': country,

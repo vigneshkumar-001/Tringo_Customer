@@ -36,6 +36,127 @@ class _FillProfileState extends ConsumerState<FillProfile> {
   bool _navigated = false;
 
   @override
+  void initState() {
+    super.initState();
+    _checkProfileStatus();
+  }
+
+  Future<void> _checkProfileStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isCompleted = prefs.getBool("isProfileCompleted") ?? false;
+
+    if (isCompleted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go(AppRoutes.homePath);
+      });
+    }
+  }
+
+  final ImagePicker _picker = ImagePicker();
+  List<File?> _pickedImages = List<File?>.filled(4, null);
+  List<bool> _hasError = List<bool>.filled(4, false);
+
+  void _showImageSourcePicker(int index) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromSource(index, ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromSource(index, ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImageFromSource(int index, ImageSource source) async {
+    final pickedFile = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() {
+      _pickedImages[index] = File(pickedFile.path);
+      _hasError[index] = false;
+    });
+  }
+
+  void _showProfileImageSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final pickedFile = await _picker.pickImage(
+                    source: ImageSource.camera,
+                    imageQuality: 85,
+                  );
+                  if (pickedFile != null) {
+                    setState(() {
+                      selectedPhoto = pickedFile;
+                      profilePhotoController.text = "Photo Selected";
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final pickedFile = await _picker.pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 85,
+                  );
+                  if (pickedFile != null) {
+                    setState(() {
+                      selectedPhoto = pickedFile;
+                      profilePhotoController.text = "Photo Selected";
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileNotifierProvider);
     return Scaffold(
@@ -126,27 +247,46 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                             rightLabel: 'Gender',
                             onTap: () {
                               showModalBottomSheet(
+                                backgroundColor: AppColor.white,
                                 context: context,
                                 builder: (_) {
                                   return Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       ListTile(
-                                        title: Text("Male"),
+                                        title: Text(
+                                          "Male",
+                                          style: GoogleFont.Mulish(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
                                         onTap: () {
                                           genderController.text = "Male";
                                           Navigator.pop(context);
                                         },
                                       ),
                                       ListTile(
-                                        title: Text("Female"),
+                                        title: Text(
+                                          "Female",
+                                          style: GoogleFont.Mulish(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
                                         onTap: () {
                                           genderController.text = "Female";
                                           Navigator.pop(context);
                                         },
                                       ),
                                       ListTile(
-                                        title: Text("Other"),
+                                        title: Text(
+                                          "Other",
+                                          style: GoogleFont.Mulish(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
                                         onTap: () {
                                           genderController.text = "Other";
                                           Navigator.pop(context);
@@ -172,7 +312,33 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                                 initialDate: DateTime(2000),
                                 firstDate: DateTime(1950),
                                 lastDate: DateTime.now(),
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: ColorScheme.light(
+                                        primary: Colors
+                                            .blue, // Header background (month/year)
+                                        onPrimary:
+                                            Colors.white, // Header text color
+                                        surface:
+                                            Colors.white, // Calendar background
+                                        onSurface:
+                                            Colors.black, // Calendar text color
+                                      ),
+                                      dialogBackgroundColor:
+                                          Colors.white, // Popup background
+                                    ),
+                                    child: child!,
+                                  );
+                                },
                               );
+
+                              // final picked = await showDatePicker(
+                              //   context: context,
+                              //   initialDate: DateTime(2000),
+                              //   firstDate: DateTime(1950),
+                              //   lastDate: DateTime.now(),
+                              // );
 
                               if (picked != null) {
                                 dateOfBirthController.text =
@@ -187,21 +353,24 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                             hint: 'Upload Profile Pic',
                             rightLabel: 'Profile Photo',
                             selectedImage: selectedPhoto?.path,
-                            onTap: () async {
-                              final ImagePicker picker = ImagePicker();
-
-                              final XFile? image = await picker.pickImage(
-                                source: ImageSource.gallery,
-                              );
-
-                              if (image != null) {
-                                setState(() {
-                                  selectedPhoto = image;
-                                  profilePhotoController.text =
-                                      "Photo Selected";
-                                });
-                              }
+                            onTap: () {
+                              _showProfileImageSourcePicker();
                             },
+                            // onTap: () async {
+                            //   final ImagePicker picker = ImagePicker();
+                            //
+                            //   final XFile? image = await picker.pickImage(
+                            //     source: ImageSource.gallery,
+                            //   );
+                            //
+                            //   if (image != null) {
+                            //     setState(() {
+                            //       selectedPhoto = image;
+                            //       profilePhotoController.text =
+                            //           "Photo Selected";
+                            //     });
+                            //   }
+                            // },
                           ),
                         ],
                       ),
@@ -317,9 +486,13 @@ class _FillProfileState extends ConsumerState<FillProfile> {
                                 profileNotifierProvider.notifier,
                               );
                               if (response != null) {
-                                context.go(AppRoutes.homePath);
                                 final prefs =
                                     await SharedPreferences.getInstance();
+                                await prefs.setBool("isProfileCompleted", true);
+
+                                context.go(AppRoutes.homePath);
+                                // final prefs =
+                                //     await SharedPreferences.getInstance();
                                 await prefs.setBool("isProfileCompleted", true);
                               } else if (state.error != null) {
                                 AppSnackBar.error(context, state.error ?? '');
