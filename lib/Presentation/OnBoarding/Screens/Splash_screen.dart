@@ -40,7 +40,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         .getAppVersion(
           appPlatForm: 'android',
           appVersion: appVersion,
-          appName: 'vendor',
+          appName: 'customer',
         );
 
     // 2) Read version state and decide
