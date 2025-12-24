@@ -8,6 +8,7 @@ class ApiUrl {
   static const String resendOtp = "${base}api/v1/auth/resend-otp";
   // static const String home = "${base}api/v1/public/home";
   static const String profile = "${base}api/v1/customer/profile";
+  static const String version = "${base}api/v1/app/version";
   static const String mobileVerify = "${base}api/v1/auth/login-by-sim";
   static String imageUrl =
       "https://next.fenizotechnologies.com/Adrox/api/image-save";

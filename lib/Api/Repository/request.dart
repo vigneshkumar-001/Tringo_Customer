@@ -6,11 +6,11 @@ import 'package:tringo_app/Core/Const/app_logger.dart';
 
 class Request {
   static Future<dynamic> sendRequest(
-      String url,
-      Map<String, dynamic> body,
-      String? method,
-      bool isTokenRequired,
-      ) async {
+    String url,
+    Map<String, dynamic> body,
+    String? method,
+    bool isTokenRequired,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
     final String? sessionToken = prefs.getString('sessionToken');
@@ -30,15 +30,15 @@ class Request {
         },
         onResponse:
             (Response<dynamic> response, ResponseInterceptorHandler handler) {
-          AppLogger.log.i(body);
-          AppLogger.log.i(
-            "sendRequest \n"
+              AppLogger.log.i(body);
+              AppLogger.log.i(
+                "sendRequest \n"
                 " API: $url \n"
                 " Token : $token \n"
                 " RESPONSE: ${response.toString()}",
-          );
-          return handler.next(response);
-        },
+              );
+              return handler.next(response);
+            },
         onError: (DioException error, ErrorInterceptorHandler handler) async {
           final status = error.response?.statusCode;
 
@@ -72,10 +72,10 @@ class Request {
 
       AppLogger.log.i(
         "REQUEST \n"
-            " METHOD: $httpMethod \n"
-            " API   : $url \n"
-            " BODY  : $body \n"
-            " HEADERS: $headers",
+        " METHOD: $httpMethod \n"
+        " API   : $url \n"
+        " BODY  : $body \n"
+        " HEADERS: $headers",
       );
 
       late Response response;
@@ -84,104 +84,104 @@ class Request {
         case 'GET':
           response = await dio
               .get(
-            url,
-            queryParameters: body.isEmpty ? null : body,
-            options: Options(
-              headers: headers,
-              validateStatus: (status) => status != null && status < 503,
-            ),
-          )
+                url,
+                queryParameters: body.isEmpty ? null : body,
+                options: Options(
+                  headers: headers,
+                  validateStatus: (status) => status != null && status < 503,
+                ),
+              )
               .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException("Request timed out after 10 seconds");
-            },
-          );
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException("Request timed out after 10 seconds");
+                },
+              );
           break;
 
         case 'PUT':
           response = await dio
               .put(
-            url,
-            data: body,
-            options: Options(
-              headers: headers,
-              validateStatus: (status) => status != null && status < 503,
-            ),
-          )
+                url,
+                data: body,
+                options: Options(
+                  headers: headers,
+                  validateStatus: (status) => status != null && status < 503,
+                ),
+              )
               .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException("Request timed out after 10 seconds");
-            },
-          );
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException("Request timed out after 10 seconds");
+                },
+              );
           break;
 
         case 'PATCH':
           response = await dio
               .patch(
-            url,
-            data: body,
-            options: Options(
-              headers: headers,
-              validateStatus: (status) => status != null && status < 503,
-            ),
-          )
+                url,
+                data: body,
+                options: Options(
+                  headers: headers,
+                  validateStatus: (status) => status != null && status < 503,
+                ),
+              )
               .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException("Request timed out after 10 seconds");
-            },
-          );
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException("Request timed out after 10 seconds");
+                },
+              );
           break;
 
-      ///  DELETE SUPPORT (THIS IS WHAT YOU NEEDED)
+        ///  DELETE SUPPORT (THIS IS WHAT YOU NEEDED)
         case 'DELETE':
           response = await dio
               .delete(
-            url,
-            data: body.isEmpty ? null : body,
-            options: Options(
-              headers: headers,
-              validateStatus: (status) => status != null && status < 503,
-            ),
-          )
+                url,
+                data: body.isEmpty ? null : body,
+                options: Options(
+                  headers: headers,
+                  validateStatus: (status) => status != null && status < 503,
+                ),
+              )
               .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException("Request timed out after 10 seconds");
-            },
-          );
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException("Request timed out after 10 seconds");
+                },
+              );
           break;
 
-      /// Default → POST (for your existing usages)
+        /// Default → POST (for your existing usages)
         case 'POST':
         default:
           response = await dio
               .post(
-            url,
-            data: body,
-            options: Options(
-              headers: headers,
-              validateStatus: (status) => status != null && status < 503,
-            ),
-          )
+                url,
+                data: body,
+                options: Options(
+                  headers: headers,
+                  validateStatus: (status) => status != null && status < 503,
+                ),
+              )
               .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException("Request timed out after 10 seconds");
-            },
-          );
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException("Request timed out after 10 seconds");
+                },
+              );
           break;
       }
 
       AppLogger.log.i(
         "RESPONSE \n"
-            " API: $url \n"
-            " Token : $token \n"
-            " session Token : $sessionToken \n"
-            " Headers : $headers \n"
-            " RESPONSE: ${response.toString()}",
+        " API: $url \n"
+        " Token : $token \n"
+        " session Token : $sessionToken \n"
+        " Headers : $headers \n"
+        " RESPONSE: ${response.toString()}",
       );
 
       AppLogger.log.i("$body");
@@ -197,6 +197,7 @@ class Request {
       throw Exception(e.toString());
     }
   }
+
   // static Future<dynamic> sendRequest(
   //   String url,
   //   Map<String, dynamic> body,
@@ -365,13 +366,15 @@ class Request {
     }
   }
 
-
   static Future<Response?> sendGetRequest(
-      String url,
-      Map<String, dynamic> queryParams,
-      String method,
-      bool isTokenRequired,
-      ) async {
+    String url,
+    Map<String, dynamic> queryParams,
+    String method,
+    bool isTokenRequired, {
+    String? appName,
+    String? appVersion,
+    String? appPlatForm,
+  }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     String? sessionToken = prefs.getString('sessionToken');
@@ -379,8 +382,8 @@ class Request {
 
     Dio dio = Dio(
       BaseOptions(
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 20),
       ),
     );
 
@@ -391,12 +394,12 @@ class Request {
         },
         onResponse:
             (Response<dynamic> response, ResponseInterceptorHandler handler) {
-          AppLogger.log.i(queryParams);
-          AppLogger.log.i(
-            "RESPONSE \n API: $url \n Token : $token \n session Token : $sessionToken \n Headers : headers \n RESPONSE: ${response.toString()}",
-          );
-          return handler.next(response);
-        },
+              AppLogger.log.i(queryParams);
+              AppLogger.log.i(
+                "RESPONSE \n API: $url \n Token : $token \n session Token : $sessionToken \n Headers : headers \n RESPONSE: ${response.toString()}",
+              );
+              return handler.next(response);
+            },
         onError: (DioException error, ErrorInterceptorHandler handler) async {
           final status = error.response?.statusCode;
           if (status == 402) {
@@ -417,6 +420,9 @@ class Request {
       if (token != null && isTokenRequired) "Authorization": "Bearer $token",
       if (sessionToken != null && isTokenRequired)
         "x-session-token": sessionToken,
+      "X-App-Id": appName,
+      "X-App-Version": appVersion,
+      "X-Platform": appPlatForm,
     };
     try {
       Response response = await dio.get(
