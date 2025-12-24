@@ -57,69 +57,135 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
   void initState() {
     super.initState();
 
-    // Ask permission once when screen opens
-    _ensurePhonePermission();
+    // ✅ Request permission immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _ensurePhonePermission();
+    });
 
-    // Listen to LoginState changes
-    _sub = ref.listenManual<LoginState>(
-      loginNotifierProvider,
-          (prev, next) {
-        if (!mounted) return;
+    _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
+        prev,
+        next,
+        ) async {
+      if (!mounted) return;
 
-        // 1) New error (only when changed)
-        if (prev?.error != next.error && next.error != null) {
-          AppSnackBar.error(context, next.error!);
-        }
+      // ❌ remove this line from here:
+      // _ensurePhonePermission();
 
-        // 2) WhatsApp verification result (only when updated)
-        if (prev?.whatsappResponse != next.whatsappResponse &&
-            next.whatsappResponse != null) {
-          final resp = next.whatsappResponse!;
-          final hasWhatsapp = resp.data.hasWhatsapp; // adjust to your model
+      if (next.error != null) {
+        AppSnackBar.error(context, next.error!);
+        return;
+      }
 
-          if (hasWhatsapp) {
-            setState(() => isWhatsappChecked = true);
+      if (next.whatsappResponse != null) {
+        final resp = next.whatsappResponse!;
+        final hasWhatsapp = resp.data.hasWhatsapp;
 
-            final raw = _lastRawPhone;
-            if (raw != null) {
-              final fullPhone = '$_selectedDialCode$raw';
-              final simToken = generateSimToken(fullPhone);
+        if (hasWhatsapp) {
+          setState(() => isWhatsappChecked = true);
 
-              // NOTE: your backend currently builds "+91$phone" inside request.
-              // For full multi-country support, update backend later.
-              debugPrint('Generated simToken: $simToken');
+          final raw = _lastRawPhone;
+          if (raw != null) {
+            final fullPhone = '$_selectedDialCode$raw';
+            final simToken = generateSimToken(fullPhone);
 
-              ref
-                  .read(loginNotifierProvider.notifier)
-                  .loginUser(phoneNumber: raw, simToken: simToken);
-            }
-          } else {
-            setState(() => isWhatsappChecked = false);
-            AppSnackBar.error(
-              context,
-              'This number is not registered on WhatsApp. Please use a WhatsApp number.',
-            );
+            ref
+                .read(loginNotifierProvider.notifier)
+                .loginUser(phoneNumber: raw, simToken: simToken);
           }
-        }
-
-        // 3) Login result (only when updated) → navigate once
-        if (prev?.loginResponse != next.loginResponse &&
-            next.loginResponse != null) {
-          final raw = _lastRawPhone ?? '';
-          final fullPhone = '$_selectedDialCode$raw';
-          final simToken = generateSimToken(fullPhone);
-
-          context.pushNamed(
-            AppRoutes.mobileNumberVerify,
-            extra: {'phone': raw, 'simToken': simToken},
+        } else {
+          setState(() => isWhatsappChecked = false);
+          AppSnackBar.error(
+            context,
+            'This number is not registered on WhatsApp. Please use a WhatsApp number.',
           );
-
-          // Clear state so listener won't re-trigger
-          ref.read(loginNotifierProvider.notifier).resetState();
         }
-      },
-    );
+      }
+
+      if (next.loginResponse != null) {
+        // ✅ Ensure permission before going to SIM screen
+        await _ensurePhonePermission();
+
+        final raw = _lastRawPhone ?? '';
+        final fullPhone = '$_selectedDialCode$raw';
+        final simToken = generateSimToken(fullPhone);
+
+        context.pushNamed(
+          AppRoutes.mobileNumberVerify,
+          extra: {'phone': raw, 'simToken': simToken},
+        );
+
+        ref.read(loginNotifierProvider.notifier).resetState();
+      }
+    });
   }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //
+  //   // Ask permission once when screen opens
+  //   _ensurePhonePermission();
+  //
+  //   // Listen to LoginState changes
+  //   _sub = ref.listenManual<LoginState>(
+  //     loginNotifierProvider,
+  //         (prev, next) {
+  //       if (!mounted) return;
+  //
+  //       // 1) New error (only when changed)
+  //       if (prev?.error != next.error && next.error != null) {
+  //         AppSnackBar.error(context, next.error!);
+  //       }
+  //
+  //       // 2) WhatsApp verification result (only when updated)
+  //       if (prev?.whatsappResponse != next.whatsappResponse &&
+  //           next.whatsappResponse != null) {
+  //         final resp = next.whatsappResponse!;
+  //         final hasWhatsapp = resp.data.hasWhatsapp; // adjust to your model
+  //
+  //         if (hasWhatsapp) {
+  //           setState(() => isWhatsappChecked = true);
+  //
+  //           final raw = _lastRawPhone;
+  //           if (raw != null) {
+  //             final fullPhone = '$_selectedDialCode$raw';
+  //             final simToken = generateSimToken(fullPhone);
+  //
+  //             // NOTE: your backend currently builds "+91$phone" inside request.
+  //             // For full multi-country support, update backend later.
+  //             debugPrint('Generated simToken: $simToken');
+  //
+  //             ref
+  //                 .read(loginNotifierProvider.notifier)
+  //                 .loginUser(phoneNumber: raw, simToken: simToken);
+  //           }
+  //         } else {
+  //           setState(() => isWhatsappChecked = false);
+  //           AppSnackBar.error(
+  //             context,
+  //             'This number is not registered on WhatsApp. Please use a WhatsApp number.',
+  //           );
+  //         }
+  //       }
+  //
+  //       // 3) Login result (only when updated) → navigate once
+  //       if (prev?.loginResponse != next.loginResponse &&
+  //           next.loginResponse != null) {
+  //         final raw = _lastRawPhone ?? '';
+  //         final fullPhone = '$_selectedDialCode$raw';
+  //         final simToken = generateSimToken(fullPhone);
+  //
+  //         context.pushNamed(
+  //           AppRoutes.mobileNumberVerify,
+  //           extra: {'phone': raw, 'simToken': simToken},
+  //         );
+  //
+  //         // Clear state so listener won't re-trigger
+  //         ref.read(loginNotifierProvider.notifier).resetState();
+  //       }
+  //     },
+  //   );
+  // }
 
   @override
   void dispose() {
