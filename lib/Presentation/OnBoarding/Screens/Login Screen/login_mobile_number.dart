@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
@@ -57,63 +55,70 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
   void initState() {
     super.initState();
 
-    // ✅ Request permission immediately
+    // ✅ ask permission once
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _ensurePhonePermission();
     });
 
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
-        prev,
-        next,
-        ) async {
+      prev,
+      next,
+    ) async {
       if (!mounted) return;
 
-      // ❌ remove this line from here:
-      // _ensurePhonePermission();
-
-      if (next.error != null) {
+      // ✅ show error only when it changes
+      if (prev?.error != next.error && next.error != null) {
         AppSnackBar.error(context, next.error!);
         return;
       }
 
-      if (next.whatsappResponse != null) {
+      // ✅ WhatsApp response: trigger ONLY when whatsappResponse changes
+      if (prev?.whatsappResponse != next.whatsappResponse &&
+          next.whatsappResponse != null) {
         final resp = next.whatsappResponse!;
         final hasWhatsapp = resp.data.hasWhatsapp;
 
-        if (hasWhatsapp) {
-          setState(() => isWhatsappChecked = true);
-
-          final raw = _lastRawPhone;
-          if (raw != null) {
-            final fullPhone = '$_selectedDialCode$raw';
-            final simToken = generateSimToken(fullPhone);
-
-            ref
-                .read(loginNotifierProvider.notifier)
-                .loginUser(phoneNumber: raw, simToken: simToken);
-          }
-        } else {
-          setState(() => isWhatsappChecked = false);
+        if (!hasWhatsapp) {
+          if (mounted) setState(() => isWhatsappChecked = false);
           AppSnackBar.error(
             context,
             'This number is not registered on WhatsApp. Please use a WhatsApp number.',
           );
+          return;
         }
+
+        if (mounted) setState(() => isWhatsappChecked = true);
+
+        final raw = _lastRawPhone;
+        if (raw == null) return;
+
+        final fullPhone = '$_selectedDialCode$raw';
+        final simToken = generateSimToken(fullPhone);
+
+        // ✅ call loginUser once (only when whatsappResponse arrived)
+        ref
+            .read(loginNotifierProvider.notifier)
+            .loginUser(phoneNumber: raw, simToken: simToken);
+        return;
       }
 
-      if (next.loginResponse != null) {
-        // ✅ Ensure permission before going to SIM screen
+      // ✅ Login response: trigger ONLY when loginResponse changes
+      if (prev?.loginResponse != next.loginResponse &&
+          next.loginResponse != null) {
         await _ensurePhonePermission();
 
         final raw = _lastRawPhone ?? '';
         final fullPhone = '$_selectedDialCode$raw';
         final simToken = generateSimToken(fullPhone);
 
+        if (!mounted) return;
+
         context.pushNamed(
           AppRoutes.mobileNumberVerify,
           extra: {'phone': raw, 'simToken': simToken},
         );
 
+        //  reset after navigation so it won't re-trigger
         ref.read(loginNotifierProvider.notifier).resetState();
       }
     });
@@ -432,26 +437,25 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                                       ),
                                       border: InputBorder.none,
                                       suffixIcon:
-                                      mobileNumberController.text.isNotEmpty
+                                          mobileNumberController.text.isNotEmpty
                                           ? GestureDetector(
-                                        onTap: () {
-                                          mobileNumberController
-                                              .clear();
-                                          setState(() {});
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets
-                                              .symmetric(
-                                            vertical: 17,
-                                          ),
-                                          child: Image.asset(
-                                            AppImages.closeImage,
-                                            width: 10,
-                                            height: 10,
-                                            fit: BoxFit.contain,
-                                          ),
-                                        ),
-                                      )
+                                              onTap: () {
+                                                mobileNumberController.clear();
+                                                setState(() {});
+                                              },
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 17,
+                                                    ),
+                                                child: Image.asset(
+                                                  AppImages.closeImage,
+                                                  width: 10,
+                                                  height: 10,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              ),
+                                            )
                                           : null,
                                     ),
                                   ),
@@ -523,10 +527,10 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                                   padding: const EdgeInsets.all(8.0),
                                   child: isWhatsappChecked
                                       ? Image.asset(
-                                    AppImages.tickImage,
-                                    height: 12,
-                                    color: AppColor.green,
-                                  )
+                                          AppImages.tickImage,
+                                          height: 12,
+                                          color: AppColor.green,
+                                        )
                                       : const SizedBox(width: 12, height: 12),
                                 ),
                               ),
@@ -547,33 +551,36 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
                             onTap: state.isLoading
                                 ? null
                                 : () async {
-                              final formatted =
-                              mobileNumberController.text.trim();
-                              final rawPhone =
-                              formatted.replaceAll(' ', '');
+                                    final formatted = mobileNumberController
+                                        .text
+                                        .trim();
+                                    final rawPhone = formatted.replaceAll(
+                                      ' ',
+                                      '',
+                                    );
 
-                              if (rawPhone.isEmpty) {
-                                AppSnackBar.info(
-                                  context,
-                                  'Please enter phone number',
-                                );
-                                return;
-                              }
-                              if (rawPhone.length != 10) {
-                                AppSnackBar.info(
-                                  context,
-                                  'Please enter a valid 10-digit number',
-                                );
-                                return;
-                              }
+                                    if (rawPhone.isEmpty) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter phone number',
+                                      );
+                                      return;
+                                    }
+                                    if (rawPhone.length != 10) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter a valid 10-digit number',
+                                      );
+                                      return;
+                                    }
 
-                              _lastRawPhone = rawPhone;
+                                    _lastRawPhone = rawPhone;
 
-                              await notifier.verifyWhatsappNumber(
-                                contact: rawPhone,
-                                purpose: 'customer',
-                              );
-                            },
+                                    await notifier.verifyWhatsappNumber(
+                                      contact: rawPhone,
+                                      purpose: 'customer',
+                                    );
+                                  },
                             text: 'Verify Now',
                           ),
                         ),
