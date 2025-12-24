@@ -79,20 +79,36 @@ class _MobileNumberVerifyState extends ConsumerState<MobileNumberVerify> {
       // Permission should already be handled in LoginMobileNumber screen.
       // Here we ONLY CHECK, we DO NOT REQUEST again.
 
-      final hasPermission = await MobileNumber.hasPhonePermission;
-      if (!hasPermission) {
-        debugPrint(
-          "⚠️ Phone/SIM permission not granted. Skipping SIM auto-verify.",
-        );
+      // final hasPermission = await MobileNumber.hasPhonePermission;
+      // if (!hasPermission) {
+      //   debugPrint(
+      //     "⚠️ Phone/SIM permission not granted. Skipping SIM auto-verify.",
+      //   );
+      //
+      //   if (!mounted) return;
+      //   setState(() {
+      //     loaded = true;
+      //     anySimHasNumber = false;
+      //     numberMatch = false;
+      //   });
+      //
+      //   // Directly fall back to OTP UI (text + button already there)
+      //   return;
+      // }
+      var hasPermission = await MobileNumber.hasPhonePermission;
 
+      if (!hasPermission) {
+        await MobileNumber.requestPhonePermission;
+        hasPermission = await MobileNumber.hasPhonePermission;
+      }
+
+      if (!hasPermission) {
         if (!mounted) return;
         setState(() {
           loaded = true;
           anySimHasNumber = false;
           numberMatch = false;
         });
-
-        // Directly fall back to OTP UI (text + button already there)
         return;
       }
 
