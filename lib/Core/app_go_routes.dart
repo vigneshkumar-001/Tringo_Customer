@@ -1,5 +1,6 @@
 // lib/Core/Routing/app_go_routes.dart
 import 'package:go_router/go_router.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Screens/edit_profile.dart';
 
 import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Screen/mobile_number_verify.dart';
@@ -18,6 +19,7 @@ class AppRoutes {
   static const String home = 'home';
   static const String fillProfile = 'fillProfile';
   static const String privacyPolicy = 'privacyPolicy';
+  static const String editProfile = 'editProfile';
 
   static const String splashScreenPath = '/splashScreen';
   static const String loginPath = '/login';
@@ -26,6 +28,7 @@ class AppRoutes {
   static const String homePath = '/home';
   static const String fillProfilePath = '/fillProfile';
   static const String privacyPolicyPath = '/privacyPolicy';
+  static const String editProfilePath = '/editProfile';
 }
 
 final goRouter = GoRouter(
@@ -84,6 +87,11 @@ final goRouter = GoRouter(
       path: AppRoutes.privacyPolicyPath,
       name: AppRoutes.privacyPolicy,
       builder: (context, state) => const PrivacyPolicy(),
+    ),
+    GoRoute(
+      path: AppRoutes.editProfilePath,
+      name: AppRoutes.editProfile,
+      builder: (context, state) => const EditProfile(),
     ),
   ],
 );

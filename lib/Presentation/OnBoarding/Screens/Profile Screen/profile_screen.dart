@@ -10,6 +10,7 @@ import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
+import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/login_mobile_number.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -183,7 +184,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             const SizedBox(height: 10),
                             InkWell(
-                              onTap: () {},
+                              onTap: () {
+                                // context.pushNamed(AppRoutes.editProfilePath);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditProfile(),
+                                  ),
+                                );
+                              },
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -195,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppColor.yellow,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                    SizedBox(width: 6),
                                   Image.asset(
                                     AppImages.rightArrow,
                                     height: 12,

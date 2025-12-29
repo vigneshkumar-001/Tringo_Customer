@@ -3052,7 +3052,7 @@ class CommonContainer {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         decoration: BoxDecoration(
           border: Border.all(color: AppColor.borderGray, width: 2),
           borderRadius: BorderRadius.circular(18),
@@ -3119,7 +3119,7 @@ class CommonContainer {
 
               Container(
                 width: 2,
-                height: 35,
+                height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,

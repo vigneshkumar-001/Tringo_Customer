@@ -9,6 +9,7 @@ import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../Core/Widgets/common_container.dart';
 import '../../../Core/app_go_routes.dart';
+import '../../../Core/permissions/permission_service.dart';
 import 'Home Screen/Screens/home_screen.dart';
 import 'Login Screen/Controller/app_version_notifier.dart';
 import 'Login Screen/login_mobile_number.dart';
@@ -27,6 +28,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     checkNavigation();
+    PermissionService.requestOverlayAndContacts();
   }
 
   Future<void> checkNavigation() async {
