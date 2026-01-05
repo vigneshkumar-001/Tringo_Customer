@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
@@ -22,9 +25,12 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigate
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/food_details_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/search_screen_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_shops_details.dart';
+import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../../Smart Connect/smart_connect_guide.dart';
+
+final callerIdAskedProvider = StateProvider<bool>((ref) => false);
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -35,7 +41,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 const _avatarHeroTag = 'profileAvatarHero';
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   int selectedIndex = 0;
   int selectedServiceIndex = 0;
   late final TextEditingController textController;
@@ -60,24 +67,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return 'hero-$section-$index-$safe';
   }
 
+  //  native channel
+  static const MethodChannel _native = MethodChannel('sim_info');
+
+  bool _openingSystemRole = false; // prevent double open
+  bool _askedOnce = false; // show only once per app run
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+      if (!overlayOk) {
+        await CallerIdRoleHelper.requestOverlayPermission();
+      }
+      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
+    });
 
     textController = TextEditingController();
+
     Future.microtask(() async {
       final loc = await _initLocationFlow();
-
       ref
           .read(homeNotifierProvider.notifier)
           .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
     });
-    _initLocationFlow();
+
     _listenServiceChanges();
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //
+  //   WidgetsBinding.instance.addObserver(this);
+  //
+  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
+  //     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+  //     if (!overlayOk) {
+  //       await CallerIdRoleHelper.requestOverlayPermission();
+  //     }
+  //     await CallerIdRoleHelper.maybeAskOnce(ref: ref);
+  //   });
+  //
+  //   textController = TextEditingController();
+  //   Future.microtask(() async {
+  //     final loc = await _initLocationFlow();
+  //
+  //     ref
+  //         .read(homeNotifierProvider.notifier)
+  //         .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
+  //   });
+  //   _initLocationFlow();
+  //   _listenServiceChanges();
+  // }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      // user system screen-ல இருந்து back வந்த பிறகு check
+      await Future.delayed(const Duration(milliseconds: 400));
+      await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _serviceSub?.cancel();
     _posSub?.cancel();
     textController.dispose();
@@ -85,51 +143,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  // Future<void> _initLocationFlow() async {
-  //   setState(() => _locBusy = true);
-  //
-  //   try {
-  //     // 1) Ensure service on
-  //     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //     if (!serviceEnabled) {
-  //       final enable = await _askToEnableLocationServices();
-  //       if (enable == true) {
-  //         await Geolocator.openLocationSettings();
-  //         await Future.delayed(const Duration(milliseconds: 600));
-  //         serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //       }
-  //       if (!serviceEnabled) {
-  //         setState(() {
-  //           currentAddress = "Location services disabled";
-  //           _locBusy = false;
-  //         });
-  //         return;
-  //       }
-  //     }
-  //
-  //     // 🔹 NO permission request/check here now – assume login screen already did it
-  //
-  //     // 2) Get position (if permission denied, this will throw and go to catch)
-  //     final pos = await Geolocator.getCurrentPosition(
-  //       desiredAccuracy: LocationAccuracy.high,
-  //       timeLimit: const Duration(seconds: 10),
-  //     );
-  //
-  //     // 3) Reverse-geocode
-  //     final address = await _reverseToNiceAddress(pos);
-  //     setState(() {
-  //       currentAddress = address ?? "Unknown location";
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       currentAddress = "Unable to fetch location";
-  //     });
-  //   } finally {
-  //     if (mounted) setState(() => _locBusy = false);
-  //   }
-  // }
+  Future<bool> _isDefaultCallerIdApp() async {
+    try {
+      if (!Platform.isAndroid) return true;
+      final ok = await _native.invokeMethod<bool>('isDefaultCallerIdApp');
+      debugPrint("✅ [HOME] isDefaultCallerIdApp => $ok");
+      return ok ?? false;
+    } catch (e) {
+      debugPrint('❌ [HOME] isDefaultCallerIdApp error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _requestDefaultCallerIdApp() async {
+    try {
+      if (!Platform.isAndroid) return true;
+      debugPrint("🔥 [HOME] calling requestDefaultCallerIdApp...");
+      final ok = await _native.invokeMethod<bool>('requestDefaultCallerIdApp');
+      debugPrint("✅ [HOME] requestDefaultCallerIdApp result => $ok");
+      return ok ?? false;
+    } catch (e) {
+      debugPrint('❌ [HOME] requestDefaultCallerIdApp error: $e');
+      return false;
+    }
+  }
+
+  /// ✅ Home screen open ஆகும்போது system popup மட்டும் once
+  Future<void> _maybeShowSystemCallerIdPopupOnce() async {
+    if (!mounted) return;
+    if (!Platform.isAndroid) return;
+
+    if (_openingSystemRole) return;
+    if (_askedOnce) return;
+
+    final ok = await _isDefaultCallerIdApp();
+    if (ok) return;
+
+    _askedOnce = true;
+    _openingSystemRole = true;
+
+    final granted = await _requestDefaultCallerIdApp();
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    _openingSystemRole = false;
+
+    debugPrint(" [HOME] system role granted=$granted");
+  }
+
   Future<({double lat, double lng})> _initLocationFlow() async {
-    setState(() => _locBusy = true);
+    if (!mounted) return (lat: 0.0, lng: 0.0);
+
+    setState(() {
+      _locBusy = true;
+      if (currentAddress == null || currentAddress!.isEmpty) {
+        currentAddress = "Fetching location...";
+      }
+    });
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -137,7 +206,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final enable = await _askToEnableLocationServices();
         if (enable == true) {
           await Geolocator.openLocationSettings();
-          await Future.delayed(const Duration(milliseconds: 600));
+          await Future.delayed(const Duration(milliseconds: 900));
           serviceEnabled = await Geolocator.isLocationServiceEnabled();
         }
         if (!serviceEnabled) {
@@ -150,23 +219,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
+
       if (perm == LocationPermission.denied) {
         setState(() => currentAddress = "Location permission denied");
         return (lat: 0.0, lng: 0.0);
       }
+
       if (perm == LocationPermission.deniedForever) {
-        await _askToOpenAppSettings();
+        final open = await _askToOpenAppSettings();
+        if (open == true) {
+          await Geolocator.openAppSettings();
+        }
         setState(() => currentAddress = "Permission permanently denied");
         return (lat: 0.0, lng: 0.0);
       }
 
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 12),
       );
 
       final address = await _reverseToNiceAddress(pos);
-      setState(() => currentAddress = address ?? "Unknown location");
+
+      setState(() {
+        currentAddress =
+            address ??
+            "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
+      });
 
       return (lat: pos.latitude, lng: pos.longitude);
     } catch (e) {
@@ -176,73 +255,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (mounted) setState(() => _locBusy = false);
     }
   }
-
-  /* Future<void> _initLocationFlow() async {
-    setState(() => _locBusy = true);
-
-    try {
-      // 1) Ensure service on
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        final enable = await _askToEnableLocationServices();
-        if (enable == true) {
-          await Geolocator.openLocationSettings();
-          // small delay for settings page return
-          await Future.delayed(const Duration(milliseconds: 600));
-          serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        }
-        if (!serviceEnabled) {
-          setState(() {
-            currentAddress = "Location services disabled";
-            _locBusy = false;
-          });
-          return;
-        }
-      }
-
-      // 2) Ensure permission
-      LocationPermission perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied) {
-        setState(() {
-          currentAddress = "Location permission denied";
-          _locBusy = false;
-        });
-        return;
-      }
-      if (perm == LocationPermission.deniedForever) {
-        final open = await _askToOpenAppSettings();
-        if (open == true) {
-          await Geolocator.openAppSettings();
-        }
-        setState(() {
-          currentAddress = "Permission permanently denied";
-          _locBusy = false;
-        });
-        return;
-      }
-
-      // 3) Get position (with timeout + sensible accuracy)
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      // 4) Reverse-geocode with fallbacks
-      final address = await _reverseToNiceAddress(pos);
-      setState(() {
-        currentAddress = address ?? "Unknown location";
-      });
-    } catch (e) {
-      setState(() {
-        currentAddress = "Unable to fetch location";
-      });
-    } finally {
-      if (mounted) setState(() => _locBusy = false);
-    }
-  }*/
 
   Future<String?> _reverseToNiceAddress(Position pos) async {
     try {
@@ -1448,7 +1460,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                               '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
                                                           location:
                                                               '${services.addressEn},'
-                                                           '${services.city},${services.state} ',
+                                                              '${services.city},${services.state} ',
                                                           fieldName: services
                                                               .ownershipTypeLabel,
                                                           ratingStar: services

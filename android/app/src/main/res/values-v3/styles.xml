@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Theme applied to the Android Window while the process is starting -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
 
-    <!-- Normal Flutter Activity theme -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 
-    <!-- ✅ Popup Activity theme (MUST be separate, NOT inside NormalTheme) -->
+    <!-- ✅ MUST BE OUTSIDE NormalTheme -->
     <style name="Theme.Tringo.Popup"
         parent="@android:style/Theme.Translucent.NoTitleBar.Fullscreen">
         <item name="android:windowIsTranslucent">true</item>

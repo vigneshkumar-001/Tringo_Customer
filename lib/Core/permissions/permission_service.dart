@@ -8,5 +8,6 @@ class PermissionService {
     if (!await Permission.systemAlertWindow.isGranted) {
       await Permission.systemAlertWindow.request();
     }
+    await Permission.notification.request();
   }
 }

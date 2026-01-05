@@ -1,7 +1,7 @@
 class ApiUrl {
-  // static const String base =
-  //     "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
-  static const String base = "https://bknd.tringobiz.com/";
+  static const String base =
+      "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
+  //  static const String base = "https://bknd.tringobiz.com/";
   static const String register = "${base}api/v1/auth/request-otp";
   static const String verifyOtp = "${base}api/v1/auth/verify-otp";
   static const String whatsAppVerify = "${base}api/v1/auth/check-whatsapp";
@@ -10,6 +10,7 @@ class ApiUrl {
   static const String profile = "${base}api/v1/customer/profile";
   static const String version = "${base}api/v1/app/version";
   static const String mobileVerify = "${base}api/v1/auth/login-by-sim";
+  static const String contactInfo = "${base}api/v1/contacts/sync";
   static String imageUrl =
       "https://next.fenizotechnologies.com/Adrox/api/image-save";
   static String shopDetails({required String shopId}) {
@@ -51,9 +52,9 @@ class ApiUrl {
   static String searchSuggestions({
     required String searchWords,
     required double lat,
-    required lng,
+    required double lng,
   }) {
-    return "${base}api/v1/public/search?lat=$lat&lng=$lng&q=$searchWords";
+    return "${base}api/v1/public/search?q=$searchWords&lat=$lat&lng=$lng";
   }
 
   static String productList({

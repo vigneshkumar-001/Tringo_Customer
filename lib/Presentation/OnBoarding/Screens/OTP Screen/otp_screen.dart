@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_loader.dart';
@@ -12,6 +13,7 @@ import '../../../../Core/Utility/app_snackbar.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
+import '../../../../Core/contacts/contacts_service.dart';
 import '../Login Screen/Controller/login_notifier.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -81,7 +83,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final state = ref.watch(loginNotifierProvider);
     final notifier = ref.read(loginNotifierProvider.notifier);
     // Listen to login state changes (OTP, resend, errors)
-    ref.listen<LoginState>(loginNotifierProvider, (previous, next) {
+    ref.listen<LoginState>(loginNotifierProvider, (previous, next) async {
       final notifier = ref.read(loginNotifierProvider.notifier);
 
       // Error case
@@ -92,6 +94,28 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       // OTP verified
       else if (next.otpResponse != null) {
         AppSnackBar.success(context, 'OTP verified successfully!');
+
+        // final prefs = await SharedPreferences.getInstance();
+        // final alreadySynced = prefs.getBool('contacts_synced') ?? false;
+        //
+        // if (!alreadySynced) {
+        //   try {
+        //     // ✅ permission first
+        //     final contacts = await ContactsService.getAllContacts();
+        //
+        //     final limited = contacts.take(200).toList();
+        //     for (final c in limited) {
+        //       await ref
+        //           .read(apiDataSourceProvider)
+        //           .syncContacts(name: c.name, phone: c.phone);
+        //     }
+        //
+        //     await prefs.setBool('contacts_synced', true);
+        //     AppLogger.log.i("✅ Contacts synced: ${limited.length}");
+        //   } catch (e) {
+        //     AppLogger.log.e("❌ Contact sync failed: $e");
+        //   }
+        // }
         context.goNamed(AppRoutes.privacyPolicy);
         notifier.resetState();
       }
