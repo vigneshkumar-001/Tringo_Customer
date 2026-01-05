@@ -47,7 +47,6 @@ dependencies:
   mobile_number: ^3.0.0
   sim_card_info: ^1.0.2
   equatable: ^2.0.7
-  permission_handler: ^11.3.0
   dio: ^5.9.0
   logger: ^2.6.2
   top_snackbar_flutter: ^3.3.0
@@ -59,6 +58,8 @@ dependencies:
   cached_network_image: ^3.4.1
   skeletonizer: ^2.1.0+1
   country_picker: ^2.0.25
+  permission_handler: ^11.3.1
+  flutter_contacts: ^1.1.9+2
 
 dev_dependencies:
   flutter_test:

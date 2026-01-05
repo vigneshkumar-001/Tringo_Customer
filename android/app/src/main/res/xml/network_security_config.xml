@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">next.fenizotechnologies.com/Adrox/./assets/images/support/image_1766037063_694396478941a.jpg</domain>
+    </domain-config>
+</network-security-config>

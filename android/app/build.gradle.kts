@@ -7,8 +7,10 @@ plugins {
 
 android {
     namespace = "com.feni.tringo.tringo_app"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 35
+//        flutter.compileSdkVersion
+    ndkVersion =  "27.0.12077973"
+//        flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -16,7 +18,8 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget =
+            JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
@@ -24,8 +27,10 @@ android {
         applicationId = "com.feni.tringo.tringo_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+//            flutter.minSdkVersion
+        targetSdk = 35
+//            flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -38,6 +43,22 @@ android {
         }
     }
 }
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    implementation("com.google.android.material:material:1.12.0")
+
+    // ✅ ADD THIS (for loading imageUrl in overlay)
+    implementation("io.coil-kt:coil:2.6.0")
+}
+
 
 flutter {
     source = "../.."

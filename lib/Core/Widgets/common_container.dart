@@ -2140,7 +2140,6 @@ class CommonContainer {
       ),
     );
   }
-
   static Widget gradientContainer({
     required String text,
     String? locationImage,
@@ -2150,116 +2149,102 @@ class CommonContainer {
     Color textColor = AppColor.darkBlue,
     FontWeight? fontWeight,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColor.lowLightBlue,
-              AppColor.lowLightBlue.withOpacity(0.5),
-              AppColor.white.withOpacity(0.3),
-            ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(30),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColor.lowLightBlue,
+            AppColor.lowLightBlue.withOpacity(0.5),
+            AppColor.white.withOpacity(0.3),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (locationImage != null)
-              Image.asset(locationImage, height: 24, color: lIconColor),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (locationImage != null) ...[
+            Image.asset(locationImage, height: 24, color: lIconColor),
             const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                text,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: GoogleFont.Mulish(
-                  color: textColor,
-                  fontWeight: fontWeight,
-                ),
+          ],
+
+          //  NO Flexible/Expanded here
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220), // adjust if needed
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: GoogleFont.Mulish(
+                color: textColor,
+                fontWeight: fontWeight,
               ),
             ),
+          ),
+
+          if (iconImage != null) ...[
             const SizedBox(width: 6),
-            if (iconImage != null)
-              Image.asset(iconImage, height: 11, color: dIconColor),
+            Image.asset(iconImage, height: 11, color: dIconColor),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  // CommonContainer.glowAvatar (Figma-style)
-  /*  static Widget glowAvatar({
-    required String image,         // asset path
-    double size = 80,
-    double radius = 20,
-    Color borderColor = const Color(0xFFFFA11A),
-    double borderWidth = 2,
-    double glowBlur = 25,
-    double glowSpread = 2,
-    String? heroTag,
-    GestureTapCallback? onTap,
-  }) {
-    final content = Container(
-      width: size,
-      height: size,
-      // OUTER GLOW only (no fill)
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: [
-          BoxShadow(
-            color: borderColor.withOpacity(0.70),
-            blurRadius: glowBlur,
-            spreadRadius: glowSpread,
-            offset: const Offset(0, 0),
-          ),
-          // optional softer halo
-          BoxShadow(
-            color: borderColor.withOpacity(0.25),
-            blurRadius: glowBlur * 1.6,
-            spreadRadius: glowSpread * 1.2,
-            offset: const Offset(0, 0),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // full-bleed image
-            Image.asset(image, fit: BoxFit.cover),
+  // static Widget gradientContainer({
+  //   required String text,
+  //   String? locationImage,
+  //   String? iconImage,
+  //   Color lIconColor = AppColor.darkBlue,
+  //   Color dIconColor = AppColor.darkBlue,
+  //   Color textColor = AppColor.darkBlue,
+  //   FontWeight? fontWeight,
+  // }) {
+  //   return Expanded(
+  //     child: Container(
+  //       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+  //       decoration: BoxDecoration(
+  //         gradient: LinearGradient(
+  //           colors: [
+  //             AppColor.lowLightBlue,
+  //             AppColor.lowLightBlue.withOpacity(0.5),
+  //             AppColor.white.withOpacity(0.3),
+  //           ],
+  //           begin: Alignment.centerLeft,
+  //           end: Alignment.centerRight,
+  //         ),
+  //         borderRadius: BorderRadius.circular(30),
+  //       ),
+  //       child: Row(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           if (locationImage != null)
+  //             Image.asset(locationImage, height: 24, color: lIconColor),
+  //           const SizedBox(width: 6),
+  //           Flexible(
+  //             child: Text(
+  //               text,
+  //               overflow: TextOverflow.ellipsis,
+  //               maxLines: 1,
+  //               style: GoogleFont.Mulish(
+  //                 color: textColor,
+  //                 fontWeight: fontWeight,
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(width: 6),
+  //           if (iconImage != null)
+  //             Image.asset(iconImage, height: 11, color: dIconColor),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-            // TOP STROKE (thin border) – no background fill
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(radius),
-                    border: Border.all(color: borderColor, width: borderWidth),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
 
-    final tappable = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(radius),
-        child: content,
-      ),
-    );
-
-    return heroTag == null ? tappable : Hero(tag: heroTag!, child: tappable);
-  }*/
 
   static Widget glowAvatarUniversal({
     required ImageProvider
@@ -3052,7 +3037,7 @@ class CommonContainer {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         decoration: BoxDecoration(
           border: Border.all(color: AppColor.borderGray, width: 2),
           borderRadius: BorderRadius.circular(18),
@@ -3119,7 +3104,7 @@ class CommonContainer {
 
               Container(
                 width: 2,
-                height: 35,
+                height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
