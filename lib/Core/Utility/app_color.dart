@@ -14,10 +14,13 @@ class AppColor {
   static const lowLightWhite = Color(0xffFFF6F6);
   static const black = Color(0xff000000);
   static const red = Color(0xffF5465C);
+  static const mildBlack = Color(0xFF252525);
   static const gray84 = Color(0xFF6D6D6D);
   static const lowGery1 = Color(0xffF2F2F2);
+  static const mediumGray = Color(0xff777777);
   static const darkGrey = Color(0xffA1A1A1);
   static const lightGray = Color(0xffB2BCC3);
+  static const veryLightGray = Color(0xffF3F3F3);
   static const lightGray1 = Color(0xffB5BABD);
   static const lightGray2 = Color(0xffA1A1A1);
   static const lightGray3 = Color(0xff6D6D6D);

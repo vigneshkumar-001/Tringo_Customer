@@ -120,4 +120,7 @@ class AppImages {
   static String dateOfBirth = 'Assets/Images/Date of Brith.png';
   static String noDataGif = 'Assets/Images/NoDataImage.gif';
   static String leftStickArrow = 'Assets/Images/LeftStickArrow.png';
+  static String uploadPhoto = 'Assets/Images/UploadPhoto.png';
+  static String mobileNoInfoBCImage =
+      'Assets/Images/MobileNumberInfoBCImage.png';
 }

@@ -150,7 +150,7 @@ Sed euismod lectus ut mi varius, a tempor mi rhoncus. Sed sodales sollicitudin e
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 65,
+                                  horizontal: 50,
                                   vertical: 20,
                                 ),
                                 child: Text(

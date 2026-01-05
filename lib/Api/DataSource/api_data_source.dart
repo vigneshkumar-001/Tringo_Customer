@@ -23,6 +23,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/s
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
 
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
+import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
@@ -248,9 +249,11 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-  Future<Either<Failure, ShopsResponse>> getShopDetails({required String highlightId}) async {
+  Future<Either<Failure, ShopsResponse>> getShopDetails({
+    required String highlightId,
+  }) async {
     try {
-      final url = ApiUrl.shopList(kind: 'RETAIL',highlightId: highlightId);
+      final url = ApiUrl.shopList(kind: 'RETAIL', highlightId: highlightId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -344,9 +347,11 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-  Future<Either<Failure, ServiceResponse>> getServiceDetails({required String highlightId}) async {
+  Future<Either<Failure, ServiceResponse>> getServiceDetails({
+    required String highlightId,
+  }) async {
     try {
-      final url = ApiUrl.shopList(kind: 'SERVICE',highlightId: highlightId);
+      final url = ApiUrl.shopList(kind: 'SERVICE', highlightId: highlightId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -646,6 +651,7 @@ class ApiDataSource extends BaseApiDataSource {
 
   Future<Either<Failure, SearchSuggestionResponse>> searchSuggestions({
     required String searchWords,
+    required String query,
   }) async {
     try {
       final url = ApiUrl.searchSuggestions(
@@ -768,7 +774,6 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, AppVersionResponse>> getAppVersion({
     required String appName,
     required String appVersion,
@@ -803,6 +808,44 @@ class ApiDataSource extends BaseApiDataSource {
             ServerFailure(response.data['message'] ?? "Something went wrong"),
           );
         }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, ContactResponse>> syncContacts({
+    required List<Map<String, dynamic>> items,
+  }) async {
+    try {
+      final url = ApiUrl.contactInfo; // same endpoint
+
+      final payload = {"items": items};
+
+      final response = await Request.sendRequest(url, payload, 'Post', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(ContactResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Sync failed"),
+            );
+          }
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
       } else {
         final errorData = response.response?.data;
         if (errorData is Map && errorData.containsKey('message')) {
