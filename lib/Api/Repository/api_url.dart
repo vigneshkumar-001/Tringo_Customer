@@ -1,8 +1,8 @@
 class ApiUrl {
-  static const String base =
-      "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
-  //  static const String base = "https://bknd.tringobiz.com/";
-  // static const String base = "https://bknd.tringobiz.com/";
+  // static const String base =
+  //     "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
+  static const String base = "https://bknd.tringobiz.com/";
+
   static const String register = "${base}api/v1/auth/request-otp";
   static const String verifyOtp = "${base}api/v1/auth/verify-otp";
   static const String whatsAppVerify = "${base}api/v1/auth/check-whatsapp";
@@ -19,7 +19,7 @@ class ApiUrl {
   }
 
   static String home({required double lng, required double lat}) {
-    return "${base}api/v1/public/home?lat=$lat&lng=$lat";
+    return "${base}api/v1/public/home?lat=$lat&lng=$lng";
   }
 
   static String shopList({required String kind, required String highlightId}) {
@@ -55,7 +55,7 @@ class ApiUrl {
     required double lat,
     required double lng,
   }) {
-    return "${base}api/v1/public/search?q=$searchWords&lat=$lat&lng=$lng";
+    return "${base}api/v1/public/search?q=$searchWords";
   }
 
   static String productList({
@@ -65,7 +65,7 @@ class ApiUrl {
     required String searchWords,
     required String highlightId,
   }) {
-    return "${base}api/v1/public/listings?type=$kind&page=1&limit=0&highlightId=$highlightId";
+    return "${base}api/v1/public/listings?type=$kind&page=1&limit=15&highlightId=$highlightId";
   }
 
   // static String productList({

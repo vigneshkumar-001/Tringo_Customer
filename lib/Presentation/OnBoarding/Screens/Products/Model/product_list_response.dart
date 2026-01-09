@@ -21,11 +21,16 @@ class ProductListResponse {
     'data': data?.toJson(),
   };
 }
-
+int? _toInt(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is String) return int.tryParse(v);
+  return null;
+}
 class ProductListData {
   final String? type;
   final String? page;
-  final String? limit;
+  final int? limit;
   final int? total;
   final List<ProductItem> items;
 
@@ -41,8 +46,8 @@ class ProductListData {
     return ProductListData(
       type: json['type'],
       page: json['page'],
-      limit: json['limit'],
-      total: json['total'],
+      limit: _toInt(json['limit']),
+      total:_toInt( json['total']),
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => ProductItem.fromJson(e))
           .toList(),

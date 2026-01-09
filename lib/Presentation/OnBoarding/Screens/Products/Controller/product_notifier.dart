@@ -93,9 +93,11 @@ class ProductNotifier extends Notifier<ProductState> {
 
     result.fold(
       (failure) {
-        state = state.copyWith(isLoading: false, productListResponse: null);
+        print('Hii iam Product List Empty');
+        state = state.copyWith(isLoading: false, productListResponse: null,error: failure.message);
       },
       (response) {
+        print('Hii iam Product List');
         state = state.copyWith(isLoading: false, productListResponse: response);
       },
     );
