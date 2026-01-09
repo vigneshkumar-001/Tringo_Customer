@@ -662,7 +662,7 @@ class ApiDataSource extends BaseApiDataSource {
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
-      AppLogger.log.i(response);
+      AppLogger.log.i('response Datas \n $response');
 
       final data = response?.data;
 
@@ -722,7 +722,11 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e) {
+    } catch (e,st) {
+      AppLogger.log.e(e);
+      AppLogger.log.e(st);
+      print(e);
+      print(st);
       return Left(ServerFailure(e.toString()));
     }
   }

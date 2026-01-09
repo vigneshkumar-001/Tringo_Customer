@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/product_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Screens/product_details.dart';
@@ -26,6 +27,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
   @override
   void initState() {
     super.initState();
+    AppLogger.log.w('Iam In Produc List${widget.kind} ${widget.highlightId}');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(productNotifierProvider.notifier)
@@ -44,6 +46,7 @@ class _ProductListingState extends ConsumerState<ProductListing> {
     }
 
     final productListData = state.productListResponse;
+    print(productListData);
     if (productListData == null) {
       return const Scaffold(body: Center(child: NoDataScreen()));
     }
