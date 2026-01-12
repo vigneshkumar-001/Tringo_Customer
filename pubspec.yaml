@@ -60,6 +60,7 @@ dependencies:
   country_picker: ^2.0.25
   permission_handler: ^11.3.1
   flutter_contacts: ^1.1.9+2
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
