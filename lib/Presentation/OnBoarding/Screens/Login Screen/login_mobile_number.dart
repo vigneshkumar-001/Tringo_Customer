@@ -126,9 +126,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
       await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
 
-    // ✅ IMPORTANT CHANGE:
-    // We will ONLY react to whatsappResponse here.
-    // We will NOT auto react to loginResponse here (that was causing OTP send / side-effect sometimes).
+    // login state listener (same as yours)
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
       prev,
       next,
@@ -163,11 +161,27 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
         final fullPhone = '$_selectedDialCode$raw';
         final simToken = generateSimToken(fullPhone);
 
+        ref
+            .read(loginNotifierProvider.notifier)
+            .loginUser(phoneNumber: raw, simToken: simToken);
+        return;
+      }
+
+      if (prev?.loginResponse != next.loginResponse &&
+          next.loginResponse != null) {
+        await _ensurePhonePermission();
+
+        final raw = _lastRawPhone ?? '';
+        final fullPhone = '$_selectedDialCode$raw';
+        final simToken = generateSimToken(fullPhone);
+
         if (!mounted) return;
-        context.pushNamed(
-          AppRoutes.mobileNumberVerify,
-          extra: {'phone': raw, 'simToken': simToken},
-        );
+
+        // context.pushNamed(
+        //   AppRoutes.mobileNumberVerify,
+        //   extra: {'phone': raw, 'simToken': simToken},
+        // );
+        context.pushNamed(AppRoutes.otp, extra: raw);
 
         // ✅ reset after navigation
         ref.read(loginNotifierProvider.notifier).resetState();
@@ -437,16 +451,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                             onTap: state.isLoading
                                 ? null
                                 : () async {
-                                    final hasInternet =
-                                        await NetworkUtil.hasInternet();
-                                    if (!hasInternet) {
-                                      AppSnackBar.error(
-                                        context,
-                                        "You're offline. Check your network connection",
-                                      );
-                                      return;
-                                    }
-
                                     final formatted = mobileNumberController
                                         .text
                                         .trim();
