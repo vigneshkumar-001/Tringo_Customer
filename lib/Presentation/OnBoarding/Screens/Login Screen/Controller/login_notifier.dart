@@ -197,68 +197,7 @@ class LoginNotifier extends Notifier<LoginState> {
     );
   }
 
-  // Future<void> verifyOtp({required String contact, required String otp}) async {
-  //   state = state.copyWith(isLoading: true, error: null);
-  //
-  //   final result = await api.otp(contact: contact, otp: otp);
-  //
-  //   result.fold(
-  //     (failure) {
-  //       state = state.copyWith(isLoading: false, error: failure.message);
-  //     },
-  //     (response) async {
-  //       final prefs = await SharedPreferences.getInstance();
-  //
-  //       final data = response.data;
-  //       await prefs.setString('token', data?.accessToken ?? '');
-  //       await prefs.setString('refreshToken', data?.refreshToken ?? '');
-  //       await prefs.setString('sessionToken', data?.sessionToken ?? '');
-  //       await prefs.setString('role', data?.role ?? '');
-  //
-  //       final alreadySynced = prefs.getBool('contacts_synced') ?? false;
-  //
-  //       if (!alreadySynced) {
-  //         try {
-  //           AppLogger.log.i("✅ Contact sync started");
-  //
-  //           final contacts = await ContactsService.getAllContacts();
-  //           AppLogger.log.i("📞 contacts fetched = ${contacts.length}");
-  //
-  //           if (contacts.isEmpty) {
-  //             AppLogger.log.w(
-  //               "⚠️ Contacts empty OR permission denied. Not marking synced.",
-  //             );
-  //           } else {
-  //             final limited = contacts.take(200).toList();
-  //             AppLogger.log.i("🔁 syncing limited = ${limited.length}");
-  //
-  //             for (final c in limited) {
-  //               final res = await api.syncContacts(
-  //                 name: c.name,
-  //                 phone: c.phone,
-  //               );
-  //
-  //               res.fold(
-  //                 (l) =>
-  //                     AppLogger.log.e("❌ sync fail ${c.phone}: ${l.message}"),
-  //                 (r) => AppLogger.log.i(
-  //                   "✅ sync ok ${c.phone} | inserted=${r.data.inserted} touched=${r.data.touched} skipped=${r.data.skipped}",
-  //                 ),
-  //               );
-  //             }
-  //
-  //             await prefs.setBool('contacts_synced', true);
-  //             AppLogger.log.i("✅ Contacts synced done: ${limited.length}");
-  //           }
-  //         } catch (e) {
-  //           AppLogger.log.e("❌ Contact sync failed: $e");
-  //         }
-  //       }
-  //
-  //       state = state.copyWith(isLoading: false, otpResponse: response);
-  //     },
-  //   );
-  // }
+
 
   Future<void> verifyWhatsappNumber({
     required String contact,
