@@ -286,7 +286,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Future<bool?> _askToEnableLocationServices() {
     return showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => AlertDialog(backgroundColor: AppColor.white,
         title: const Text("Turn on Location"),
         content: const Text(
           "Please enable Location Services to show your current address.",

@@ -1,20 +1,26 @@
+// ===============================
+// LoginMobileNumber.dart (FULL)
+// ===============================
+
 import 'dart:io';
-import 'package:country_picker/country_picker.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_number/mobile_number.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_number/mobile_number.dart';
+import 'package:country_picker/country_picker.dart';
 
-import '../../../../Core/Utility/app_Images.dart';
-import '../../../../Core/Utility/app_color.dart';
-import '../../../../Core/Utility/app_loader.dart';
+import '../../../../../Core/Utility/app_Images.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_loader.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/app_go_routes.dart';
 import '../../../../Core/Utility/app_snackbar.dart';
-import '../../../../Core/Utility/google_font.dart';
+import '../../../../Core/Utility/network_util.dart';
 import '../../../../Core/Utility/sim_token.dart';
 import '../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../../../Core/Widgets/common_container.dart';
-import '../../../../Core/app_go_routes.dart';
 import 'Controller/login_notifier.dart';
 
 class LoginMobileNumber extends ConsumerStatefulWidget {
@@ -42,7 +48,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
   static const MethodChannel _native = MethodChannel('sim_info');
 
   bool _openingSystemRole = false; // ✅ prevent double open
-  bool _askedOnce = false;         // ✅ show only once on first open
+  bool _askedOnce = false; // ✅ show only once on first open
 
   // ---- PERMISSION ----
   Future<void> _ensurePhonePermission() async {
@@ -84,7 +90,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     }
   }
 
-
   /// ✅ SHOW ONLY SYSTEM POPUP ONCE
   Future<void> _maybeShowSystemCallerIdPopupOnce() async {
     if (!mounted) return;
@@ -104,27 +109,30 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     _openingSystemRole = false;
   }
 
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    //  On first open -> ask phone permission + show ONLY system popup once
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _ensurePhonePermission();
 
+      // ✅ keep your original overlay / callerId role logic
       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
       if (!overlayOk) {
-        await CallerIdRoleHelper.requestOverlayPermission(); // settings open
+        await CallerIdRoleHelper.requestOverlayPermission();
       }
 
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref); // caller id role popup
+      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
 
-
-    // login state listener (same as yours)
-    _sub = ref.listenManual<LoginState>(loginNotifierProvider, (prev, next) async {
+    // ✅ IMPORTANT CHANGE:
+    // We will ONLY react to whatsappResponse here.
+    // We will NOT auto react to loginResponse here (that was causing OTP send / side-effect sometimes).
+    _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
+      prev,
+      next,
+    ) async {
       if (!mounted) return;
 
       if (prev?.error != next.error && next.error != null) {
@@ -132,6 +140,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
         return;
       }
 
+      // ✅ WhatsApp verify success -> navigate to MobileNumberVerify
       if (prev?.whatsappResponse != next.whatsappResponse &&
           next.whatsappResponse != null) {
         final resp = next.whatsappResponse!;
@@ -154,33 +163,23 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
         final fullPhone = '$_selectedDialCode$raw';
         final simToken = generateSimToken(fullPhone);
 
-        ref.read(loginNotifierProvider.notifier).loginUser(
-          phoneNumber: raw,
-          simToken: simToken,
-        );
-        return;
-      }
-
-      if (prev?.loginResponse != next.loginResponse && next.loginResponse != null) {
-        await _ensurePhonePermission();
-
-        final raw = _lastRawPhone ?? '';
-        final fullPhone = '$_selectedDialCode$raw';
-        final simToken = generateSimToken(fullPhone);
-
         if (!mounted) return;
-
         context.pushNamed(
           AppRoutes.mobileNumberVerify,
           extra: {'phone': raw, 'simToken': simToken},
         );
 
+        // ✅ reset after navigation
         ref.read(loginNotifierProvider.notifier).resetState();
+        return;
       }
+
+      // ❌ REMOVED:
+      // loginResponse listener block is removed to prevent OTP being sent unexpectedly.
     });
   }
 
-  ///  IMPORTANT: resumed ல auto-open செய்யாதீங்க (double popup stop)
+  /// IMPORTANT: resumed ல auto-open செய்யாதீங்க (double popup stop)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
@@ -188,12 +187,10 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
       final ok = await _isDefaultCallerIdApp();
       debugPrint("🔁 resumed default ok? $ok");
 
-      // ✅ if user granted, stop asking
       if (ok) {
-        _askedOnce = true; // keep asked
+        _askedOnce = true;
       } else {
-        // ❌ user cancel/back -> DON'T auto open again here (avoid loop)
-        // next app launch / next screen you can ask again if you want
+        // don't auto open again
       }
     }
   }
@@ -238,8 +235,8 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
           _selectedFlag = country.flagEmoji;
         });
       },
-      countryListTheme: CountryListThemeData(
-        borderRadius: const BorderRadius.only(
+      countryListTheme: const CountryListThemeData(
+        borderRadius: BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
         ),
@@ -248,7 +245,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     );
   }
 
-  // ✅ உங்கள் existing UI build same — unchanged
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(loginNotifierProvider);
@@ -277,10 +273,13 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(left: 35, top: 50),
-                          child: Image.asset(AppImages.logo, height: 88, width: 85),
+                          child: Image.asset(
+                            AppImages.logo,
+                            height: 88,
+                            width: 85,
+                          ),
                         ),
                         const SizedBox(height: 81),
-
                         Padding(
                           padding: const EdgeInsets.only(left: 35, top: 20),
                           child: Column(
@@ -288,31 +287,44 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                             children: [
                               Row(
                                 children: [
-                                  Text('Login',
-                                      style: GoogleFont.Mulish(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 24,
-                                          color: AppColor.darkBlue)),
+                                  Text(
+                                    'Login',
+                                    style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 24,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
                                   const SizedBox(width: 5),
-                                  Text('With',
-                                      style: GoogleFont.Mulish(
-                                          fontSize: 24, color: AppColor.darkBlue)),
+                                  Text(
+                                    'With',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 24,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              Text('Your Mobile Number',
-                                  style: GoogleFont.Mulish(
-                                      fontSize: 24, color: AppColor.darkBlue)),
+                              Text(
+                                'Your Mobile Number',
+                                style: GoogleFont.Mulish(
+                                  fontSize: 24,
+                                  color: AppColor.darkBlue,
+                                ),
+                              ),
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 35),
 
                         // phone input (same)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 35),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColor.white,
                               borderRadius: BorderRadius.circular(17),
@@ -320,7 +332,9 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                 color: mobileNumberController.text.isNotEmpty
                                     ? AppColor.skyBlue
                                     : AppColor.black,
-                                width: mobileNumberController.text.isNotEmpty ? 2 : 1.5,
+                                width: mobileNumberController.text.isNotEmpty
+                                    ? 2
+                                    : 1.5,
                               ),
                             ),
                             child: Row(
@@ -330,30 +344,47 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(_selectedFlag, style: const TextStyle(fontSize: 20)),
+                                      Text(
+                                        _selectedFlag,
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
                                       const SizedBox(width: 6),
-                                      Text(_selectedDialCode,
-                                          style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 14,
-                                              color: AppColor.gray84)),
+                                      Text(
+                                        _selectedDialCode,
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppColor.gray84,
+                                        ),
+                                      ),
                                       const SizedBox(width: 4),
-                                      Image.asset(AppImages.drapDownImage,
-                                          height: 14, color: AppColor.darkGrey),
+                                      Image.asset(
+                                        AppImages.drapDownImage,
+                                        height: 14,
+                                        color: AppColor.darkGrey,
+                                      ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Container(width: 2, height: 35, color: AppColor.white3),
+                                Container(
+                                  width: 2,
+                                  height: 35,
+                                  color: AppColor.white3,
+                                ),
                                 const SizedBox(width: 9),
                                 Expanded(
                                   child: TextFormField(
                                     controller: mobileNumberController,
                                     keyboardType: TextInputType.phone,
                                     maxLength: 12,
-                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
                                     style: GoogleFont.Mulish(
-                                        fontWeight: FontWeight.w700, fontSize: 20),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 20,
+                                    ),
                                     onChanged: _formatPhoneNumber,
                                     decoration: InputDecoration(
                                       counterText: '',
@@ -364,6 +395,27 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                         fontSize: 16,
                                       ),
                                       border: InputBorder.none,
+                                      suffixIcon:
+                                          mobileNumberController.text.isNotEmpty
+                                          ? GestureDetector(
+                                              onTap: () {
+                                                mobileNumberController.clear();
+                                                setState(() {});
+                                              },
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 18,
+                                                    ),
+                                                child: Image.asset(
+                                                  AppImages.closeImageBlack,
+                                                  width: 6,
+                                                  height: 6,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                   ),
                                 ),
@@ -379,30 +431,52 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                           padding: const EdgeInsets.symmetric(horizontal: 35),
                           child: CommonContainer.button2(
                             width: double.infinity,
-                            loader: state.isLoading ? const ThreeDotsLoader() : null,
+                            loader: state.isLoading
+                                ? const ThreeDotsLoader()
+                                : null,
                             onTap: state.isLoading
                                 ? null
                                 : () async {
-                              final formatted = mobileNumberController.text.trim();
-                              final rawPhone = formatted.replaceAll(' ', '');
+                                    final hasInternet =
+                                        await NetworkUtil.hasInternet();
+                                    if (!hasInternet) {
+                                      AppSnackBar.error(
+                                        context,
+                                        "You're offline. Check your network connection",
+                                      );
+                                      return;
+                                    }
 
-                              if (rawPhone.isEmpty) {
-                                AppSnackBar.info(context, 'Please enter phone number');
-                                return;
-                              }
-                              if (rawPhone.length != 10) {
-                                AppSnackBar.info(
-                                    context, 'Please enter a valid 10-digit number');
-                                return;
-                              }
+                                    final formatted = mobileNumberController
+                                        .text
+                                        .trim();
+                                    final rawPhone = formatted.replaceAll(
+                                      ' ',
+                                      '',
+                                    );
 
-                              _lastRawPhone = rawPhone;
+                                    if (rawPhone.isEmpty) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter phone number',
+                                      );
+                                      return;
+                                    }
+                                    if (rawPhone.length != 10) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter a valid 10-digit number',
+                                      );
+                                      return;
+                                    }
 
-                              await notifier.verifyWhatsappNumber(
-                                contact: rawPhone,
-                                purpose: 'customer',
-                              );
-                            },
+                                    _lastRawPhone = rawPhone;
+
+                                    await notifier.verifyWhatsappNumber(
+                                      contact: rawPhone,
+                                      purpose: 'customer',
+                                    );
+                                  },
                             text: 'Verify Now',
                           ),
                         ),
@@ -426,7 +500,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
   }
 }
 
-// import 'dart:async';
+// import 'dart:io';
 // import 'package:country_picker/country_picker.dart';
 // import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart';
@@ -439,7 +513,9 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 // import '../../../../Core/Utility/app_loader.dart';
 // import '../../../../Core/Utility/app_snackbar.dart';
 // import '../../../../Core/Utility/google_font.dart';
+// import '../../../../Core/Utility/network_util.dart';
 // import '../../../../Core/Utility/sim_token.dart';
+// import '../../../../Core/Widgets/caller_id_role_helper.dart';
 // import '../../../../Core/Widgets/common_container.dart';
 // import '../../../../Core/app_go_routes.dart';
 // import 'Controller/login_notifier.dart';
@@ -451,7 +527,8 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //   ConsumerState<LoginMobileNumber> createState() => _LoginMobileNumberState();
 // }
 //
-// class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber> {
+// class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
+//     with WidgetsBindingObserver {
 //   bool isWhatsappChecked = false;
 //   String errorText = '';
 //   bool _isFormatting = false;
@@ -463,6 +540,12 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //
 //   String _selectedDialCode = '+91';
 //   String _selectedFlag = '🇮🇳';
+//
+//   // ✅ native channel
+//   static const MethodChannel _native = MethodChannel('sim_info');
+//
+//   bool _openingSystemRole = false; // ✅ prevent double open
+//   bool _askedOnce = false; // ✅ show only once on first open
 //
 //   // ---- PERMISSION ----
 //   Future<void> _ensurePhonePermission() async {
@@ -479,28 +562,107 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //     }
 //   }
 //
+//   // ✅ default caller id check
+//   Future<bool> _isDefaultCallerIdApp() async {
+//     try {
+//       if (!Platform.isAndroid) return true;
+//       final ok = await _native.invokeMethod<bool>('isDefaultCallerIdApp');
+//       debugPrint("✅ isDefaultCallerIdApp => $ok");
+//       return ok ?? false;
+//     } catch (e) {
+//       debugPrint('❌ isDefaultCallerIdApp error: $e');
+//       return false;
+//     }
+//   }
+//
+//   // ✅ request system popup (returns true if granted)
+//   Future<void> _requestDefaultCallerIdApp() async {
+//     try {
+//       if (!Platform.isAndroid) return;
+//       debugPrint("🔥 calling requestDefaultCallerIdApp...");
+//       await _native.invokeMethod('requestDefaultCallerIdApp');
+//       debugPrint("✅ requestDefaultCallerIdApp invoked");
+//     } catch (e) {
+//       debugPrint('❌ requestDefaultCallerIdApp error: $e');
+//     }
+//   }
+//
+//   /// ✅ SHOW ONLY SYSTEM POPUP ONCE
+//   Future<void> _maybeShowSystemCallerIdPopupOnce() async {
+//     if (!mounted) return;
+//     if (!Platform.isAndroid) return;
+//     if (_openingSystemRole) return;
+//     if (_askedOnce) return;
+//
+//     final ok = await _isDefaultCallerIdApp();
+//     if (ok) return;
+//
+//     _askedOnce = true;
+//     _openingSystemRole = true;
+//
+//     await _requestDefaultCallerIdApp();
+//
+//     await Future.delayed(const Duration(milliseconds: 300));
+//     _openingSystemRole = false;
+//   }
+//
 //   @override
 //   void initState() {
 //     super.initState();
+//     WidgetsBinding.instance.addObserver(this);
 //
-//     // ✅ ask permission once
+//     //  On first open -> ask phone permission + show ONLY system popup once
 //     WidgetsBinding.instance.addPostFrameCallback((_) async {
 //       await _ensurePhonePermission();
+//
+//       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+//       if (!overlayOk) {
+//         await CallerIdRoleHelper.requestOverlayPermission(); // settings open
+//       }
+//
+//       await CallerIdRoleHelper.maybeAskOnce(ref: ref); // caller id role popup
 //     });
 //
+//     // login state listener (same as yours)
 //     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
 //       prev,
 //       next,
 //     ) async {
 //       if (!mounted) return;
 //
-//       // ✅ show error only when it changes
 //       if (prev?.error != next.error && next.error != null) {
 //         AppSnackBar.error(context, next.error!);
 //         return;
 //       }
 //
-//       // ✅ WhatsApp response: trigger ONLY when whatsappResponse changes
+//       // if (prev?.whatsappResponse != next.whatsappResponse &&
+//       //     next.whatsappResponse != null) {
+//       //   final resp = next.whatsappResponse!;
+//       //   final hasWhatsapp = resp.data.hasWhatsapp;
+//       //
+//       //   if (!hasWhatsapp) {
+//       //     if (mounted) setState(() => isWhatsappChecked = false);
+//       //     AppSnackBar.error(
+//       //       context,
+//       //       'This number is not registered on WhatsApp. Please use a WhatsApp number.',
+//       //     );
+//       //     return;
+//       //   }
+//       //
+//       //   if (mounted) setState(() => isWhatsappChecked = true);
+//       //
+//       //   final raw = _lastRawPhone;
+//       //   if (raw == null) return;
+//       //
+//       //   final fullPhone = '$_selectedDialCode$raw';
+//       //   final simToken = generateSimToken(fullPhone);
+//       //
+//       //   ref
+//       //       .read(loginNotifierProvider.notifier)
+//       //       .loginUser(phoneNumber: raw, simToken: simToken);
+//       //   return;
+//       // }
+//
 //       if (prev?.whatsappResponse != next.whatsappResponse &&
 //           next.whatsappResponse != null) {
 //         final resp = next.whatsappResponse!;
@@ -523,14 +685,18 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //         final fullPhone = '$_selectedDialCode$raw';
 //         final simToken = generateSimToken(fullPhone);
 //
-//         // ✅ call loginUser once (only when whatsappResponse arrived)
-//         ref
-//             .read(loginNotifierProvider.notifier)
-//             .loginUser(phoneNumber: raw, simToken: simToken);
+//         // ✅ ONLY navigate (NO OTP send here)
+//         if (!mounted) return;
+//         context.pushNamed(
+//           AppRoutes.mobileNumberVerify,
+//           extra: {'phone': raw, 'simToken': simToken},
+//         );
+//
+//         ref.read(loginNotifierProvider.notifier).resetState();
 //         return;
 //       }
 //
-//       // ✅ Login response: trigger ONLY when loginResponse changes
+//
 //       if (prev?.loginResponse != next.loginResponse &&
 //           next.loginResponse != null) {
 //         await _ensurePhonePermission();
@@ -546,82 +712,32 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //           extra: {'phone': raw, 'simToken': simToken},
 //         );
 //
-//         //  reset after navigation so it won't re-trigger
 //         ref.read(loginNotifierProvider.notifier).resetState();
 //       }
 //     });
 //   }
 //
-//   // @override
-//   // void initState() {
-//   //   super.initState();
-//   //
-//   //   // Ask permission once when screen opens
-//   //   _ensurePhonePermission();
-//   //
-//   //   // Listen to LoginState changes
-//   //   _sub = ref.listenManual<LoginState>(
-//   //     loginNotifierProvider,
-//   //         (prev, next) {
-//   //       if (!mounted) return;
-//   //
-//   //       // 1) New error (only when changed)
-//   //       if (prev?.error != next.error && next.error != null) {
-//   //         AppSnackBar.error(context, next.error!);
-//   //       }
-//   //
-//   //       // 2) WhatsApp verification result (only when updated)
-//   //       if (prev?.whatsappResponse != next.whatsappResponse &&
-//   //           next.whatsappResponse != null) {
-//   //         final resp = next.whatsappResponse!;
-//   //         final hasWhatsapp = resp.data.hasWhatsapp; // adjust to your model
-//   //
-//   //         if (hasWhatsapp) {
-//   //           setState(() => isWhatsappChecked = true);
-//   //
-//   //           final raw = _lastRawPhone;
-//   //           if (raw != null) {
-//   //             final fullPhone = '$_selectedDialCode$raw';
-//   //             final simToken = generateSimToken(fullPhone);
-//   //
-//   //             // NOTE: your backend currently builds "+91$phone" inside request.
-//   //             // For full multi-country support, update backend later.
-//   //             debugPrint('Generated simToken: $simToken');
-//   //
-//   //             ref
-//   //                 .read(loginNotifierProvider.notifier)
-//   //                 .loginUser(phoneNumber: raw, simToken: simToken);
-//   //           }
-//   //         } else {
-//   //           setState(() => isWhatsappChecked = false);
-//   //           AppSnackBar.error(
-//   //             context,
-//   //             'This number is not registered on WhatsApp. Please use a WhatsApp number.',
-//   //           );
-//   //         }
-//   //       }
-//   //
-//   //       // 3) Login result (only when updated) → navigate once
-//   //       if (prev?.loginResponse != next.loginResponse &&
-//   //           next.loginResponse != null) {
-//   //         final raw = _lastRawPhone ?? '';
-//   //         final fullPhone = '$_selectedDialCode$raw';
-//   //         final simToken = generateSimToken(fullPhone);
-//   //
-//   //         context.pushNamed(
-//   //           AppRoutes.mobileNumberVerify,
-//   //           extra: {'phone': raw, 'simToken': simToken},
-//   //         );
-//   //
-//   //         // Clear state so listener won't re-trigger
-//   //         ref.read(loginNotifierProvider.notifier).resetState();
-//   //       }
-//   //     },
-//   //   );
-//   // }
+//   ///  IMPORTANT: resumed ல auto-open செய்யாதீங்க (double popup stop)
+//   @override
+//   void didChangeAppLifecycleState(AppLifecycleState state) async {
+//     if (state == AppLifecycleState.resumed) {
+//       await Future.delayed(const Duration(milliseconds: 400));
+//       final ok = await _isDefaultCallerIdApp();
+//       debugPrint("🔁 resumed default ok? $ok");
+//
+//       // ✅ if user granted, stop asking
+//       if (ok) {
+//         _askedOnce = true; // keep asked
+//       } else {
+//         // ❌ user cancel/back -> DON'T auto open again here (avoid loop)
+//         // next app launch / next screen you can ask again if you want
+//       }
+//     }
+//   }
 //
 //   @override
 //   void dispose() {
+//     WidgetsBinding.instance.removeObserver(this);
 //     _sub?.close();
 //     mobileNumberController.dispose();
 //     super.dispose();
@@ -629,7 +745,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //
 //   void _formatPhoneNumber(String value) {
 //     setState(() => errorText = '');
-//
 //     if (_isFormatting) return;
 //     _isFormatting = true;
 //
@@ -665,38 +780,12 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //           topLeft: Radius.circular(16),
 //           topRight: Radius.circular(16),
 //         ),
-//         inputDecoration: InputDecoration(
-//           filled: true,
-//           fillColor: Colors.grey.shade100,
-//           hintText: 'Search country or code',
-//           hintStyle: GoogleFont.Mulish(
-//             fontSize: 14,
-//             fontWeight: FontWeight.w500,
-//             color: AppColor.borderLightGrey,
-//           ),
-//           prefixIcon: const Icon(Icons.search_rounded, size: 22),
-//           contentPadding: const EdgeInsets.symmetric(
-//             horizontal: 16,
-//             vertical: 12,
-//           ),
-//           enabledBorder: OutlineInputBorder(
-//             borderRadius: BorderRadius.circular(30),
-//             borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-//           ),
-//           focusedBorder: OutlineInputBorder(
-//             borderRadius: BorderRadius.circular(30),
-//             borderSide: BorderSide(color: AppColor.skyBlue, width: 1.5),
-//           ),
-//           border: OutlineInputBorder(
-//             borderRadius: BorderRadius.circular(30),
-//             borderSide: BorderSide.none,
-//           ),
-//         ),
 //         bottomSheetHeight: 500,
 //       ),
 //     );
 //   }
 //
+//   // ✅ உங்கள் existing UI build same — unchanged
 //   @override
 //   Widget build(BuildContext context) {
 //     final state = ref.watch(loginNotifierProvider);
@@ -723,7 +812,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                     child: Column(
 //                       crossAxisAlignment: CrossAxisAlignment.start,
 //                       children: [
-//                         // Logo
 //                         Padding(
 //                           padding: const EdgeInsets.only(left: 35, top: 50),
 //                           child: Image.asset(
@@ -734,7 +822,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                         ),
 //                         const SizedBox(height: 81),
 //
-//                         // Titles
 //                         Padding(
 //                           padding: const EdgeInsets.only(left: 35, top: 20),
 //                           child: Column(
@@ -773,7 +860,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //
 //                         const SizedBox(height: 35),
 //
-//                         // Phone input
+//                         // phone input (same)
 //                         Padding(
 //                           padding: const EdgeInsets.symmetric(horizontal: 35),
 //                           child: Container(
@@ -795,7 +882,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                             ),
 //                             child: Row(
 //                               children: [
-//                                 // Country selector
 //                                 GestureDetector(
 //                                   onTap: _showCountryPicker,
 //                                   child: Row(
@@ -827,19 +913,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                                 Container(
 //                                   width: 2,
 //                                   height: 35,
-//                                   decoration: BoxDecoration(
-//                                     gradient: LinearGradient(
-//                                       begin: Alignment.topCenter,
-//                                       end: Alignment.bottomCenter,
-//                                       colors: [
-//                                         AppColor.white.withOpacity(0.5),
-//                                         AppColor.white3,
-//                                         AppColor.white3,
-//                                         AppColor.white.withOpacity(0.5),
-//                                       ],
-//                                     ),
-//                                     borderRadius: BorderRadius.circular(1),
-//                                   ),
+//                                   color: AppColor.white3,
 //                                 ),
 //                                 const SizedBox(width: 9),
 //                                 Expanded(
@@ -864,27 +938,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                                         fontSize: 16,
 //                                       ),
 //                                       border: InputBorder.none,
-//                                       suffixIcon:
-//                                           mobileNumberController.text.isNotEmpty
-//                                           ? GestureDetector(
-//                                               onTap: () {
-//                                                 mobileNumberController.clear();
-//                                                 setState(() {});
-//                                               },
-//                                               child: Padding(
-//                                                 padding:
-//                                                     const EdgeInsets.symmetric(
-//                                                       vertical: 17,
-//                                                     ),
-//                                                 child: Image.asset(
-//                                                   AppImages.closeImage,
-//                                                   width: 10,
-//                                                   height: 10,
-//                                                   fit: BoxFit.contain,
-//                                                 ),
-//                                               ),
-//                                             )
-//                                           : null,
 //                                     ),
 //                                   ),
 //                                 ),
@@ -895,80 +948,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //
 //                         const SizedBox(height: 35),
 //
-//                         // WhatsApp checkbox row
-//                         Padding(
-//                           padding: const EdgeInsets.only(left: 25, right: 10),
-//                           child: ListTile(
-//                             dense: true,
-//                             minLeadingWidth: 0,
-//                             horizontalTitleGap: 10,
-//                             leading: Image.asset(
-//                               AppImages.whatsAppBlack,
-//                               height: 20,
-//                             ),
-//                             title: Text(
-//                               'Get Instant Updates',
-//                               style: GoogleFont.Mulish(
-//                                 fontSize: 12,
-//                                 fontWeight: FontWeight.w800,
-//                                 color: AppColor.darkBlue,
-//                               ),
-//                             ),
-//                             subtitle: Row(
-//                               children: [
-//                                 Text(
-//                                   'From Tringo on your',
-//                                   style: GoogleFont.Mulish(
-//                                     fontSize: 10,
-//                                     fontWeight: FontWeight.w500,
-//                                     color: AppColor.darkGrey,
-//                                   ),
-//                                 ),
-//                                 const SizedBox(width: 5),
-//                                 Text(
-//                                   'whatsapp',
-//                                   style: GoogleFont.Mulish(
-//                                     fontSize: 10,
-//                                     fontWeight: FontWeight.w700,
-//                                     color: AppColor.gray84,
-//                                   ),
-//                                 ),
-//                               ],
-//                             ),
-//                             trailing: GestureDetector(
-//                               onTap: () {
-//                                 setState(() {
-//                                   isWhatsappChecked = !isWhatsappChecked;
-//                                 });
-//                               },
-//                               child: Container(
-//                                 decoration: BoxDecoration(
-//                                   border: Border.all(
-//                                     color: isWhatsappChecked
-//                                         ? AppColor.green
-//                                         : AppColor.darkGrey,
-//                                     width: 2,
-//                                   ),
-//                                   borderRadius: BorderRadius.circular(12),
-//                                 ),
-//                                 child: Padding(
-//                                   padding: const EdgeInsets.all(8.0),
-//                                   child: isWhatsappChecked
-//                                       ? Image.asset(
-//                                           AppImages.tickImage,
-//                                           height: 12,
-//                                           color: AppColor.green,
-//                                         )
-//                                       : const SizedBox(width: 12, height: 12),
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//
-//                         const SizedBox(height: 35),
-//
-//                         // VERIFY BUTTON
+//                         // verify button (same)
 //                         Padding(
 //                           padding: const EdgeInsets.symmetric(horizontal: 35),
 //                           child: CommonContainer.button2(
@@ -979,6 +959,17 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                             onTap: state.isLoading
 //                                 ? null
 //                                 : () async {
+//                                     //🔴 INTERNET CHECK FIRST
+//                                     final hasInternet =
+//                                         await NetworkUtil.hasInternet();
+//                                     if (!hasInternet) {
+//                                       AppSnackBar.error(
+//                                         context,
+//                                         "You're offline. Check your network connection",
+//                                       );
+//                                       return; //⛔ STOP HERE
+//                                     }
+//
 //                                     final formatted = mobileNumberController
 //                                         .text
 //                                         .trim();
@@ -1031,3 +1022,5 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //     );
 //   }
 // }
+//
+//
