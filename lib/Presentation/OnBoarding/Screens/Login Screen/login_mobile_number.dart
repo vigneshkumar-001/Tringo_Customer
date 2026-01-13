@@ -42,7 +42,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
   static const MethodChannel _native = MethodChannel('sim_info');
 
   bool _openingSystemRole = false; // ✅ prevent double open
-  bool _askedOnce = false;         // ✅ show only once on first open
+  bool _askedOnce = false; // ✅ show only once on first open
 
   // ---- PERMISSION ----
   Future<void> _ensurePhonePermission() async {
@@ -84,7 +84,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     }
   }
 
-
   /// ✅ SHOW ONLY SYSTEM POPUP ONCE
   Future<void> _maybeShowSystemCallerIdPopupOnce() async {
     if (!mounted) return;
@@ -104,7 +103,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     _openingSystemRole = false;
   }
 
-
   @override
   void initState() {
     super.initState();
@@ -122,9 +120,11 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
       await CallerIdRoleHelper.maybeAskOnce(ref: ref); // caller id role popup
     });
 
-
     // login state listener (same as yours)
-    _sub = ref.listenManual<LoginState>(loginNotifierProvider, (prev, next) async {
+    _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
+      prev,
+      next,
+    ) async {
       if (!mounted) return;
 
       if (prev?.error != next.error && next.error != null) {
@@ -154,14 +154,14 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
         final fullPhone = '$_selectedDialCode$raw';
         final simToken = generateSimToken(fullPhone);
 
-        ref.read(loginNotifierProvider.notifier).loginUser(
-          phoneNumber: raw,
-          simToken: simToken,
-        );
+        ref
+            .read(loginNotifierProvider.notifier)
+            .loginUser(phoneNumber: raw, simToken: simToken);
         return;
       }
 
-      if (prev?.loginResponse != next.loginResponse && next.loginResponse != null) {
+      if (prev?.loginResponse != next.loginResponse &&
+          next.loginResponse != null) {
         await _ensurePhonePermission();
 
         final raw = _lastRawPhone ?? '';
@@ -170,10 +170,11 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
         if (!mounted) return;
 
-        context.pushNamed(
-          AppRoutes.mobileNumberVerify,
-          extra: {'phone': raw, 'simToken': simToken},
-        );
+        // context.pushNamed(
+        //   AppRoutes.mobileNumberVerify,
+        //   extra: {'phone': raw, 'simToken': simToken},
+        // );
+        context.pushNamed(AppRoutes.otp, extra: raw);
 
         ref.read(loginNotifierProvider.notifier).resetState();
       }
@@ -277,7 +278,11 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(left: 35, top: 50),
-                          child: Image.asset(AppImages.logo, height: 88, width: 85),
+                          child: Image.asset(
+                            AppImages.logo,
+                            height: 88,
+                            width: 85,
+                          ),
                         ),
                         const SizedBox(height: 81),
 
@@ -288,20 +293,31 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                             children: [
                               Row(
                                 children: [
-                                  Text('Login',
-                                      style: GoogleFont.Mulish(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 24,
-                                          color: AppColor.darkBlue)),
+                                  Text(
+                                    'Login',
+                                    style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 24,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
                                   const SizedBox(width: 5),
-                                  Text('With',
-                                      style: GoogleFont.Mulish(
-                                          fontSize: 24, color: AppColor.darkBlue)),
+                                  Text(
+                                    'With',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 24,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              Text('Your Mobile Number',
-                                  style: GoogleFont.Mulish(
-                                      fontSize: 24, color: AppColor.darkBlue)),
+                              Text(
+                                'Your Mobile Number',
+                                style: GoogleFont.Mulish(
+                                  fontSize: 24,
+                                  color: AppColor.darkBlue,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -312,7 +328,10 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 35),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColor.white,
                               borderRadius: BorderRadius.circular(17),
@@ -320,7 +339,9 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                 color: mobileNumberController.text.isNotEmpty
                                     ? AppColor.skyBlue
                                     : AppColor.black,
-                                width: mobileNumberController.text.isNotEmpty ? 2 : 1.5,
+                                width: mobileNumberController.text.isNotEmpty
+                                    ? 2
+                                    : 1.5,
                               ),
                             ),
                             child: Row(
@@ -330,30 +351,47 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(_selectedFlag, style: const TextStyle(fontSize: 20)),
+                                      Text(
+                                        _selectedFlag,
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
                                       const SizedBox(width: 6),
-                                      Text(_selectedDialCode,
-                                          style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 14,
-                                              color: AppColor.gray84)),
+                                      Text(
+                                        _selectedDialCode,
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppColor.gray84,
+                                        ),
+                                      ),
                                       const SizedBox(width: 4),
-                                      Image.asset(AppImages.drapDownImage,
-                                          height: 14, color: AppColor.darkGrey),
+                                      Image.asset(
+                                        AppImages.drapDownImage,
+                                        height: 14,
+                                        color: AppColor.darkGrey,
+                                      ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Container(width: 2, height: 35, color: AppColor.white3),
+                                Container(
+                                  width: 2,
+                                  height: 35,
+                                  color: AppColor.white3,
+                                ),
                                 const SizedBox(width: 9),
                                 Expanded(
                                   child: TextFormField(
                                     controller: mobileNumberController,
                                     keyboardType: TextInputType.phone,
                                     maxLength: 12,
-                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
                                     style: GoogleFont.Mulish(
-                                        fontWeight: FontWeight.w700, fontSize: 20),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 20,
+                                    ),
                                     onChanged: _formatPhoneNumber,
                                     decoration: InputDecoration(
                                       counterText: '',
@@ -379,30 +417,42 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                           padding: const EdgeInsets.symmetric(horizontal: 35),
                           child: CommonContainer.button2(
                             width: double.infinity,
-                            loader: state.isLoading ? const ThreeDotsLoader() : null,
+                            loader: state.isLoading
+                                ? const ThreeDotsLoader()
+                                : null,
                             onTap: state.isLoading
                                 ? null
                                 : () async {
-                              final formatted = mobileNumberController.text.trim();
-                              final rawPhone = formatted.replaceAll(' ', '');
+                                    final formatted = mobileNumberController
+                                        .text
+                                        .trim();
+                                    final rawPhone = formatted.replaceAll(
+                                      ' ',
+                                      '',
+                                    );
 
-                              if (rawPhone.isEmpty) {
-                                AppSnackBar.info(context, 'Please enter phone number');
-                                return;
-                              }
-                              if (rawPhone.length != 10) {
-                                AppSnackBar.info(
-                                    context, 'Please enter a valid 10-digit number');
-                                return;
-                              }
+                                    if (rawPhone.isEmpty) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter phone number',
+                                      );
+                                      return;
+                                    }
+                                    if (rawPhone.length != 10) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter a valid 10-digit number',
+                                      );
+                                      return;
+                                    }
 
-                              _lastRawPhone = rawPhone;
+                                    _lastRawPhone = rawPhone;
 
-                              await notifier.verifyWhatsappNumber(
-                                contact: rawPhone,
-                                purpose: 'customer',
-                              );
-                            },
+                                    await notifier.verifyWhatsappNumber(
+                                      contact: rawPhone,
+                                      purpose: 'customer',
+                                    );
+                                  },
                             text: 'Verify Now',
                           ),
                         ),
