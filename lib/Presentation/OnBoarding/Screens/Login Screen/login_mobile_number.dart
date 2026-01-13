@@ -170,11 +170,11 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
         if (!mounted) return;
 
-        // context.pushNamed(
-        //   AppRoutes.mobileNumberVerify,
-        //   extra: {'phone': raw, 'simToken': simToken},
-        // );
-        context.pushNamed(AppRoutes.otp, extra: raw);
+        context.pushNamed(
+          AppRoutes.mobileNumberVerify,
+          extra: {'phone': raw, 'simToken': simToken},
+        );
+        // context.pushNamed(AppRoutes.otp, extra: raw);
 
         ref.read(loginNotifierProvider.notifier).resetState();
       }
