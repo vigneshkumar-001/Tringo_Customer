@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Api/Repository/failure.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/login_new_response.dart';
 
 import '../../../../../Api/DataSource/api_data_source.dart';
 
@@ -17,6 +19,7 @@ import '../Model/whatsapp_response.dart';
 class LoginState {
   final bool isLoading;
   final LoginResponse? loginResponse;
+  final OtpLoginResponse? otpLoginResponse;
   final OtpResponse? otpResponse;
   final String? error;
   final WhatsappResponse? whatsappResponse;
@@ -29,6 +32,7 @@ class LoginState {
     this.error,
     this.whatsappResponse,
     this.contactResponse,
+    this.otpLoginResponse,
   });
 
   factory LoginState.initial() => const LoginState();
@@ -40,6 +44,7 @@ class LoginState {
     String? error,
     WhatsappResponse? whatsappResponse,
     ContactResponse? contactResponse,
+    OtpLoginResponse? otpLoginResponse,
   }) {
     return LoginState(
       isLoading: isLoading ?? this.isLoading,
@@ -48,6 +53,7 @@ class LoginState {
       error: error,
       whatsappResponse: whatsappResponse ?? this.whatsappResponse,
       contactResponse: contactResponse ?? this.contactResponse,
+      otpLoginResponse: otpLoginResponse ?? this.otpLoginResponse,
     );
   }
 }
@@ -60,7 +66,7 @@ class LoginNotifier extends Notifier<LoginState> {
     api = ref.read(apiDataSourceProvider);
     return LoginState.initial();
   }
-  //
+
   // Future<void> loginUser({
   //   required String phoneNumber,
   //   String? simToken,
@@ -75,21 +81,22 @@ class LoginNotifier extends Notifier<LoginState> {
   //   );
   //
   //   result.fold(
-  //         (failure) {
+  //     (failure) {
   //       state = state.copyWith(
   //         isLoading: false,
   //         error: failure.message,
+  //         loginResponse: null,
   //       );
   //     },
-  //         (response) {
+  //     (response) {
   //       state = state.copyWith(
   //         isLoading: false,
   //         loginResponse: response,
+  //         error: null,
   //       );
   //     },
   //   );
   // }
-  //
 
   Future<void> loginUser({
     required String phoneNumber,
@@ -118,6 +125,100 @@ class LoginNotifier extends Notifier<LoginState> {
           loginResponse: response,
           error: null,
         );
+      },
+    );
+  }
+
+  Future<void> loginNewUser({
+    required String phoneNumber,
+    String? simToken,
+    String? page,
+  }) async {
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      otpLoginResponse: null,
+    );
+
+    final result = await api.mobileNewNumberLogin(
+      phoneNumber,
+      simToken ?? "",
+      page: page ?? "",
+    );
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          isLoading: false,
+          error: failure.message,
+          otpLoginResponse: null,
+        );
+      },
+      (response) async {
+        state = state.copyWith(
+          isLoading: false,
+          otpLoginResponse: response,
+          error: null,
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        await AppPrefs.setToken(response.data?.accessToken ?? '');
+        await AppPrefs.setRefreshToken(response.data?.refreshToken ?? '');
+        await AppPrefs.setSessionToken(response.data?.sessionToken ?? '');
+        await AppPrefs.setRole(response.data?.role ?? '');
+
+        AppLogger.log.i('✅ SIM login token stored');
+
+        //  HERE: contacts sync for SIM-direct login
+        final alreadySynced = prefs.getBool('contacts_synced') ?? false;
+
+        // Optional: only sync when SIM verified true
+        final simVerified = response.data?.simVerified == true;
+
+        if (!alreadySynced && simVerified) {
+          try {
+            AppLogger.log.i("✅ Contact sync started (SIM login)");
+
+            final contacts = await ContactsService.getAllContacts();
+            AppLogger.log.i("📞 contacts fetched = ${contacts.length}");
+
+            if (contacts.isEmpty) {
+              AppLogger.log.w(
+                "⚠️ Contacts empty / permission denied. Will retry later.",
+              );
+              return;
+            }
+
+            final limited = contacts.take(500).toList();
+
+            final items = limited
+                .map((c) => {"name": c.name, "phone": "+91${c.phone}"})
+                .toList();
+
+            // ✅ chunk to reduce payload size (recommended)
+            const chunkSize = 200;
+            for (var i = 0; i < items.length; i += chunkSize) {
+              final chunk = items.sublist(
+                i,
+                (i + chunkSize > items.length) ? items.length : i + chunkSize,
+              );
+
+              final res = await api.syncContacts(items: chunk);
+
+              res.fold(
+                (l) => AppLogger.log.e("❌ batch sync fail: ${l.message}"),
+                (r) => AppLogger.log.i(
+                  "✅ batch ok total=${r.data.total} inserted=${r.data.inserted} touched=${r.data.touched} skipped=${r.data.skipped}",
+                ),
+              );
+            }
+
+            await prefs.setBool('contacts_synced', true);
+            AppLogger.log.i("✅ Contacts synced (SIM login): ${limited.length}");
+          } catch (e) {
+            AppLogger.log.e("❌ Contact sync failed (SIM login): $e");
+          }
+        }
       },
     );
   }
@@ -197,8 +298,6 @@ class LoginNotifier extends Notifier<LoginState> {
     );
   }
 
-
-
   Future<void> verifyWhatsappNumber({
     required String contact,
     required String purpose,
@@ -272,148 +371,3 @@ final apiDataSourceProvider = Provider<ApiDataSource>((ref) {
 final loginNotifierProvider = NotifierProvider<LoginNotifier, LoginState>(
   LoginNotifier.new,
 );
-
-///old///
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:tringo_app/Api/DataSource/api_data_source.dart';
-// import 'package:tringo_app/Api/Repository/failure.dart';
-// import 'package:tringo_app/Core/Const/app_logger.dart';
-//
-// // ✅ IMPORTANT: use the SAME model files as ApiDataSource
-// import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/login_response.dart';
-// import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/otp_response.dart';
-// import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/whatsapp_response.dart';
-//
-// class LoginState {
-//   final bool isLoading;
-//   final LoginResponse? loginResponse;
-//   final OtpResponse? otpResponse;
-//   final WhatsappResponse? whatsappResponse;
-//   final String? error;
-//
-//   const LoginState({
-//     this.isLoading = false,
-//     this.loginResponse,
-//     this.otpResponse,
-//     this.whatsappResponse,
-//     this.error,
-//   });
-//
-//   factory LoginState.initial() => const LoginState();
-//
-//   LoginState copyWith({
-//     bool? isLoading,
-//     LoginResponse? loginResponse,
-//     OtpResponse? otpResponse,
-//     WhatsappResponse? whatsappResponse,
-//     String? error,
-//   }) {
-//     return LoginState(
-//       isLoading: isLoading ?? this.isLoading,
-//       loginResponse: loginResponse ?? this.loginResponse,
-//       otpResponse: otpResponse ?? this.otpResponse,
-//       whatsappResponse: whatsappResponse ?? this.whatsappResponse,
-//       error: error,
-//     );
-//   }
-// }
-//
-// /// --- LOGIN NOTIFIER ---
-// class LoginNotifier extends Notifier<LoginState> {
-//   @override
-//   LoginState build() => LoginState.initial();
-//
-//   ApiDataSource get api => ref.read(apiDataSourceProvider);
-//
-//   void resetState() => state = LoginState.initial();
-//
-//   Future<void> loginUser({required String phoneNumber, String? page}) async {
-//     state = state.copyWith(isLoading: true, error: null);
-//
-//     final result = await api.mobileNumberLogin(phoneNumber, page ?? '');
-//
-//     result.fold(
-//       (Failure failure) {
-//         state = state.copyWith(isLoading: false, error: failure.message);
-//       },
-//       (LoginResponse response) {
-//         state = state.copyWith(
-//           isLoading: false,
-//           loginResponse: response,
-//           error: null,
-//         );
-//       },
-//     );
-//   }
-//
-//   Future<void> verifyOtp({required String contact, required String otp}) async {
-//     state = state.copyWith(isLoading: true, error: null);
-//
-//     final result = await api.otp(contact: contact, otp: otp);
-//
-//     result.fold(
-//       (Failure failure) {
-//         state = state.copyWith(isLoading: false, error: failure.message);
-//       },
-//       (OtpResponse response) async {
-//         final data = response.data;
-//
-//         if (data != null) {
-//           final prefs = await SharedPreferences.getInstance();
-//
-//           await prefs.setString('token', data.accessToken);
-//           await prefs.setString('refreshToken', data.refreshToken);
-//           await prefs.setString('sessionToken', data.sessionToken);
-//           await prefs.setString('role', data.role);
-//
-//           AppLogger.log.i(
-//             'SharedPreferences stored successfully: token → ${data.accessToken}',
-//           );
-//         } else {
-//           AppLogger.log.e('OtpResponse.data is null, nothing to store');
-//         }
-//
-//         state = state.copyWith(
-//           isLoading: false,
-//           otpResponse: response,
-//           error: null,
-//         );
-//       },
-//     );
-//   }
-//
-//   Future<void> verifyWhatsappNumber({
-//     required String contact,
-//     required String purpose,
-//   }) async {
-//     state = LoginState(isLoading: true); // start loader
-//
-//     try {
-//       final result = await api.whatsAppNumberVerify(
-//         contact: contact,
-//         purpose: purpose,
-//       );
-//
-//       result.fold(
-//             (failure) {
-//           // API failed
-//           state = LoginState(isLoading: false, error: failure.message);
-//         },
-//             (response) {
-//           // API success
-//           state = LoginState(isLoading: false, whatsappResponse: response);
-//         },
-//       );
-//     } catch (e) {
-//       state = LoginState(isLoading: false, error: e.toString());
-//     }
-//   }
-// }
-//
-//
-// /// --- PROVIDERS ---
-// final apiDataSourceProvider = Provider<ApiDataSource>((ref) => ApiDataSource());
-//
-// final loginNotifierProvider =
-//     NotifierProvider.autoDispose<LoginNotifier, LoginState>(LoginNotifier.new);
