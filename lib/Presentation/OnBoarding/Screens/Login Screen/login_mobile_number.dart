@@ -130,7 +130,8 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
       prev,
       next,
-    ) async {
+    ) async
+    {
       if (!mounted) return;
 
       if (prev?.error != next.error && next.error != null) {
@@ -161,32 +162,35 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
         final fullPhone = '$_selectedDialCode$raw';
         final simToken = generateSimToken(fullPhone);
 
+        // ref
+        //     .read(loginNotifierProvider.notifier)
+        //     .loginUser(phoneNumber: raw, simToken: simToken);
         ref
             .read(loginNotifierProvider.notifier)
-            .loginUser(phoneNumber: raw, simToken: simToken);
+            .loginNewUser(phoneNumber: raw, simToken: simToken);
         return;
       }
 
-      if (prev?.loginResponse != next.loginResponse &&
-          next.loginResponse != null) {
+      if (prev?.otpLoginResponse != next.otpLoginResponse &&
+          next.otpLoginResponse != null) {
         await _ensurePhonePermission();
-
-        final raw = _lastRawPhone ?? '';
-        final fullPhone = '$_selectedDialCode$raw';
-        final simToken = generateSimToken(fullPhone);
 
         if (!mounted) return;
 
-        // context.pushNamed(
-        //   AppRoutes.mobileNumberVerify,
-        //   extra: {'phone': raw, 'simToken': simToken},
-        // );
-        context.pushNamed(AppRoutes.otp, extra: raw);
+        final otpLoginResponse = next.otpLoginResponse!; // ✅ use next
+        if (otpLoginResponse.data?.simVerified == true) {
+          if (otpLoginResponse.data?.isNewOwner == true) {
+            context.go(AppRoutes.privacyPolicyPath);
+          } else {
+            context.go(AppRoutes.homePath);
+          }
+        } else {
+          context.pushNamed(AppRoutes.otp, extra: _lastRawPhone ?? '');
+        }
 
-        // ✅ reset after navigation
         ref.read(loginNotifierProvider.notifier).resetState();
-        return;
       }
+
 
       // ❌ REMOVED:
       // loginResponse listener block is removed to prevent OTP being sent unexpectedly.

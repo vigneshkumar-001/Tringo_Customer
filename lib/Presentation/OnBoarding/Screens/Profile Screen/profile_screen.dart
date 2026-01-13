@@ -74,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 //   (route) => false,
                 // );
                 final prefs = await SharedPreferences.getInstance();
-                // prefs.remove('token');
+                  prefs.remove('token');
                 // prefs.remove('isProfileCompleted');
                 // prefs.remove('isNewOwner');
                 await prefs.clear();

@@ -24,6 +24,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/s
 
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
+import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';
 import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
@@ -43,17 +44,17 @@ abstract class BaseApiDataSource {
 class ApiDataSource extends BaseApiDataSource {
   @override
   Future<Either<Failure, LoginResponse>> mobileNumberLogin(
-      String phone,
-      String simToken, {
-        String page = "",
-      }) async {
+    String phone,
+    String simToken, {
+    String page = "",
+  }) async
+  {
     try {
-      final url =
-      page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
+      final url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
 
       final response = await Request.sendRequest(
         url,
-        {"contact": "+91$phone", "purpose": "owner"},
+        {"contact": "+91$phone", "purpose": "customer"},
         'Post',
         false,
       );
@@ -71,15 +72,11 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(
         ServerFailure(response.data['message'] ?? "Something went wrong"),
       );
-    }
-
-    on DioException catch (e) {
+    } on DioException catch (e) {
       // 🔴 NO INTERNET
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.unknown) {
-        return Left(
-          ServerFailure("No internet connection. Please try again"),
-        );
+        return Left(ServerFailure("No internet connection. Please try again"));
       }
 
       final errorData = e.response?.data;
@@ -88,13 +85,63 @@ class ApiDataSource extends BaseApiDataSource {
       }
 
       return Left(ServerFailure("Request failed"));
-    }
-
-    catch (_) {
+    } catch (_) {
       return Left(ServerFailure("Unexpected error occurred"));
     }
   }
 
+  Future<Either<Failure, OtpLoginResponse>> mobileNewNumberLogin(
+      String phone,
+      String simToken, {
+        String page = "",
+      }) async
+  {
+    try {
+      // final url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
+      final url =  ApiUrl.requestLogin;
+      final method = simToken.isEmpty? 'OTP' : 'SIM';
+      final response = await Request.sendRequest(
+        url,
+        {
+          "contact": "+91$phone",
+          "purpose": "customer",
+          "loginMethod": method,
+          "simToken": simToken,
+        },
+        'Post',
+        false,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(OtpLoginResponse.fromJson(response.data));
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Login failed"),
+          );
+        }
+      }
+
+      return Left(
+        ServerFailure(response.data['message'] ?? "Something went wrong"),
+      );
+    } on DioException catch (e) {
+      // 🔴 NO INTERNET
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.unknown) {
+        return Left(ServerFailure("No internet connection. Please try again"));
+      }
+
+      final errorData = e.response?.data;
+      if (errorData is Map && errorData['message'] != null) {
+        return Left(ServerFailure(errorData['message']));
+      }
+
+      return Left(ServerFailure("Request failed"));
+    } catch (_) {
+      return Left(ServerFailure("Unexpected error occurred"));
+    }
+  }
   // Future<Either<Failure, LoginResponse>> mobileNumberLogin(
   //   String phone,
   //   String simToken, {
@@ -204,17 +251,9 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final url = ApiUrl.whatsAppVerify;
 
-      final payload = {
-        "contact": "+91$contact",
-        "purpose": purpose,
-      };
+      final payload = {"contact": "+91$contact", "purpose": purpose};
 
-      final response = await Request.sendRequest(
-        url,
-        payload,
-        'Post',
-        true,
-      );
+      final response = await Request.sendRequest(url, payload, 'Post', true);
 
       final data = response.data;
 
@@ -228,14 +267,11 @@ class ApiDataSource extends BaseApiDataSource {
 
       return Left(ServerFailure(data['message'] ?? "Something went wrong"));
     }
-
     // 🔴 NETWORK / INTERNET ERRORS
     on DioException catch (e) {
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.unknown) {
-        return Left(
-          ServerFailure("No internet connection. Please try again"),
-        );
+        return Left(ServerFailure("No internet connection. Please try again"));
       }
 
       final errorData = e.response?.data;
@@ -244,9 +280,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
 
       return Left(ServerFailure("Request failed"));
-    }
-
-    catch (_) {
+    } catch (_) {
       return Left(ServerFailure("Unexpected error occurred"));
     }
   }
@@ -793,7 +827,7 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e,st) {
+    } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
       print(e);
