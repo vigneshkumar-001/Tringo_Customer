@@ -30,6 +30,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: AppColor.white,
+          surfaceTintColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -204,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppColor.yellow,
                                     ),
                                   ),
-                                    SizedBox(width: 6),
+                                  SizedBox(width: 6),
                                   Image.asset(
                                     AppImages.rightArrow,
                                     height: 12,
