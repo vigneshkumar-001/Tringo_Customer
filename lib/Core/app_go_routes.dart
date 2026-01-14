@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Screens/edit_profile.dart';
 
 import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
-import '../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Screen/mobile_number_verify.dart';
+import '../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Screen/mobile_number_verify.dart'
+    hide LoginMobileNumber;
 import '../Presentation/OnBoarding/Screens/Privacy Policy/privacy_policy.dart';
 import '../Presentation/OnBoarding/Screens/Splash_screen.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/login_mobile_number.dart';
@@ -42,19 +43,25 @@ final goRouter = GoRouter(
     GoRoute(
       path: AppRoutes.loginPath,
       name: AppRoutes.login,
-      builder: (context, state) => const LoginMobileNumber(),
-    ),
-    GoRoute(
-      path: AppRoutes.mobileNumberVerifyPath,
-      name: AppRoutes.mobileNumberVerify,
       builder: (context, state) {
         final args = state.extra as Map<String, dynamic>? ?? {};
         final phone = args['phone'] as String? ?? '';
         final simToken = args['simToken'] as String? ?? '';
 
-        return MobileNumberVerify(loginNumber: phone, simToken: simToken);
+        return LoginMobileNumber(loginNumber: phone, simToken: simToken);
       },
     ),
+    // GoRoute(
+    //   path: AppRoutes.mobileNumberVerifyPath,
+    //   name: AppRoutes.mobileNumberVerify,
+    //   builder: (context, state) {
+    //     final args = state.extra as Map<String, dynamic>? ?? {};
+    //     final phone = args['phone'] as String? ?? '';
+    //     final simToken = args['simToken'] as String? ?? '';
+    //
+    //     return MobileNumberVerify(loginNumber: phone, simToken: simToken);
+    //   },
+    // ),
     GoRoute(
       path: AppRoutes.otpPath,
       name: AppRoutes.otp,
