@@ -1,7 +1,3 @@
-// ===============================
-// LoginMobileNumber.dart (FULL)
-// ===============================
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,14 +13,20 @@ import '../../../../../Core/Utility/app_loader.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/app_go_routes.dart';
 import '../../../../Core/Utility/app_snackbar.dart';
-import '../../../../Core/Utility/network_util.dart';
 import '../../../../Core/Utility/sim_token.dart';
 import '../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../../../Core/Widgets/common_container.dart';
+import '../Mobile Nomber Verify/Controller/mobile_verify_notifier.dart';
 import 'Controller/login_notifier.dart';
 
 class LoginMobileNumber extends ConsumerStatefulWidget {
-  const LoginMobileNumber({super.key});
+  final String loginNumber;
+  final String simToken;
+  const LoginMobileNumber({
+    super.key,
+    required this.loginNumber,
+    required this.simToken,
+  });
 
   @override
   ConsumerState<LoginMobileNumber> createState() => _LoginMobileNumberState();
@@ -44,13 +46,19 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
   String _selectedDialCode = '+91';
   String _selectedFlag = '🇮🇳';
 
-  // ✅ native channel
   static const MethodChannel _native = MethodChannel('sim_info');
 
-  bool _openingSystemRole = false; // ✅ prevent double open
-  bool _askedOnce = false; // ✅ show only once on first open
+  bool _openingSystemRole = false;
+  bool _askedOnce = false;
 
-  // ---- PERMISSION ----
+  // ✅ to avoid multiple triggers
+  bool _waitingWhatsapp = false;
+  bool _whatsappLoginTriggered = false;
+
+  // ✅ NEW: last attempt SIM1 eligibility + token store
+  bool _sim1EligibleForLastAttempt = false;
+  String _simTokenForLastAttempt = '';
+
   Future<void> _ensurePhonePermission() async {
     try {
       final hasPermission = await MobileNumber.hasPhonePermission;
@@ -65,7 +73,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     }
   }
 
-  // ✅ default caller id check
   Future<bool> _isDefaultCallerIdApp() async {
     try {
       if (!Platform.isAndroid) return true;
@@ -78,7 +85,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     }
   }
 
-  // ✅ request system popup (returns true if granted)
   Future<void> _requestDefaultCallerIdApp() async {
     try {
       if (!Platform.isAndroid) return;
@@ -90,7 +96,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     }
   }
 
-  /// ✅ SHOW ONLY SYSTEM POPUP ONCE
   Future<void> _maybeShowSystemCallerIdPopupOnce() async {
     if (!mounted) return;
     if (!Platform.isAndroid) return;
@@ -117,7 +122,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _ensurePhonePermission();
 
-      // ✅ keep your original overlay / callerId role logic
       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
       if (!overlayOk) {
         await CallerIdRoleHelper.requestOverlayPermission();
@@ -126,24 +130,25 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
       await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
 
-    // login state listener (same as yours)
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
       prev,
       next,
-    ) async
-    {
+    ) async {
       if (!mounted) return;
 
+      // ✅ error
       if (prev?.error != next.error && next.error != null) {
         AppSnackBar.error(context, next.error!);
         return;
       }
 
-      // ✅ WhatsApp verify success -> navigate to MobileNumberVerify
+      // ✅ WhatsApp verify response (FIXED: SIM token only if SIM1 eligible)
       if (prev?.whatsappResponse != next.whatsappResponse &&
           next.whatsappResponse != null) {
         final resp = next.whatsappResponse!;
-        final hasWhatsapp = resp.data.hasWhatsapp;
+        final hasWhatsapp = resp.data.hasWhatsapp == true;
+
+        _waitingWhatsapp = false;
 
         if (!hasWhatsapp) {
           if (mounted) setState(() => isWhatsappChecked = false);
@@ -154,31 +159,44 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
           return;
         }
 
+        // ✅ WhatsApp OK -> now do loginNewUser (only once)
+        if (_whatsappLoginTriggered) return;
+        _whatsappLoginTriggered = true;
+
         if (mounted) setState(() => isWhatsappChecked = true);
 
         final raw = _lastRawPhone;
-        if (raw == null) return;
+        if (raw == null || raw.isEmpty) {
+          _whatsappLoginTriggered = false;
+          return;
+        }
 
-        final fullPhone = '$_selectedDialCode$raw';
-        final simToken = generateSimToken(fullPhone);
+        // ✅ IMPORTANT: SIM token ONLY IF last attempt was SIM1 eligible
+        final String simTokenToSend = _sim1EligibleForLastAttempt
+            ? _simTokenForLastAttempt
+            : '';
 
-        // ref
-        //     .read(loginNotifierProvider.notifier)
-        //     .loginUser(phoneNumber: raw, simToken: simToken);
-        ref
+        // ✅ clear stale state so otpLoginResponse listener triggers cleanly
+        ref.read(loginNotifierProvider.notifier).resetState();
+
+        await ref
             .read(loginNotifierProvider.notifier)
-            .loginNewUser(phoneNumber: raw, simToken: simToken);
+            .loginNewUser(phoneNumber: raw, simToken: simTokenToSend);
+
+        _whatsappLoginTriggered = false;
         return;
       }
 
+      // ✅ OTP login response navigation (your existing)
       if (prev?.otpLoginResponse != next.otpLoginResponse &&
           next.otpLoginResponse != null) {
         await _ensurePhonePermission();
-
         if (!mounted) return;
 
-        final otpLoginResponse = next.otpLoginResponse!; // ✅ use next
-        if (otpLoginResponse.data?.simVerified == true) {
+        final otpLoginResponse = next.otpLoginResponse!;
+
+        if (_allowDirectHome == true &&
+            otpLoginResponse.data?.simVerified == true) {
           if (otpLoginResponse.data?.isNewOwner == true) {
             context.go(AppRoutes.privacyPolicyPath);
           } else {
@@ -190,26 +208,134 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
         ref.read(loginNotifierProvider.notifier).resetState();
       }
-
-
-      // ❌ REMOVED:
-      // loginResponse listener block is removed to prevent OTP being sent unexpectedly.
     });
   }
 
-  /// IMPORTANT: resumed ல auto-open செய்யாதீங்க (double popup stop)
+  bool numberMatch = false;
+  bool loaded = false;
+  bool anySimHasNumber = false;
+  List<SimCard> sims = [];
+  int? matchedSlotIndex;
+  bool _simVerifyTriggered = false;
+  bool _allowDirectHome = false;
+
+  String _normalizeNumber(String num) {
+    var n = num.replaceAll(RegExp(r'\D'), '');
+    if (n.length > 10) {
+      n = n.substring(n.length - 10);
+    }
+    return n;
+  }
+
+  int _uiIndexFromSlot(int? slotIndex, int listIndex) {
+    if (slotIndex == null) return listIndex.clamp(0, 1);
+    if (slotIndex == 0 || slotIndex == 1) return slotIndex;
+    if (slotIndex == 2) return 1;
+    if (slotIndex <= 0) return 0;
+    return 1;
+  }
+
+  Future<void> _triggerSimVerifyDirect({
+    required String phone,
+    required String simToken,
+  }) async {
+    if (_simVerifyTriggered) return;
+    _simVerifyTriggered = true;
+
+    final notifier = ref.read(mobileVerifyProvider.notifier);
+
+    await notifier.mobileVerify(
+      contact: phone.trim(),
+      simToken: simToken,
+      purpose: 'LOGIN',
+    );
+
+    if (!mounted) return;
+
+    final state = ref.read(mobileVerifyProvider);
+
+    if (state.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!)));
+      _simVerifyTriggered = false;
+      return;
+    }
+
+    final simResponse = state.simVerifyResponse;
+    if (simResponse != null && simResponse.data.simVerified == true) {
+      if (simResponse.data.isNewOwner == true) {
+        context.go(AppRoutes.privacyPolicyPath);
+      } else {
+        context.go(AppRoutes.homePath);
+      }
+    } else {
+      context.pushNamed(AppRoutes.otp, extra: phone);
+    }
+  }
+
+  Future<void> loadSimInfoFor(String enteredPhone) async {
+    try {
+      var hasPermission = await MobileNumber.hasPhonePermission;
+
+      if (!hasPermission) {
+        await MobileNumber.requestPhonePermission;
+        hasPermission = await MobileNumber.hasPhonePermission;
+      }
+
+      if (!hasPermission) {
+        if (!mounted) return;
+        setState(() {
+          loaded = true;
+          anySimHasNumber = false;
+          numberMatch = false;
+          matchedSlotIndex = null;
+        });
+        return;
+      }
+
+      final simCards = await MobileNumber.getSimCards;
+      sims = simCards ?? [];
+      matchedSlotIndex = null;
+
+      bool localAnySimHasNumber = false;
+      final loginNorm = _normalizeNumber(enteredPhone.trim());
+
+      for (int i = 0; i < sims.length; i++) {
+        final sim = sims[i];
+        final raw = (sim.number ?? '').trim();
+        final norm = _normalizeNumber(raw);
+        final uiIndex = _uiIndexFromSlot(sim.slotIndex, i);
+
+        if (norm.isNotEmpty) {
+          localAnySimHasNumber = true;
+          if (norm == loginNorm) {
+            matchedSlotIndex = uiIndex; // 0=SIM1, 1=SIM2
+          }
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        anySimHasNumber = localAnySimHasNumber;
+        numberMatch = matchedSlotIndex != null;
+        loaded = true;
+      });
+    } catch (e, st) {
+      debugPrint("❌ SIM Load Error: $e");
+      debugPrint("$st");
+      if (!mounted) return;
+      setState(() => loaded = true);
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
       await Future.delayed(const Duration(milliseconds: 400));
       final ok = await _isDefaultCallerIdApp();
       debugPrint("🔁 resumed default ok? $ok");
-
-      if (ok) {
-        _askedOnce = true;
-      } else {
-        // don't auto open again
-      }
+      if (ok) _askedOnce = true;
     }
   }
 
@@ -263,10 +389,80 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     );
   }
 
+  Widget _whatsappCheckboxTile() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 25, right: 10),
+      child: ListTile(
+        dense: true,
+        minLeadingWidth: 0,
+        horizontalTitleGap: 10,
+        leading: Image.asset(AppImages.whatsAppBlack, height: 20),
+        title: Text(
+          'Get Instant Updates',
+          style: GoogleFont.Mulish(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: AppColor.darkBlue,
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Text(
+              'From Tringo on your',
+              style: GoogleFont.Mulish(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: AppColor.darkGrey,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'whatsapp',
+              style: GoogleFont.Mulish(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColor.gray84,
+              ),
+            ),
+          ],
+        ),
+        trailing: GestureDetector(
+          onTap: () {
+            setState(() {
+              isWhatsappChecked = !isWhatsappChecked;
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isWhatsappChecked ? AppColor.green : AppColor.darkGrey,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: isWhatsappChecked
+                  ? Image.asset(
+                      AppImages.tickImage,
+                      height: 12,
+                      color: AppColor.green,
+                    )
+                  : const SizedBox(width: 12, height: 12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(loginNotifierProvider);
     final notifier = ref.read(loginNotifierProvider.notifier);
+    final simState = ref.watch(mobileVerifyProvider);
+
+    final bool isBusy = state.isLoading || simState.isLoading;
 
     return Scaffold(
       body: SafeArea(
@@ -335,7 +531,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                         ),
                         const SizedBox(height: 35),
 
-                        // phone input (same)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 35),
                           child: Container(
@@ -426,7 +621,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                                       vertical: 18,
                                                     ),
                                                 child: Image.asset(
-                                                  AppImages.closeImageBlack,
+                                                  AppImages.closeImage,
                                                   width: 6,
                                                   height: 6,
                                                   fit: BoxFit.contain,
@@ -442,17 +637,16 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                           ),
                         ),
 
-                        const SizedBox(height: 35),
+                        const SizedBox(height: 20),
+                        _whatsappCheckboxTile(),
+                        const SizedBox(height: 20),
 
-                        // verify button (same)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 35),
                           child: CommonContainer.button2(
                             width: double.infinity,
-                            loader: state.isLoading
-                                ? const ThreeDotsLoader()
-                                : null,
-                            onTap: state.isLoading
+                            loader: isBusy ? const ThreeDotsLoader() : null,
+                            onTap: isBusy
                                 ? null
                                 : () async {
                                     final formatted = mobileNumberController
@@ -480,9 +674,51 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
                                     _lastRawPhone = rawPhone;
 
-                                    await notifier.verifyWhatsappNumber(
-                                      contact: rawPhone,
-                                      purpose: 'customer',
+                                    // 1) SIM check
+                                    await loadSimInfoFor(rawPhone);
+
+                                    // ✅ decide SIM1 eligibility for THIS attempt
+                                    _sim1EligibleForLastAttempt =
+                                        (numberMatch && matchedSlotIndex == 0);
+
+                                    // ✅ token ONLY if SIM1 eligible
+                                    final fullPhone =
+                                        '$_selectedDialCode$rawPhone';
+                                    _simTokenForLastAttempt =
+                                        _sim1EligibleForLastAttempt
+                                        ? generateSimToken(fullPhone)
+                                        : '';
+
+                                    // 2) SIM1 direct verify
+                                    if (_sim1EligibleForLastAttempt) {
+                                      _allowDirectHome = true;
+
+                                      await _triggerSimVerifyDirect(
+                                        phone: rawPhone,
+                                        simToken: _simTokenForLastAttempt,
+                                      );
+                                      return;
+                                    }
+
+                                    _allowDirectHome = false;
+
+                                    // 3) Non-SIM1: Checkbox ON => WhatsApp verify first
+                                    if (isWhatsappChecked) {
+                                      _waitingWhatsapp = true;
+
+                                      await notifier.verifyWhatsappNumber(
+                                        contact: rawPhone,
+                                        purpose: 'owner',
+                                      );
+                                      return; // whatsappResponse listener will continue
+                                    }
+
+                                    // 4) Checkbox OFF => direct loginNewUser (NO sim token)
+                                    notifier.resetState();
+                                    await notifier.loginNewUser(
+                                      phoneNumber: rawPhone,
+                                      simToken:
+                                          '', // ✅ IMPORTANT: NO token for non-SIM1
                                     );
                                   },
                             text: 'Verify Now',
@@ -509,27 +745,35 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 }
 
 // import 'dart:io';
-// import 'package:country_picker/country_picker.dart';
+//
 // import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart';
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:mobile_number/mobile_number.dart';
 // import 'package:go_router/go_router.dart';
+// import 'package:mobile_number/mobile_number.dart';
+// import 'package:country_picker/country_picker.dart';
 //
-// import '../../../../Core/Utility/app_Images.dart';
-// import '../../../../Core/Utility/app_color.dart';
-// import '../../../../Core/Utility/app_loader.dart';
+// import '../../../../../Core/Utility/app_Images.dart';
+// import '../../../../../Core/Utility/app_color.dart';
+// import '../../../../../Core/Utility/app_loader.dart';
+// import '../../../../../Core/Utility/google_font.dart';
+// import '../../../../../Core/app_go_routes.dart';
 // import '../../../../Core/Utility/app_snackbar.dart';
-// import '../../../../Core/Utility/google_font.dart';
 // import '../../../../Core/Utility/network_util.dart';
 // import '../../../../Core/Utility/sim_token.dart';
 // import '../../../../Core/Widgets/caller_id_role_helper.dart';
 // import '../../../../Core/Widgets/common_container.dart';
-// import '../../../../Core/app_go_routes.dart';
+// import '../Mobile Nomber Verify/Controller/mobile_verify_notifier.dart';
 // import 'Controller/login_notifier.dart';
 //
 // class LoginMobileNumber extends ConsumerStatefulWidget {
-//   const LoginMobileNumber({super.key});
+//   final String loginNumber;
+//   final String simToken;
+//   const LoginMobileNumber({
+//     super.key,
+//     required this.loginNumber,
+//     required this.simToken,
+//   });
 //
 //   @override
 //   ConsumerState<LoginMobileNumber> createState() => _LoginMobileNumberState();
@@ -619,16 +863,16 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //     super.initState();
 //     WidgetsBinding.instance.addObserver(this);
 //
-//     //  On first open -> ask phone permission + show ONLY system popup once
 //     WidgetsBinding.instance.addPostFrameCallback((_) async {
 //       await _ensurePhonePermission();
 //
+//       // ✅ keep your original overlay / callerId role logic
 //       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
 //       if (!overlayOk) {
-//         await CallerIdRoleHelper.requestOverlayPermission(); // settings open
+//         await CallerIdRoleHelper.requestOverlayPermission();
 //       }
 //
-//       await CallerIdRoleHelper.maybeAskOnce(ref: ref); // caller id role popup
+//       await CallerIdRoleHelper.maybeAskOnce(ref: ref);
 //     });
 //
 //     // login state listener (same as yours)
@@ -643,34 +887,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //         return;
 //       }
 //
-//       // if (prev?.whatsappResponse != next.whatsappResponse &&
-//       //     next.whatsappResponse != null) {
-//       //   final resp = next.whatsappResponse!;
-//       //   final hasWhatsapp = resp.data.hasWhatsapp;
-//       //
-//       //   if (!hasWhatsapp) {
-//       //     if (mounted) setState(() => isWhatsappChecked = false);
-//       //     AppSnackBar.error(
-//       //       context,
-//       //       'This number is not registered on WhatsApp. Please use a WhatsApp number.',
-//       //     );
-//       //     return;
-//       //   }
-//       //
-//       //   if (mounted) setState(() => isWhatsappChecked = true);
-//       //
-//       //   final raw = _lastRawPhone;
-//       //   if (raw == null) return;
-//       //
-//       //   final fullPhone = '$_selectedDialCode$raw';
-//       //   final simToken = generateSimToken(fullPhone);
-//       //
-//       //   ref
-//       //       .read(loginNotifierProvider.notifier)
-//       //       .loginUser(phoneNumber: raw, simToken: simToken);
-//       //   return;
-//       // }
-//
+//       // ✅ WhatsApp verify success -> navigate to MobileNumberVerify
 //       if (prev?.whatsappResponse != next.whatsappResponse &&
 //           next.whatsappResponse != null) {
 //         final resp = next.whatsappResponse!;
@@ -693,39 +910,187 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //         final fullPhone = '$_selectedDialCode$raw';
 //         final simToken = generateSimToken(fullPhone);
 //
-//         // ✅ ONLY navigate (NO OTP send here)
-//         if (!mounted) return;
-//         context.pushNamed(
-//           AppRoutes.mobileNumberVerify,
-//           extra: {'phone': raw, 'simToken': simToken},
-//         );
-//
-//         ref.read(loginNotifierProvider.notifier).resetState();
+//         // ref
+//         //     .read(loginNotifierProvider.notifier)
+//         //     .loginUser(phoneNumber: raw, simToken: simToken);
+//         ref
+//             .read(loginNotifierProvider.notifier)
+//             .loginNewUser(phoneNumber: raw, simToken: simToken);
 //         return;
 //       }
 //
-//
-//       if (prev?.loginResponse != next.loginResponse &&
-//           next.loginResponse != null) {
+//       if (prev?.otpLoginResponse != next.otpLoginResponse &&
+//           next.otpLoginResponse != null) {
 //         await _ensurePhonePermission();
-//
-//         final raw = _lastRawPhone ?? '';
-//         final fullPhone = '$_selectedDialCode$raw';
-//         final simToken = generateSimToken(fullPhone);
-//
 //         if (!mounted) return;
 //
-//         context.pushNamed(
-//           AppRoutes.mobileNumberVerify,
-//           extra: {'phone': raw, 'simToken': simToken},
-//         );
+//         final otpLoginResponse = next.otpLoginResponse!;
+//
+//         // ✅ Only if SIM1 direct flow is allowed -> go Home
+//         if (_allowDirectHome == true &&
+//             otpLoginResponse.data?.simVerified == true) {
+//           if (otpLoginResponse.data?.isNewOwner == true) {
+//             context.go(AppRoutes.privacyPolicyPath);
+//           } else {
+//             context.go(AppRoutes.homePath);
+//           }
+//         } else {
+//           // ✅ For ALL other numbers -> OTP screen 반드시
+//           context.pushNamed(AppRoutes.otp, extra: _lastRawPhone ?? '');
+//         }
 //
 //         ref.read(loginNotifierProvider.notifier).resetState();
 //       }
+//
+//       // if (prev?.otpLoginResponse != next.otpLoginResponse &&
+//       //     next.otpLoginResponse != null) {
+//       //   await _ensurePhonePermission();
+//       //
+//       //   if (!mounted) return;
+//       //
+//       //   final otpLoginResponse = next.otpLoginResponse!; // ✅ use next
+//       //   if (otpLoginResponse.data?.simVerified == true) {
+//       //     if (otpLoginResponse.data?.isNewOwner == true) {
+//       //       context.go(AppRoutes.privacyPolicyPath);
+//       //     } else {
+//       //       context.go(AppRoutes.homePath);
+//       //     }
+//       //   } else {
+//       //     context.pushNamed(AppRoutes.otp, extra: _lastRawPhone ?? '');
+//       //   }
+//       //
+//       //   ref.read(loginNotifierProvider.notifier).resetState();
+//       // }
+//
+//       // ❌ REMOVED:
+//       // loginResponse listener block is removed to prevent OTP being sent unexpectedly.
 //     });
 //   }
 //
-//   ///  IMPORTANT: resumed ல auto-open செய்யாதீங்க (double popup stop)
+//   bool numberMatch = false;
+//   bool loaded = false;
+//   bool anySimHasNumber = false;
+//   List<SimCard> sims = [];
+//   int? matchedSlotIndex;
+//   bool _simVerifyTriggered = false;
+//   bool _allowDirectHome = false; // ✅ only SIM1 direct flow
+//
+//   String _normalizeNumber(String num) {
+//     var n = num.replaceAll(RegExp(r'\D'), '');
+//     if (n.length > 10) {
+//       n = n.substring(n.length - 10);
+//     }
+//     return n;
+//   }
+//
+//   int _uiIndexFromSlot(int? slotIndex, int listIndex) {
+//     if (slotIndex == null) return listIndex.clamp(0, 1);
+//     if (slotIndex == 0 || slotIndex == 1) return slotIndex;
+//     if (slotIndex == 2) return 1;
+//     if (slotIndex <= 0) return 0;
+//     return 1;
+//   }
+//
+//   Future<void> _triggerSimVerifyDirect({
+//     required String phone,
+//     required String simToken,
+//   }) async {
+//     if (_simVerifyTriggered) return;
+//     _simVerifyTriggered = true;
+//
+//     final notifier = ref.read(mobileVerifyProvider.notifier);
+//
+//     await notifier.mobileVerify(
+//       contact: phone.trim(),
+//       simToken: simToken,
+//       purpose: 'LOGIN',
+//     );
+//
+//     if (!mounted) return;
+//
+//     final state = ref.read(mobileVerifyProvider);
+//
+//     if (state.error != null) {
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text(state.error!)));
+//       _simVerifyTriggered = false;
+//       return;
+//     }
+//
+//     final simResponse = state.simVerifyResponse;
+//     if (simResponse != null && simResponse.data.simVerified == true) {
+//       if (simResponse.data.isNewOwner == true) {
+//         context.go(AppRoutes.privacyPolicyPath);
+//       } else {
+//         context.go(AppRoutes.homePath);
+//       }
+//     } else {
+//       // ✅ SIM verify failed -> OTP
+//       context.pushNamed(AppRoutes.otp, extra: phone);
+//     }
+//   }
+//
+//   Future<void> loadSimInfoFor(String enteredPhone) async {
+//     try {
+//       var hasPermission = await MobileNumber.hasPhonePermission;
+//
+//       if (!hasPermission) {
+//         await MobileNumber.requestPhonePermission;
+//         hasPermission = await MobileNumber.hasPhonePermission;
+//       }
+//
+//       if (!hasPermission) {
+//         if (!mounted) return;
+//         setState(() {
+//           loaded = true;
+//           anySimHasNumber = false;
+//           numberMatch = false;
+//           matchedSlotIndex = null;
+//         });
+//         return;
+//       }
+//
+//       final simCards = await MobileNumber.getSimCards;
+//       sims = simCards ?? [];
+//       matchedSlotIndex = null;
+//
+//       bool localAnySimHasNumber = false;
+//
+//       final loginNorm = _normalizeNumber(enteredPhone.trim());
+//
+//       for (int i = 0; i < sims.length; i++) {
+//         final sim = sims[i];
+//
+//         final raw = (sim.number ?? '').trim();
+//         final norm = _normalizeNumber(raw);
+//         final slot = sim.slotIndex;
+//         final uiIndex = _uiIndexFromSlot(slot, i);
+//
+//         if (norm.isNotEmpty) {
+//           localAnySimHasNumber = true;
+//
+//           if (norm == loginNorm) {
+//             matchedSlotIndex = uiIndex; // 0 = SIM1, 1 = SIM2
+//           }
+//         }
+//       }
+//
+//       if (!mounted) return;
+//       setState(() {
+//         anySimHasNumber = localAnySimHasNumber;
+//         numberMatch = matchedSlotIndex != null;
+//         loaded = true;
+//       });
+//     } catch (e, st) {
+//       debugPrint("❌ SIM Load Error: $e");
+//       debugPrint("$st");
+//       if (!mounted) return;
+//       setState(() => loaded = true);
+//     }
+//   }
+//
+//   /// IMPORTANT: resumed ல auto-open செய்யாதீங்க (double popup stop)
 //   @override
 //   void didChangeAppLifecycleState(AppLifecycleState state) async {
 //     if (state == AppLifecycleState.resumed) {
@@ -733,12 +1098,10 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //       final ok = await _isDefaultCallerIdApp();
 //       debugPrint("🔁 resumed default ok? $ok");
 //
-//       // ✅ if user granted, stop asking
 //       if (ok) {
-//         _askedOnce = true; // keep asked
+//         _askedOnce = true;
 //       } else {
-//         // ❌ user cancel/back -> DON'T auto open again here (avoid loop)
-//         // next app launch / next screen you can ask again if you want
+//         // don't auto open again
 //       }
 //     }
 //   }
@@ -783,8 +1146,8 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //           _selectedFlag = country.flagEmoji;
 //         });
 //       },
-//       countryListTheme: CountryListThemeData(
-//         borderRadius: const BorderRadius.only(
+//       countryListTheme: const CountryListThemeData(
+//         borderRadius: BorderRadius.only(
 //           topLeft: Radius.circular(16),
 //           topRight: Radius.circular(16),
 //         ),
@@ -793,7 +1156,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //     );
 //   }
 //
-//   // ✅ உங்கள் existing UI build same — unchanged
 //   @override
 //   Widget build(BuildContext context) {
 //     final state = ref.watch(loginNotifierProvider);
@@ -829,7 +1191,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                           ),
 //                         ),
 //                         const SizedBox(height: 81),
-//
 //                         Padding(
 //                           padding: const EdgeInsets.only(left: 35, top: 20),
 //                           child: Column(
@@ -865,7 +1226,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                             ],
 //                           ),
 //                         ),
-//
 //                         const SizedBox(height: 35),
 //
 //                         // phone input (same)
@@ -946,6 +1306,27 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                                         fontSize: 16,
 //                                       ),
 //                                       border: InputBorder.none,
+//                                       suffixIcon:
+//                                           mobileNumberController.text.isNotEmpty
+//                                           ? GestureDetector(
+//                                               onTap: () {
+//                                                 mobileNumberController.clear();
+//                                                 setState(() {});
+//                                               },
+//                                               child: Padding(
+//                                                 padding:
+//                                                     const EdgeInsets.symmetric(
+//                                                       vertical: 18,
+//                                                     ),
+//                                                 child: Image.asset(
+//                                                   AppImages.closeImageBlack,
+//                                                   width: 6,
+//                                                   height: 6,
+//                                                   fit: BoxFit.contain,
+//                                                 ),
+//                                               ),
+//                                             )
+//                                           : null,
 //                                     ),
 //                                   ),
 //                                 ),
@@ -967,17 +1348,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                             onTap: state.isLoading
 //                                 ? null
 //                                 : () async {
-//                                     //🔴 INTERNET CHECK FIRST
-//                                     final hasInternet =
-//                                         await NetworkUtil.hasInternet();
-//                                     if (!hasInternet) {
-//                                       AppSnackBar.error(
-//                                         context,
-//                                         "You're offline. Check your network connection",
-//                                       );
-//                                       return; //⛔ STOP HERE
-//                                     }
-//
 //                                     final formatted = mobileNumberController
 //                                         .text
 //                                         .trim();
@@ -1002,6 +1372,38 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //                                     }
 //
 //                                     _lastRawPhone = rawPhone;
+//
+//                                     await loadSimInfoFor(rawPhone);
+//
+//                                     if (numberMatch && matchedSlotIndex == 0) {
+//                                       _allowDirectHome = true; // ✅ ONLY HERE
+//
+//                                       final fullPhone =
+//                                           '$_selectedDialCode$rawPhone';
+//                                       final simToken = generateSimToken(
+//                                         fullPhone,
+//                                       );
+//
+//                                       await _triggerSimVerifyDirect(
+//                                         phone: rawPhone,
+//                                         simToken: simToken,
+//                                       );
+//                                       return;
+//                                     }
+//
+//                                     // if (numberMatch && matchedSlotIndex == 0) {
+//                                     //   final fullPhone =
+//                                     //       '$_selectedDialCode$rawPhone';
+//                                     //   final simToken = generateSimToken(
+//                                     //     fullPhone,
+//                                     //   );
+//                                     //
+//                                     //   await _triggerSimVerifyDirect(
+//                                     //     phone: rawPhone,
+//                                     //     simToken: simToken,
+//                                     //   );
+//                                     //   return; //  stop here (no OTP flow)
+//                                     // }
 //
 //                                     await notifier.verifyWhatsappNumber(
 //                                       contact: rawPhone,
@@ -1030,5 +1432,3 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //     );
 //   }
 // }
-//
-//
