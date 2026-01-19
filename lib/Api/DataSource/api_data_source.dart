@@ -22,6 +22,8 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/p
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
 
+import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
+import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';
@@ -47,8 +49,7 @@ class ApiDataSource extends BaseApiDataSource {
     String phone,
     String simToken, {
     String page = "",
-  }) async
-  {
+  }) async {
     try {
       final url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
 
@@ -91,15 +92,14 @@ class ApiDataSource extends BaseApiDataSource {
   }
 
   Future<Either<Failure, OtpLoginResponse>> mobileNewNumberLogin(
-      String phone,
-      String simToken, {
-        String page = "",
-      }) async
-  {
+    String phone,
+    String simToken, {
+    String page = "",
+  }) async {
     try {
       // final url = page == "resendOtp" ? ApiUrl.resendOtp : ApiUrl.register;
-      final url =  ApiUrl.requestLogin;
-      final method = simToken.isEmpty? 'OTP' : 'SIM';
+      final url = ApiUrl.requestLogin;
+      final method = simToken.isEmpty ? 'OTP' : 'SIM';
       final response = await Request.sendRequest(
         url,
         {
@@ -965,6 +965,79 @@ class ApiDataSource extends BaseApiDataSource {
     } catch (e) {
       AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, EditNumberVerifyResponse>> changeNumberRequest({
+    required String phone,
+    required String type,
+  }) async {
+    String url = ApiUrl.changeNumberVerify;
+
+    final response = await Request.sendRequest(
+      url,
+      {"phone": "+91$phone", "type": type},
+      'Post',
+      true,
+    );
+
+    if (response is! DioException) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(EditNumberVerifyResponse.fromJson(response.data));
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Login failed"),
+          );
+        }
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
+      }
+    } else {
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+    }
+  }
+
+  Future<Either<Failure, EditNumberOtpResponse>> changeOtpRequest({
+    required String phone,
+    required String type,
+    required String code,
+  }) async {
+    String url = ApiUrl.changeNumberOtpVerify;
+
+    final response = await Request.sendRequest(
+      url,
+      {"phone": "+91$phone", "code": code, "type": type},
+      'Post',
+      true,
+    );
+
+    if (response is! DioException) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(EditNumberOtpResponse.fromJson(response.data));
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Login failed"),
+          );
+        }
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
+      }
+    } else {
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
     }
   }
 }

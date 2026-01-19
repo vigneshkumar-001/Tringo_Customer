@@ -13,8 +13,17 @@ class ApiUrl {
   static const String version = "${base}api/v1/app/version";
   static const String mobileVerify = "${base}api/v1/auth/login-by-sim";
   static const String contactInfo = "${base}api/v1/contacts/sync";
-  static String imageUrl =
-      "https://next.fenizotechnologies.com/Adrox/api/image-save";
+  static const String imageUrl = "${base}api/media/image-save";
+
+  // static String imageUrl =
+  //     "https://next.fenizotechnologies.com/Adrox/api/image-save";
+
+  static const String changeNumberVerify =
+      "${base}api/v1/auth/phone-verification/request";
+
+  static const String changeNumberOtpVerify =
+      "${base}api/v1/auth/phone-verification/verify";
+
   static String shopDetails({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId";
   }
