@@ -2,12 +2,57 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 final callerIdAskedProvider = StateProvider<bool>((ref) => false);
 
 const MethodChannel _native = MethodChannel('sim_info');
 
 class CallerIdRoleHelper {
+
+  static Future<bool> openIgnoreBatteryOptimizationsSettings() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final ok = await _native.invokeMethod<bool>(
+        'openIgnoreBatteryOptimizationsSettings',
+      );
+      return ok ?? true;
+    } catch (e) {
+      // ignore: avoid_print
+      print('❌ openIgnoreBatteryOptimizationsSettings failed: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> openBatteryUnrestrictedSettings() async {
+    if (!Platform.isAndroid) return true;
+
+    try {
+      final ok = await _native.invokeMethod<bool>(
+        'openBatteryUnrestrictedSettings',
+      );
+
+      // some native impl returns nothing -> treat as "attempted"
+      return ok ?? true;
+    } catch (e) {
+      // log and return false so caller can fallback
+      // ignore: avoid_print
+      print('❌ openBatteryUnrestrictedSettings failed: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> openAppDetailsSettings() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final ok = await openAppSettings(); // permission_handler
+      return ok;
+    } catch (e) {
+      // ignore: avoid_print
+      print('❌ openAppDetailsSettings failed: $e');
+      return false;
+    }
+  }
   // ---------------- Role methods ----------------
 
   static Future<bool> isDefaultCallerIdApp() async {
@@ -92,12 +137,12 @@ class CallerIdRoleHelper {
     }
   }
 
-  static Future<void> openBatteryUnrestrictedSettings() async {
-    if (!Platform.isAndroid) return;
-    try {
-      await _native.invokeMethod('openBatteryUnrestrictedSettings');
-    } catch (_) {}
-  }
+  // static Future<void> openBatteryUnrestrictedSettings() async {
+  //   if (!Platform.isAndroid) return;
+  //   try {
+  //     await _native.invokeMethod('openBatteryUnrestrictedSettings');
+  //   } catch (_) {}
+  // }
 
   static Future<void> requestIgnoreBatteryOptimization() async {
     if (!Platform.isAndroid) return;

@@ -123,6 +123,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       else if (next.loginResponse != null) {
         if (lastLoginPage == 'resendOtp') {
           AppSnackBar.success(context, 'OTP resent successfully!');
+
+          otp.clear(); // ✅ clear old OTP in field
+          verifyCode = ''; // ✅ reset local value
+          _startTimer(30);
         }
         lastLoginPage = null;
         notifier.resetState();

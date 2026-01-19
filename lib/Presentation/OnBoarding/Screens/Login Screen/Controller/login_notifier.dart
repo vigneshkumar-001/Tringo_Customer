@@ -18,6 +18,8 @@ import '../Model/whatsapp_response.dart';
 /// --- STATE ---
 class LoginState {
   final bool isLoading;
+  final bool isResendingOtp;
+  final bool isVerifyingOtp;
   final LoginResponse? loginResponse;
   final OtpLoginResponse? otpLoginResponse;
   final OtpResponse? otpResponse;
@@ -27,6 +29,8 @@ class LoginState {
 
   const LoginState({
     this.isLoading = false,
+    this.isResendingOtp = false,
+    this.isVerifyingOtp = false,
     this.loginResponse,
     this.otpResponse,
     this.error,
@@ -39,6 +43,8 @@ class LoginState {
 
   LoginState copyWith({
     bool? isLoading,
+    bool? isResendingOtp,
+    bool? isVerifyingOtp,
     LoginResponse? loginResponse,
     OtpResponse? otpResponse,
     String? error,
@@ -48,6 +54,8 @@ class LoginState {
   }) {
     return LoginState(
       isLoading: isLoading ?? this.isLoading,
+      isResendingOtp: isResendingOtp ?? this.isResendingOtp,
+      isVerifyingOtp: isVerifyingOtp ?? this.isVerifyingOtp,
       loginResponse: loginResponse ?? this.loginResponse,
       otpResponse: otpResponse ?? this.otpResponse,
       error: error,
@@ -115,6 +123,7 @@ class LoginNotifier extends Notifier<LoginState> {
       (failure) {
         state = state.copyWith(
           isLoading: false,
+          isResendingOtp: page == 'resendOtp',
           error: failure.message,
           loginResponse: null,
         );
@@ -122,6 +131,7 @@ class LoginNotifier extends Notifier<LoginState> {
       (response) {
         state = state.copyWith(
           isLoading: false,
+          isResendingOtp: false,
           loginResponse: response,
           error: null,
         );
