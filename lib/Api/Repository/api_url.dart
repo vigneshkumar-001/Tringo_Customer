@@ -8,6 +8,7 @@ class ApiUrl {
   static const String requestLogin = "${base}api/v1/auth/request-login";
   static const String whatsAppVerify = "${base}api/v1/auth/check-whatsapp";
   static const String resendOtp = "${base}api/v1/auth/resend-otp";
+  static const String deleteAccount = "${base}api/v1/auth/me";
   // static const String home = "${base}api/v1/public/home";
   static const String profile = "${base}api/v1/customer/profile";
   static const String version = "${base}api/v1/app/version";

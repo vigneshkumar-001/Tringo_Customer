@@ -2,28 +2,31 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
+import '../../../../Core/Utility/app_snackbar.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/login_mobile_number.dart';
+import 'Controller/profile_notifier.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   final String? url;
   final String? name;
   final String? phnNumber;
   const ProfileScreen({super.key, this.url, this.name, this.phnNumber});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -74,7 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 //   (route) => false,
                 // );
                 final prefs = await SharedPreferences.getInstance();
-                  prefs.remove('token');
+                prefs.remove('token');
                 // prefs.remove('isProfileCompleted');
                 // prefs.remove('isNewOwner');
                 await prefs.clear();
@@ -96,6 +99,176 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
+
+  Future<bool> _confirmDeleteAccount(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning_rounded,
+                    color: Colors.red.shade600,
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Delete Account?',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(
+                              dialogContext,
+                            ).pop(false); // <-- return false
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            foregroundColor: Colors.grey.shade700,
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(
+                              dialogContext,
+                            ).pop(true); // <-- return true
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade600,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false; // if dialog is dismissed unexpectedly
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final confirmed = await _confirmDeleteAccount(context);
+    if (!confirmed) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await ref.read(profileNotifier.notifier).deleteAccount();
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // always close loader
+      }
+    }
+
+    final st = ref.read(profileNotifier);
+
+    final success =
+        st.deleteResponse?.status == true &&
+            st.deleteResponse?.data.deleted == true;
+
+    if (!mounted) return;
+
+    if (success) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      AppSnackBar.success(context, "Account deleted successfully");
+      context.goNamed(AppRoutes.login);
+    } else {
+      AppSnackBar.error(context, st.error ?? "Delete failed");
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +474,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CommonContainer.horizonalDivider(),
                 SizedBox(height: 20),
                 CommonContainer.profileList(
-                  onTap: () {},
+                  onTap: _handleDeleteAccount,
                   label: 'Delete Account',
                   iconPath: AppImages.accountRelated,
                   iconHeight: 25,
