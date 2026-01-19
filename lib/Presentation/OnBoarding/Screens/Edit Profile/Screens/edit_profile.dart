@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
@@ -8,15 +9,16 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Widgets/owner_verify_feild.dart';
+import '../Controller/edit_profile_notifier.dart';
 
-class EditProfile extends StatefulWidget {
+class EditProfile extends ConsumerStatefulWidget {
   const EditProfile({super.key});
 
   @override
-  State<EditProfile> createState() => _EditProfileState();
+  ConsumerState<EditProfile> createState() => _EditProfileState();
 }
 
-class _EditProfileState extends State<EditProfile> {
+class _EditProfileState extends ConsumerState<EditProfile> {
   TextEditingController nameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController mobileController = TextEditingController();
@@ -43,6 +45,18 @@ class _EditProfileState extends State<EditProfile> {
       _pickedImages[index] = File(pickedFile.path);
       _hasError[index] = false;
     });
+  }
+
+  String _normalizeIndianPhone10(String input) {
+    var p = input.trim();
+    p = p.replaceAll(RegExp(r'[^0-9]'), '');
+    if (p.startsWith('91') && p.length == 12) {
+      p = p.substring(2);
+    }
+    if (p.length > 10) {
+      p = p.substring(p.length - 10);
+    }
+    return p;
   }
 
   void _showProfileImageSourcePicker() {
@@ -99,6 +113,7 @@ class _EditProfileState extends State<EditProfile> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(shopCategoryNotifierProvider);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -140,32 +155,61 @@ class _EditProfileState extends State<EditProfile> {
                       rightLabel: 'Email Id',
                     ),
                     SizedBox(height: 20),
-
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       transitionBuilder: (child, animation) =>
                           FadeTransition(opacity: animation, child: child),
                       child: OwnerVerifyField(
                         controller: mobileController,
-                        // isLoading: state.isSendingOtp,
-                        // isOtpVerifying: state.isVerifyingOtp,
-                        // onSendOtp: (mobile) {
-                        //   return ref
-                        //       .read(addEmployeeNotifier.notifier)
-                        //       .employeeAddNumberRequest(
-                        //     phoneNumber: mobile,
-                        //   );
-                        // },
-                        // onVerifyOtp: (mobile, otp) {
-                        //   return ref
-                        //       .read(addEmployeeNotifier.notifier)
-                        //       .employeeAddOtpRequest(
-                        //     phoneNumber: mobile,
-                        //     code: otp,
-                        //   );
-                        // },
+                        isLoading: state.isSendingOtp,
+                        isOtpVerifying: state.isVerifyingOtp,
+                        onSendOtp: (mobile) {
+                          final phone10 = _normalizeIndianPhone10(mobile);
+                          return ref
+                              .read(shopCategoryNotifierProvider.notifier)
+                              .changeNumberRequest(
+                                type: "CUSTOMER_PHONE_CHANGE",
+                                phoneNumber: phone10,
+                              );
+                        },
+                        onVerifyOtp: (mobile, otp) {
+                          final phone10 = _normalizeIndianPhone10(mobile);
+                          return ref
+                              .read(shopCategoryNotifierProvider.notifier)
+                              .changeOtpRequest(
+                                phoneNumber: phone10,
+                                type: "CUSTOMER_PHONE_CHANGE",
+                                code: otp,
+                              );
+                        },
                       ),
                     ),
+
+                    // AnimatedSwitcher(
+                    //   duration: const Duration(milliseconds: 400),
+                    //   transitionBuilder: (child, animation) =>
+                    //       FadeTransition(opacity: animation, child: child),
+                    //   child: OwnerVerifyField(
+                    //     controller: mobileController,
+                    //     // isLoading: state.isSendingOtp,
+                    //     // isOtpVerifying: state.isVerifyingOtp,
+                    //     // onSendOtp: (mobile) {
+                    //     //   return ref
+                    //     //       .read(addEmployeeNotifier.notifier)
+                    //     //       .employeeAddNumberRequest(
+                    //     //     phoneNumber: mobile,
+                    //     //   );
+                    //     // },
+                    //     // onVerifyOtp: (mobile, otp) {
+                    //     //   return ref
+                    //     //       .read(addEmployeeNotifier.notifier)
+                    //     //       .employeeAddOtpRequest(
+                    //     //     phoneNumber: mobile,
+                    //     //     code: otp,
+                    //     //   );
+                    //     // },
+                    //   ),
+                    // ),
                     SizedBox(height: 20),
                     CommonContainer.fillProfileContainer(
                       controller: genderController,
