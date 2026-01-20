@@ -205,7 +205,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                   title: 'Upload Photo',
                   image: AppImages.iImage,
                   infoMessage:
-                      'Please upload a clear photo of your shop signboard.',
+                  'Please upload a clear photo of your shop signboard.',
                 ),
                 SizedBox(height: 10),
 
@@ -223,52 +223,52 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                     ),
                     child: (_picked == null)
                         ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(AppImages.galleryImage, height: 20),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Upload Image',
-                                style: GoogleFont.Mulish(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.file(
-                                  File(_picked!.path),
-                                  width: double.infinity,
-                                  height:
-                                      double.infinity, // ✅ fill the container
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                right: 8,
-                                top: 8,
-                                child: InkWell(
-                                  onTap: _removeImage,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.55),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(AppImages.galleryImage, height: 20),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Upload Image',
+                          style: GoogleFont.Mulish(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ],
+                    )
+                        : Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            File(_picked!.path),
+                            width: double.infinity,
+                            height:
+                            double.infinity, // ✅ fill the container
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: InkWell(
+                            onTap: _removeImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.55),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -280,7 +280,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
 
                   onTap: () async {
                     final File? imageFile =
-                        (_picked != null && _picked!.path.isNotEmpty)
+                    (_picked != null && _picked!.path.isNotEmpty)
                         ? File(_picked!.path)
                         : null;
                     AppLogger.log.w(imageFile);
@@ -296,7 +296,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (_) => SupportScreen()),
-                        (route) => false, // Remove all previous routes
+                            (route) => false, // Remove all previous routes
                       );
                     } else {
                       AppSnackBar.error(context, err); // ✅ current error
@@ -314,3 +314,4 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
     );
   }
 }
+ 
