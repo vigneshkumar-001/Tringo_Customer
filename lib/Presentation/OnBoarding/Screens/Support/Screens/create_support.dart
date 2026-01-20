@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
@@ -13,6 +14,7 @@ import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/app_go_routes.dart';
 import 'support_chat_screen.dart';
 
 class CreateSupport extends ConsumerStatefulWidget {
@@ -277,31 +279,61 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
                   imagePath: state.isLoading ? null : AppImages.rightSideArrow,
-
                   onTap: () async {
+                    // Prepare image file if picked
                     final File? imageFile =
                         (_picked != null && _picked!.path.isNotEmpty)
                         ? File(_picked!.path)
                         : null;
+
                     AppLogger.log.w(imageFile);
+
+                    // Call API to create support ticket
                     final err = await data.createSupportTicket(
                       subject: _subjectCtrl.text.trim(),
                       description: _descCtrl.text.trim(),
                       ownerImageFile: imageFile,
                       context: context,
                     );
+
                     if (!context.mounted) return;
 
                     if (err == null) {
-                      Navigator.pushAndRemoveUntil(
+                      AppLogger.log.i("Navigation to home called");
+                      // ✅ Navigate to home safely using GoRouter
+                      Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => SupportScreen()),
-                        (route) => false, // Remove all previous routes
+                        MaterialPageRoute(
+                          builder: (context) => SupportScreen(),
+                        ),
                       );
                     } else {
-                      AppSnackBar.error(context, err); // ✅ current error
+                      // Show error
+                      AppSnackBar.error(context, err);
                     }
                   },
+
+                  // onTap: () async {
+                  //   final File? imageFile =
+                  //       (_picked != null && _picked!.path.isNotEmpty)
+                  //       ? File(_picked!.path)
+                  //       : null;
+                  //   AppLogger.log.w(imageFile);
+                  //   final err = await data.createSupportTicket(
+                  //     subject: _subjectCtrl.text.trim(),
+                  //     description: _descCtrl.text.trim(),
+                  //     ownerImageFile: imageFile,
+                  //     context: context,
+                  //   );
+                  //   if (!context.mounted) return;
+                  //
+                  //   if (err == null) {
+                  //     context.go(AppRoutes.homePath);
+                  //
+                  //   } else {
+                  //     AppSnackBar.error(context, err); // ✅ current error
+                  //   }
+                  // },
                   text: state.isLoading
                       ? AppLoader.circularLoader()
                       : Text('Create Ticket'),

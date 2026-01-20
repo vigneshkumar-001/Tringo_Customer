@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tringo_app/Api/DataSource/api_data_source.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
@@ -76,7 +78,14 @@ class HomeNotifier extends Notifier<homeState> {
           // homeResponse stays as it was (probably null on first load)
         );
       },
-      (response) {
+      (response) async {
+        final bool profileCompleteFromApi =
+            response.data.user.profileComplete ?? false;
+
+        // Update SharedPreferences – this is the whole point
+        await AppPrefs.setIsProfileCompleted(profileCompleteFromApi);
+        final profile = await AppPrefs.getIsProfileComplete();
+        AppLogger.log.i(profile);
         state = state.copyWith(
           isLoading: false,
           error: null,
