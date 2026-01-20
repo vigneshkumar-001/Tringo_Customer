@@ -7,6 +7,7 @@ import '../../../../../../Core/Utility/app_Images.dart';
 import '../../../../../../Core/Utility/app_color.dart';
 import '../../../../../../Core/Utility/google_font.dart';
 import '../../../../../../Core/Widgets/common_container.dart';
+import '../../Support Chat Screen/Screen/support_chat_screen.dart';
 
 class CreateSupport extends StatefulWidget {
   const CreateSupport({super.key});
@@ -74,7 +75,7 @@ class _CreateSupportState extends State<CreateSupport>
       builder: (_) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -83,7 +84,7 @@ class _CreateSupportState extends State<CreateSupport>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
+                    color: AppColor.white,
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
@@ -138,143 +139,145 @@ class _CreateSupportState extends State<CreateSupport>
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: CommonContainer.leftSideArrow(
-                      onTap: () => Navigator.pop(context),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+          
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: CommonContainer.leftSideArrow(
+                        onTap: () => Navigator.pop(context),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Create Support',
-                    style: GoogleFont.Mulish(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: AppColor.mildBlack,
+                    Text(
+                      'Create Support',
+                      style: GoogleFont.Mulish(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: AppColor.mildBlack,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 25),
-              Text(
-                'Subject',
-                style: GoogleFont.Mulish(color: AppColor.mildBlack),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _subjectCtrl,
-                textInputAction: TextInputAction.next,
-                decoration: _fieldDeco(),
-              ),
-              SizedBox(height: 18),
-              Text(
-                'Description',
-                style: GoogleFont.Mulish(color: AppColor.mildBlack),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _descCtrl,
-                maxLines: 8,
-                decoration: _fieldDeco(),
-              ),
-
-              SizedBox(height: 18),
-
-              CommonContainer.containerTitle(
-                context: context,
-                title: 'Upload Photo',
-                image: AppImages.iImage,
-                infoMessage:
-                    'Please upload a clear photo of your shop signboard.',
-              ),
-              SizedBox(height: 10),
-
-              InkWell(
-                onTap: _showPickOptions, // ✅ camera/gallery sheet
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  height: 56,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: (_picked == null)
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(AppImages.galleryImage, height: 20),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Upload Image',
-                              style: GoogleFont.Mulish(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
+                  ],
+                ),
+                SizedBox(height: 25),
+                Text(
+                  'Subject',
+                  style: GoogleFont.Mulish(color: AppColor.mildBlack),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _subjectCtrl,
+                  maxLines: 2,
+                  textInputAction: TextInputAction.next,
+                  decoration: _fieldDeco(),
+                ),
+                SizedBox(height: 25),
+                Text(
+                  'Description',
+                  style: GoogleFont.Mulish(color: AppColor.mildBlack),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _descCtrl,
+                  maxLines: 8,
+                  decoration: _fieldDeco(),
+                ),
+          
+                SizedBox(height: 25),
+          
+                CommonContainer.containerTitle(
+                  context: context,
+                  title: 'Upload Photo',
+                  image: AppImages.iImage,
+                  infoMessage:
+                      'Please upload a clear photo of your shop signboard.',
+                ),
+                SizedBox(height: 10),
+          
+                InkWell(
+                  onTap: _showPickOptions,
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    width: double.infinity,
+                    height: _picked == null ? 70 : 200, // ✅ auto height change
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: (_picked == null)
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(AppImages.galleryImage, height: 20),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Upload Image',
+                                style: GoogleFont.Mulish(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      : Stack(
-                          children: [
-                            // ✅ image preview inside container
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.file(
-                                File(_picked!.path),
-                                width: double.infinity,
-                                height: 56,
-                                fit: BoxFit.cover,
+                            ],
+                          )
+                        : Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.file(
+                                  File(_picked!.path),
+                                  width: double.infinity,
+                                  height: double.infinity, // ✅ fill the container
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                            ),
-
-                            // ✅ close icon
-                            Positioned(
-                              right: 6,
-                              top: 6,
-                              child: InkWell(
-                                onTap: _removeImage,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.55),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Colors.white,
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: InkWell(
+                                  onTap: _removeImage,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.55),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-
-              SizedBox(height: 12),
-
-              // Preview (optional)
-              if (_picked != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.file(
-                    File(_picked!.path),
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                            ],
+                          ),
                   ),
                 ),
-            ],
+          
+                SizedBox(height: 40),
+          
+                CommonContainer.button(
+                  buttonColor: AppColor.darkBlue,
+                  imagePath: AppImages.rightSideArrow,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SupportChatScreen()),
+                    );
+                  },
+                  text: Text('Create Ticket'),
+                ),
+          
+              ],
+            ),
           ),
         ),
       ),

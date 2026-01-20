@@ -106,7 +106,12 @@ class _SupportScreenState extends State<SupportScreen>
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
                   imagePath: AppImages.rightSideArrow,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => CreateSupport()),
+                    );
+                  },
                   text: Text('Create Ticket'),
                 ),
               ],
