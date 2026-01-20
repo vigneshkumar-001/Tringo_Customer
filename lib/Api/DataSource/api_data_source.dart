@@ -26,6 +26,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/s
 import '../../Core/Utility/app_prefs.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_verify_response.dart';
+import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_profile_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';

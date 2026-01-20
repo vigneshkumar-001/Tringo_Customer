@@ -123,4 +123,21 @@ class AppImages {
   static String uploadPhoto = 'Assets/Images/UploadPhoto.png';
   static String mobileNoInfoBCImage =
       'Assets/Images/MobileNumberInfoBCImage.png';
+
+  static String offerDetailsImage = 'Assets/Images/Offer Details Image.png';
+  static String refresh = 'Assets/Images/Refresh.png';
+  static String qRColor = 'Assets/Images/QR color.png';
+  static String share = 'Assets/Images/Share.png';
+  static String uIDBlue = 'Assets/Images/UID blue.png';
+  static String qRCode = 'Assets/Images/QR  Code.png';
+  static String smallScanQRBlack = 'Assets/Images/small Scan QR Black.png';
+  static String earnByReview = 'Assets/Images/Earn by Review.png';
+  static String referFriends = 'Assets/Images/Refer Friends.png';
+  static String withdraw = 'Assets/Images/Withdraw.png';
+  static String smallScanQR = 'Assets/Images/small Scan QR.png';
+  static String receiveArrow = 'Assets/Images/Receive Arrow.png';
+  static String sendArrow = 'Assets/Images/Send Arrow.png';
+  static String uID = 'Assets/Images/UID.png';
+  static String wallet = 'Assets/Images/Wallet.png';
+  static String timing = 'Assets/Images/Timing.png';
 }

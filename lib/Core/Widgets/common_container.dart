@@ -1083,8 +1083,6 @@ class CommonContainer {
     );
   }
 
-
-
   static serviceDetails({
     VoidCallback? onTap,
     required String filedName,
@@ -2140,6 +2138,7 @@ class CommonContainer {
       ),
     );
   }
+
   static Widget gradientContainer({
     required String text,
     String? locationImage,
@@ -2173,7 +2172,9 @@ class CommonContainer {
 
           //  NO Flexible/Expanded here
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220), // adjust if needed
+            constraints: const BoxConstraints(
+              maxWidth: 220,
+            ), // adjust if needed
             child: Text(
               text,
               overflow: TextOverflow.ellipsis,
@@ -2243,8 +2244,6 @@ class CommonContainer {
   //     ),
   //   );
   // }
-
-
 
   static Widget glowAvatarUniversal({
     required ImageProvider
@@ -3173,126 +3172,61 @@ class CommonContainer {
     );
   }
 
-  // static Widget fillProfileContainer({
-  //   required TextEditingController controller,
-  //   required String hint,
-  //   TextInputType keyboardType = TextInputType.text,
-  //   int? maxLength,
-  //   double? iconHeight = 14,
-  //   String? rightIcon,
-  //   String? rightLabel,
-  //   VoidCallback? onTap,
-  //   bool readOnly = false,
-  //   String? selectedImage,
-  //   String? networkImageUrl,      // ✅ url from API
-  //
-  //   /// NEW → Add validator
-  //   String? Function(String?)? validator,
-  // }) {
-  //   final bool hasIcon = rightIcon != null && rightIcon.isNotEmpty;
-  //   final bool hasLabel = rightLabel != null && rightLabel.isNotEmpty;
-  //   final bool showRightSection = hasIcon || hasLabel;
-  //
-  //   return InkWell(
-  //     borderRadius: BorderRadius.circular(18),
-  //     onTap: onTap,
-  //     child: Container(
-  //       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-  //       decoration: BoxDecoration(
-  //         border: Border.all(color: AppColor.borderGray, width: 2),
-  //         borderRadius: BorderRadius.circular(18),
-  //       ),
-  //       child: Row(
-  //         children: [
-  //           Expanded(
-  //             child: selectedImage == null
-  //                 ? IgnorePointer(
-  //                     ignoring: onTap != null,
-  //                     child: TextFormField(
-  //                       controller: controller,
-  //                       readOnly: readOnly || onTap != null,
-  //                       keyboardType: keyboardType,
-  //                       maxLength: maxLength,
-  //
-  //                       // ************ IMPORTANT ************
-  //                       validator: validator,
-  //                       autovalidateMode: AutovalidateMode.onUserInteraction,
-  //
-  //                       // ************************************
-  //                       style: GoogleFont.Mulish(
-  //                         fontWeight: FontWeight.w700,
-  //                         fontSize: 18,
-  //                       ),
-  //                       decoration: InputDecoration(
-  //                         counterText: '',
-  //                         border: InputBorder.none,
-  //                         hintText: hint,
-  //                         hintStyle: GoogleFont.Mulish(
-  //                           fontWeight: FontWeight.w600,
-  //                           color: AppColor.borderGray,
-  //                           fontSize: 16,
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   )
-  //                 : Container(
-  //                     height: 60,
-  //                     alignment: Alignment.centerLeft,
-  //                     child: ClipRRect(
-  //                       borderRadius: BorderRadius.circular(12),
-  //                       child: Image.file(
-  //                         File(selectedImage),
-  //                         width: 130,
-  //                         height: 60,
-  //                         fit: BoxFit.cover,
-  //                       ),
-  //                     ),
-  //                   ),
-  //           ),
-  //
-  //           if (showRightSection) ...[
-  //             SizedBox(width: 10),
-  //
-  //             if (hasIcon)
-  //               Image.asset(
-  //                 rightIcon!,
-  //                 height: iconHeight,
-  //                 color: AppColor.lightGray2,
-  //               ),
-  //
-  //             SizedBox(width: 18),
-  //
-  //             Container(
-  //               width: 2,
-  //               height: 40,
-  //               decoration: BoxDecoration(
-  //                 gradient: LinearGradient(
-  //                   begin: Alignment.topCenter,
-  //                   end: Alignment.bottomCenter,
-  //                   colors: [
-  //                     AppColor.white.withOpacity(0),
-  //                     AppColor.borderGray,
-  //                     AppColor.white.withOpacity(0),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //
-  //             SizedBox(width: 18),
-  //
-  //             if (hasLabel)
-  //               Text(
-  //                 rightLabel!,
-  //                 style: GoogleFont.Mulish(
-  //                   fontWeight: FontWeight.w800,
-  //                   fontSize: 15,
-  //                   color: AppColor.lightGray2,
-  //                 ),
-  //               ),
-  //           ],
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
+  static Widget supportBox({
+    required Color containerColor,
+    required String image,
+    required String imageText,
+    required String mainText,
+    required String timingText,
+  }) {
+    return Row(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: containerColor,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              children: [
+                Image.asset(image, height: 25.5),
+                SizedBox(height: 5),
+                Text(
+                  imageText,
+                  style: GoogleFont.Mulish(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                mainText,
+                style: GoogleFont.Mulish(color: AppColor.black),
+              ),
+              SizedBox(height: 9),
+              Text(
+                timingText,
+                style: GoogleFont.Mulish(
+                  fontSize: 12,
+                  color: AppColor.black.withOpacity(0.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
