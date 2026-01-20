@@ -63,6 +63,25 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     return p;
   }
 
+  String normalizeToIndianE164(String input) {
+    var p = input.trim();
+    p = p.replaceAll(RegExp(r'[^\d+]'), '');
+
+    if (RegExp(r'^\+91\d{10}$').hasMatch(p)) return p;
+
+    if (RegExp(r'^91\d{10}$').hasMatch(p)) return '+$p';
+
+    final digits = p.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 10) return '+91$digits';
+
+    if (digits.length > 10) {
+      final last10 = digits.substring(digits.length - 10);
+      return '+91$last10';
+    }
+
+    return input.trim();
+  }
+
   /// ✅ Converts "1-1-2000" or "01-1-2000" -> "2000-01-01"
   /// Keeps "1995-08-15" as is.
   String normalizeDob(String? dob) {
@@ -389,10 +408,52 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                     Expanded(
                       child: InkWell(
                         borderRadius: BorderRadius.circular(15),
+                        // onTap: state.isLoading
+                        //     ? null
+                        //     : () async {
+                        //         // ✅ validate DOB format before API
+                        //         final dob = dateOfBirthController.text.trim();
+                        //         final isIso = RegExp(
+                        //           r'^\d{4}-\d{2}-\d{2}$',
+                        //         ).hasMatch(dob);
+                        //         if (!isIso) {
+                        //           AppSnackBar.error(
+                        //             context,
+                        //             "DOB must be YYYY-MM-DD",
+                        //           );
+                        //           return;
+                        //         }
+                        //
+                        //         final File? imageFile =
+                        //             (selectedPhoto != null &&
+                        //                 selectedPhoto!.path.isNotEmpty)
+                        //             ? File(selectedPhoto!.path)
+                        //             : null;
+                        //
+                        //         final err = await editNotifier.editProfile(
+                        //           displayName: nameController.text.trim(),
+                        //           email: emailController.text.trim(),
+                        //           gender: genderController.text.trim(),
+                        //           dateOfBirth: dob,
+                        //           ownerImageFile: imageFile,
+                        //           phoneNumber: mobileController.text.trim(),
+                        //         );
+                        //
+                        //         if (!context.mounted) return;
+                        //
+                        //         if (err == null) {
+                        //           Navigator.pushReplacement(
+                        //             context,
+                        //             MaterialPageRoute(builder: (_) => HomeScreen()),
+                        //           );
+                        //         } else {
+                        //           AppSnackBar.error(context, err); // ✅ always current
+                        //         }
+                        //
+                        // },
                         onTap: state.isLoading
                             ? null
                             : () async {
-                                // ✅ validate DOB format before API
                                 final dob = dateOfBirthController.text.trim();
                                 final isIso = RegExp(
                                   r'^\d{4}-\d{2}-\d{2}$',
@@ -405,24 +466,39 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                                   return;
                                 }
 
+                                // ✅ phone for profile update
+                                final phoneE164 = normalizeToIndianE164(
+                                  mobileController.text,
+                                );
+
+                                if (!RegExp(
+                                  r'^\+91\d{10}$',
+                                ).hasMatch(phoneE164)) {
+                                  AppSnackBar.error(
+                                    context,
+                                    "Enter valid Indian number",
+                                  );
+                                  return;
+                                }
+
                                 final File? imageFile =
                                     (selectedPhoto != null &&
                                         selectedPhoto!.path.isNotEmpty)
                                     ? File(selectedPhoto!.path)
                                     : null;
 
-                                final ok = await editNotifier.editProfile(
+                                final err = await editNotifier.editProfile(
                                   displayName: nameController.text.trim(),
                                   email: emailController.text.trim(),
                                   gender: genderController.text.trim(),
                                   dateOfBirth: dob,
                                   ownerImageFile: imageFile,
-                                  phoneNumber: mobileController.text.trim(),
+                                  phoneNumber: phoneE164, // ✅ +91 format
                                 );
 
                                 if (!context.mounted) return;
 
-                                if (ok) {
+                                if (err == null) {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
@@ -430,9 +506,10 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                                     ),
                                   );
                                 } else {
-                                  CustomSnackBar.error(
-                                    message: state.error.toString() ?? '',
-                                  );
+                                  AppSnackBar.error(
+                                    context,
+                                    err,
+                                  ); // ✅ current error
                                 }
                               },
                         child: Container(
