@@ -3012,7 +3012,6 @@ class CommonContainer {
       ],
     );
   }
-
   static Widget fillProfileContainer({
     required TextEditingController controller,
     required String hint,
@@ -3023,14 +3022,96 @@ class CommonContainer {
     String? rightLabel,
     VoidCallback? onTap,
     bool readOnly = false,
-    String? selectedImage,
+    String? selectedImage,        // local file path
+    String? networkImageUrl,      // url from API
 
-    /// NEW → Add validator
     String? Function(String?)? validator,
   }) {
     final bool hasIcon = rightIcon != null && rightIcon.isNotEmpty;
     final bool hasLabel = rightLabel != null && rightLabel.isNotEmpty;
     final bool showRightSection = hasIcon || hasLabel;
+
+    final bool hasLocalImage = selectedImage != null && selectedImage.isNotEmpty;
+    final bool hasNetworkImage =
+    (networkImageUrl != null && networkImageUrl.isNotEmpty);
+
+    Widget leftWidget;
+
+    if (hasLocalImage) {
+      // ✅ Local preview
+      leftWidget = Container(
+        height: 60,
+        alignment: Alignment.centerLeft,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            File(selectedImage!),
+            width: 130,
+            height: 60,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else if (hasNetworkImage) {
+      // ✅ Network preview (cached)
+      leftWidget = Container(
+        height: 60,
+        alignment: Alignment.centerLeft,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: CachedNetworkImage(
+            imageUrl: networkImageUrl!,
+            width: 130,
+            height: 60,
+            fit: BoxFit.cover,
+            placeholder: (context, _) => Container(
+              width: 130,
+              height: 60,
+              alignment: Alignment.center,
+              child: const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            errorWidget: (context, _, __) => Container(
+              width: 130,
+              height: 60,
+              alignment: Alignment.center,
+              color: AppColor.borderGray.withOpacity(0.2),
+              child: const Icon(Icons.broken_image),
+            ),
+          ),
+        ),
+      );
+    } else {
+      // ✅ Normal text field
+      leftWidget = IgnorePointer(
+        ignoring: onTap != null,
+        child: TextFormField(
+          controller: controller,
+          readOnly: readOnly || onTap != null,
+          keyboardType: keyboardType,
+          maxLength: maxLength,
+          validator: validator,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          style: GoogleFont.Mulish(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            border: InputBorder.none,
+            hintText: hint,
+            hintStyle: GoogleFont.Mulish(
+              fontWeight: FontWeight.w600,
+              color: AppColor.borderGray,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      );
+    }
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
@@ -3043,54 +3124,10 @@ class CommonContainer {
         ),
         child: Row(
           children: [
-            Expanded(
-              child: selectedImage == null
-                  ? IgnorePointer(
-                      ignoring: onTap != null,
-                      child: TextFormField(
-                        controller: controller,
-                        readOnly: readOnly || onTap != null,
-                        keyboardType: keyboardType,
-                        maxLength: maxLength,
-
-                        // ************ IMPORTANT ************
-                        validator: validator,
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-
-                        // ************************************
-                        style: GoogleFont.Mulish(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
-                        decoration: InputDecoration(
-                          counterText: '',
-                          border: InputBorder.none,
-                          hintText: hint,
-                          hintStyle: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w600,
-                            color: AppColor.borderGray,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      height: 60,
-                      alignment: Alignment.centerLeft,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(selectedImage),
-                          width: 130,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-            ),
+            Expanded(child: leftWidget),
 
             if (showRightSection) ...[
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
 
               if (hasIcon)
                 Image.asset(
@@ -3099,7 +3136,7 @@ class CommonContainer {
                   color: AppColor.lightGray2,
                 ),
 
-              SizedBox(width: 18),
+              const SizedBox(width: 18),
 
               Container(
                 width: 2,
@@ -3117,11 +3154,11 @@ class CommonContainer {
                 ),
               ),
 
-              SizedBox(width: 18),
+              const SizedBox(width: 18),
 
               if (hasLabel)
                 Text(
-                  rightLabel!,
+                  rightLabel,
                   style: GoogleFont.Mulish(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,

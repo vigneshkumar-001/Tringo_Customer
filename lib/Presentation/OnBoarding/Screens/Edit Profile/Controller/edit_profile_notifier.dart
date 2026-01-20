@@ -51,12 +51,13 @@ class EditProfileState {
           editNumberVerifyResponse ?? this.editNumberVerifyResponse,
       editNumberOtpResponse:
           editNumberOtpResponse ?? this.editNumberOtpResponse,
+
       editProfileResponse: editProfileResponse ?? this.editProfileResponse,
     );
   }
 }
 
-class ShopNotifier extends Notifier<EditProfileState> {
+class EditProfileNotifier extends Notifier<EditProfileState> {
   final ApiDataSource apiDataSource = ApiDataSource();
 
   String _onlyIndian10(String input) {
@@ -141,41 +142,43 @@ class ShopNotifier extends Notifier<EditProfileState> {
     required String email,
     required String gender,
     required String dateOfBirth,
-    required String avatarUrl,
+    File? ownerImageFile,
     required String phoneNumber,
-    required String phoneVerificationToken,
   }) async {
-    if (state.isVerifyingOtp) return false;
+    state = state.copyWith(isLoading: true, error: null);
 
-    state = state.copyWith(isVerifyingOtp: true, clearError: true);
+    String customerImageUrl = '';
+
+    final hasValidImage = ownerImageFile != null &&
+        ownerImageFile.path.isNotEmpty &&
+        await ownerImageFile.exists();
+
+    if (hasValidImage) {
+      final uploadResult =
+      await apiDataSource.userProfileUpload(imageFile: ownerImageFile);
+      customerImageUrl = uploadResult.fold(
+            (failure) => failure.message,
+            (success) => success.message.toString(),
+      );
+    }
 
     final result = await apiDataSource.editProfile(
-      avatarUrl: avatarUrl,
-      phoneNumber: phoneNumber,
-      dateOfBirth: dateOfBirth,
       displayName: displayName,
       email: email,
       gender: gender,
-      phoneVerificationToken: phoneVerificationToken,
+      dateOfBirth: dateOfBirth,
+      avatarUrl: customerImageUrl,
+      phoneNumber: phoneNumber,
     );
 
     return result.fold(
-      (failure) {
-        state = state.copyWith(isVerifyingOtp: false, error: failure.message);
+          (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
         return false;
       },
-      (response) async {
-        final token = response.data?.verificationToken ?? '';
-        if (token.isNotEmpty) {
-          await AppPrefs.setVerificationToken(token);
-        }
-
-        state = state.copyWith(
-          isVerifyingOtp: false,
-          editProfileResponse: response,
-        );
-
-        return response.data?.verified == true;
+          (response) {
+        state = state.copyWith(isLoading: false, editProfileResponse: response);
+        return true; // ✅ success
       },
     );
   }
@@ -185,7 +188,7 @@ class ShopNotifier extends Notifier<EditProfileState> {
   }
 }
 
-final shopCategoryNotifierProvider =
-    NotifierProvider.autoDispose<ShopNotifier, EditProfileState>(
-      ShopNotifier.new,
+final editProfileNotifierProvider =
+    NotifierProvider.autoDispose<EditProfileNotifier, EditProfileState>(
+      EditProfileNotifier.new,
     );

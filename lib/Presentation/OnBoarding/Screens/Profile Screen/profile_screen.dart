@@ -20,8 +20,21 @@ import 'Controller/profile_notifier.dart';
 class ProfileScreen extends ConsumerStatefulWidget {
   final String? url;
   final String? name;
+  final String? coins;
   final String? phnNumber;
-  const ProfileScreen({super.key, this.url, this.name, this.phnNumber});
+  final String? email;
+  final String? dob;
+  final String? gender;
+  const ProfileScreen({
+    super.key,
+    this.url,
+    this.name,
+    this.phnNumber,
+    this.coins,
+    this.email,
+    this.dob,
+    this.gender,
+  });
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -303,7 +316,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                           SizedBox(width: 6),
                           Text(
-                            '10',
+                            widget.coins.toString() ?? '',
                             style: GoogleFont.Mulish(
                               fontWeight: FontWeight.w900,
                               fontSize: 12,
@@ -364,7 +377,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => EditProfile(),
+                                    builder: (context) => EditProfile(
+                                      url: widget.url,
+                                      name: widget.name,
+                                      phone: widget.phnNumber,
+                                      email: widget.email,
+                                      dob: widget.dob,
+                                      gender: widget.gender,
+                                    ),
                                   ),
                                 );
                               },
