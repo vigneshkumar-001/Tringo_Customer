@@ -4,7 +4,7 @@ import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 
-import '../../../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Widgets/common_container.dart';
 
 class SupportChatScreen extends StatefulWidget {
   @override
