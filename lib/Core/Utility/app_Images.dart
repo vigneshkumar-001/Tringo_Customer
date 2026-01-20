@@ -140,4 +140,7 @@ class AppImages {
   static String uID = 'Assets/Images/UID.png';
   static String wallet = 'Assets/Images/Wallet.png';
   static String timing = 'Assets/Images/Timing.png';
+  static String greenTick = 'Assets/Images/greenTick.png';
+  static String orangeClock = 'Assets/Images/OrangeClock.png';
+  static String iImage = 'Assets/Images/I_Image.png';
 }

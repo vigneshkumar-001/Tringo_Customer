@@ -26,6 +26,7 @@ class AppColor {
   static const lightGray3 = Color(0xff6D6D6D);
   static const brightGray = Color(0xffEDF1F4);
   static const mistGray = Color(0xffD0D9DF);
+  static const mediumLightGray = Color(0xffACACAC);
   static const lightRed = Color(0xffDA4141);
   static const darkRed = Color(0xff771919);
   static const lowLightRed = Color(0xffFFEFEF);
