@@ -22,6 +22,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Mod
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
 
 import '../../Core/Utility/app_prefs.dart';
@@ -35,6 +36,7 @@ import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_ver
 import '../../Presentation/OnBoarding/Screens/Profile Screen/Model/delete_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/create_support_response.dart';
+import '../../Presentation/OnBoarding/Screens/Support/Model/send_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
     show UserProfileResponse;
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/user_image_response.dart';
@@ -1281,4 +1283,88 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  Future<Either<Failure, ChatMessageResponse>> getChatMessages({
+    required String id,
+  }) async {
+    try {
+      final String url = ApiUrl.getChatMessages(id: id);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(ChatMessageResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      print(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+
+  Future<Either<Failure, SendMessageResponse>> sendMessage({
+    required String subject,
+
+    required String imageUrl,
+    required String ticketId,
+    required dynamic attachments,
+  }) async
+  {
+    try {
+      final String url = ApiUrl.sendMessage(ticketId: ticketId);
+      final Map<String, dynamic> body = {
+        "message": subject,
+
+        "attachments": [
+          {"url": imageUrl},
+        ],
+      };
+
+      final response = await Request.sendRequest(url, body, 'POST', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(SendMessageResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e.toString());
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
 }
