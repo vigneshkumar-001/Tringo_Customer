@@ -104,6 +104,7 @@ class AppUser {
   final int coins;
   final String referralCode;
   final String tier;
+  final bool profileComplete;
   final GeoPoint location;
 
   const AppUser({
@@ -118,6 +119,7 @@ class AppUser {
     required this.referralCode,
     required this.tier,
     required this.location,
+    required this.profileComplete,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
@@ -132,6 +134,7 @@ class AppUser {
       coins: json['coins'] ?? 0,
       referralCode: json['referralCode'] ?? '',
       tier: json['tier'] ?? '',
+      profileComplete: json['profileComplete'] ?? '',
       location: GeoPoint.fromJson(json['location'] ?? const {}),
     );
   }
@@ -147,6 +150,7 @@ class AppUser {
       'avatarUrl': avatarUrl,
       'coins': coins,
       'referralCode': referralCode,
+      'profileComplete': profileComplete,
       'tier': tier,
       'location': location.toJson(),
     };

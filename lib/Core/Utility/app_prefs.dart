@@ -8,12 +8,16 @@ class AppPrefs {
   static const String _refreshToken = 'refreshToken';
   static const String _sessionToken = 'sessionToken';
   static const String _role = 'role';
+  static const String _isProfileCompleted = 'isProfileCompleted';
 
   static Future<void> setVerificationToken(String token) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setString(_kPhoneVerifyToken, token);
   }
-
+  static Future<void> setIsProfileCompleted(bool value) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setBool(_isProfileCompleted, value);
+  }
   static Future<String?> getVerificationToken() async {
     final sp = await SharedPreferences.getInstance();
     final t = sp.getString(_kPhoneVerifyToken);
@@ -49,6 +53,11 @@ class AppPrefs {
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_token);
+  }
+
+  static Future<bool?> getIsProfileComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isProfileCompleted);
   }
 
   static Future<String?> getRefreshToken() async {
