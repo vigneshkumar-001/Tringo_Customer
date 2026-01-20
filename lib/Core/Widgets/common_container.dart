@@ -3190,7 +3190,7 @@ class CommonContainer {
               borderRadius: BorderRadius.circular(15),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
               child: Column(
                 children: [
                   Image.asset(image, height: 25.5),

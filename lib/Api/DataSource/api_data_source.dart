@@ -22,6 +22,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Mod
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
 
 import '../../Core/Utility/app_prefs.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
@@ -33,6 +34,7 @@ import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_respo
 import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Profile Screen/Model/delete_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
+import '../../Presentation/OnBoarding/Screens/Support/Model/create_support_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
     show UserProfileResponse;
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/user_image_response.dart';
@@ -604,6 +606,7 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+
   Future<Either<Failure, UserImageResponse>> userProfileUpload({
     required File imageFile,
   }) async {
@@ -638,19 +641,24 @@ class ApiDataSource extends BaseApiDataSource {
         if (responseData['status'] == true) {
           return Right(UserImageResponse.fromJson(responseData));
         } else {
-          return Left(ServerFailure((responseData['message'] ?? '').toString()));
+          return Left(
+            ServerFailure((responseData['message'] ?? '').toString()),
+          );
         }
       } else if (response.statusCode == 409) {
         return Left(ServerFailure((responseData['message'] ?? '').toString()));
       } else {
-        return Left(ServerFailure((responseData['message'] ?? "Unknown error").toString()));
+        return Left(
+          ServerFailure(
+            (responseData['message'] ?? "Unknown error").toString(),
+          ),
+        );
       }
     } catch (e) {
       AppLogger.log.e(e);
       return Left(ServerFailure('Something went wrong'));
     }
   }
-
 
   // Future<Either<Failure, UserImageResponse>> userProfileUpload({
   //   required File imageFile,
@@ -1138,48 +1146,139 @@ class ApiDataSource extends BaseApiDataSource {
     required String email,
     required String gender,
     required String dateOfBirth,
-      String? avatarUrl,
+    String? avatarUrl,
     required String phoneNumber,
   }) async {
-    String url = ApiUrl.editProfile;
-    final verificationToken = await AppPrefs.getVerificationToken();
-    final response = await Request.sendRequest(
-      url,
-      {
-        "displayName": displayName,
-        "email": email,
-        "gender": gender,
-        "dateOfBirth": dateOfBirth,
-        "avatarUrl": avatarUrl,
-        "phoneNumber": phoneNumber,
-        "phoneVerificationToken": verificationToken,
-        //   "primaryCity": "Madurai",
-        //   "primaryState": "Tamil Nadu"
-      },
-      'PATCH',
-      true,
-    );
+    try {
+      final url = ApiUrl.editProfile;
+      final verificationToken = await AppPrefs.getVerificationToken();
 
-    if (response is! DioException) {
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (response.data['status'] == true) {
-          return Right(EditProfileResponse.fromJson(response.data));
+      final response = await Request.sendRequest(
+        url,
+        {
+          "displayName": displayName,
+          "email": email,
+          "gender": gender,
+          "dateOfBirth": dateOfBirth,
+          "avatarUrl": avatarUrl,
+          "phoneNumber": phoneNumber,
+          "phoneVerificationToken": verificationToken,
+        },
+        'PATCH',
+        true,
+      );
+
+      // If your Request.sendRequest RETURNS DioException instead of throwing it
+      if (response is DioException) {
+        final errorData = response.response?.data;
+        final msg = (errorData is Map && errorData['message'] != null)
+            ? errorData['message'].toString()
+            : (response.message ?? "Unknown Dio error");
+        return Left(ServerFailure(msg));
+      }
+
+      // Normal Response flow
+      final int? code = response.statusCode;
+
+      if (code == 200 || code == 201) {
+        final dataRaw = response.data;
+
+        if (dataRaw is Map && dataRaw['status'] == true) {
+          final Map<String, dynamic> data = Map<String, dynamic>.from(dataRaw);
+          return Right(EditProfileResponse.fromJson(data));
         } else {
-          return Left(
-            ServerFailure(response.data['message'] ?? "Login failed"),
-          );
+          final msg =
+              (dataRaw is Map ? dataRaw['message'] : null) ?? "Update failed";
+          return Left(ServerFailure(msg.toString()));
         }
       } else {
-        return Left(
-          ServerFailure(response.data['message'] ?? "Something went wrong"),
-        );
+        final dataRaw = response.data;
+        final msg =
+            (dataRaw is Map ? dataRaw['message'] : null) ??
+            "Something went wrong";
+        return Left(ServerFailure(msg.toString()));
       }
-    } else {
-      final errorData = response.response?.data;
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SupportListResponse>> supportList() async {
+    try {
+      final String url = ApiUrl.supportTicketsList;
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SupportListResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
       if (errorData is Map && errorData.containsKey('message')) {
         return Left(ServerFailure(errorData['message']));
       }
-      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      print(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, CreateSupportResponse>> createSupportTicket({
+    required String subject,
+    required String description,
+    required String imageUrl,
+    required dynamic attachments,
+  }) async {
+    try {
+      final String url = ApiUrl.supportTicketsList;
+      final Map<String, dynamic> body = {
+        "subject": subject,
+        "description": description,
+        "attachments": [
+          {"url": imageUrl},
+        ],
+      };
+
+      final response = await Request.sendRequest(url, body, 'POST', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(CreateSupportResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e.toString());
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

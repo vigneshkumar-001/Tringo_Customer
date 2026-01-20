@@ -1,22 +1,28 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Screens/support_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/controller/support_notifier.dart';
 
-import '../../../../../../Core/Utility/app_Images.dart';
-import '../../../../../../Core/Utility/app_color.dart';
-import '../../../../../../Core/Utility/google_font.dart';
-import '../../../../../../Core/Widgets/common_container.dart';
-import '../../Support Chat Screen/Screen/support_chat_screen.dart';
+import '../../../../../Core/Utility/app_Images.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/Widgets/common_container.dart';
+import 'support_chat_screen.dart';
 
-class CreateSupport extends StatefulWidget {
+class CreateSupport extends ConsumerStatefulWidget {
   const CreateSupport({super.key});
 
   @override
-  State<CreateSupport> createState() => _CreateSupportState();
+  ConsumerState<CreateSupport> createState() => _CreateSupportState();
 }
 
-class _CreateSupportState extends State<CreateSupport>
+class _CreateSupportState extends ConsumerState<CreateSupport>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -137,6 +143,9 @@ class _CreateSupportState extends State<CreateSupport>
 
   @override
   Widget build(BuildContext context) {
+    final data = ref.watch(supportNotifier.notifier);
+    final state = ref.watch(supportNotifier);
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -196,7 +205,7 @@ class _CreateSupportState extends State<CreateSupport>
                   title: 'Upload Photo',
                   image: AppImages.iImage,
                   infoMessage:
-                      'Please upload a clear photo of your shop signboard.',
+                  'Please upload a clear photo of your shop signboard.',
                 ),
                 SizedBox(height: 10),
 
@@ -214,52 +223,52 @@ class _CreateSupportState extends State<CreateSupport>
                     ),
                     child: (_picked == null)
                         ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(AppImages.galleryImage, height: 20),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Upload Image',
-                                style: GoogleFont.Mulish(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.file(
-                                  File(_picked!.path),
-                                  width: double.infinity,
-                                  height:
-                                      double.infinity, // ✅ fill the container
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                right: 8,
-                                top: 8,
-                                child: InkWell(
-                                  onTap: _removeImage,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.55),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(AppImages.galleryImage, height: 20),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Upload Image',
+                          style: GoogleFont.Mulish(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ],
+                    )
+                        : Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            File(_picked!.path),
+                            width: double.infinity,
+                            height:
+                            double.infinity, // ✅ fill the container
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: InkWell(
+                            onTap: _removeImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.55),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -267,14 +276,35 @@ class _CreateSupportState extends State<CreateSupport>
 
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
-                  imagePath: AppImages.rightSideArrow,
-                  onTap: () {
-                 Navigator.push(
-                   context,
-                   MaterialPageRoute(builder: (context) => SupportChatScreen()),
-                 );
+                  imagePath: state.isLoading ? null : AppImages.rightSideArrow,
+
+                  onTap: () async {
+                    final File? imageFile =
+                    (_picked != null && _picked!.path.isNotEmpty)
+                        ? File(_picked!.path)
+                        : null;
+                    AppLogger.log.w(imageFile);
+                    final err = await data.createSupportTicket(
+                      subject: _subjectCtrl.text.trim(),
+                      description: _descCtrl.text.trim(),
+                      ownerImageFile: imageFile,
+                      context: context,
+                    );
+                    if (!context.mounted) return;
+
+                    if (err == null) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => SupportScreen()),
+                            (route) => false, // Remove all previous routes
+                      );
+                    } else {
+                      AppSnackBar.error(context, err); // ✅ current error
+                    }
                   },
-                  text: Text('Create Ticket'),
+                  text: state.isLoading
+                      ? AppLoader.circularLoader()
+                      : Text('Create Ticket'),
                 ),
               ],
             ),
@@ -284,3 +314,4 @@ class _CreateSupportState extends State<CreateSupport>
     );
   }
 }
+ 
