@@ -22,7 +22,7 @@ class ApiUrl {
     return "${base}api/v1/support/tickets/$id";
   }
 
-  static String sendMessage({required String ticketId,  }) {
+  static String sendMessage({required String ticketId}) {
     return "${base}api/v1/support/tickets/$ticketId/messages";
   }
 
@@ -42,9 +42,6 @@ class ApiUrl {
   static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lng";
   }
-  static String sendMessage({required String ticketId,  }) {
-    return "${base}api/v1/support/tickets/$ticketId/messages";
-  }
 
   static String shopList({required String kind, required String highlightId}) {
     return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";
@@ -56,10 +53,6 @@ class ApiUrl {
 
   static String viewAllServices({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/services?page=1&limit=20";
-  }
-
-  static String getChatMessages({required String id}) {
-    return "${base}api/v1/support/tickets/$id";
   }
 
   static String putEnquiry({required String shopId}) {
