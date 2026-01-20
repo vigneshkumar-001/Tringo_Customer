@@ -22,6 +22,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Mod
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
 
 import '../../Core/Utility/app_prefs.dart';
@@ -1284,7 +1285,6 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, ChatMessageResponse>> getChatMessages({
     required String id,
   }) async {
@@ -1330,7 +1330,7 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final String url = ApiUrl.sendMessage(ticketId: ticketId);
       final Map<String, dynamic> body = {
-        "subject": subject,
+        "message": subject,
 
         "attachments": [
           {"url": imageUrl},
@@ -1367,4 +1367,5 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+
 }

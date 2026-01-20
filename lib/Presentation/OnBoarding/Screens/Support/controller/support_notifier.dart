@@ -17,6 +17,7 @@ import '../Model/send_message_response.dart';
 
 class SupportState {
   final bool isLoading;
+  final bool isMsgSendingLoading;
 
   final String? error;
 
@@ -27,6 +28,7 @@ class SupportState {
 
   const SupportState({
     this.isLoading = true,
+    this.isMsgSendingLoading = true,
     this.error,
     this.supportListResponse,
     this.createSupportResponse,
@@ -38,6 +40,7 @@ class SupportState {
 
   SupportState copyWith({
     bool? isLoading,
+    bool? isMsgSendingLoading,
 
     String? error,
 
@@ -48,6 +51,7 @@ class SupportState {
   }) {
     return SupportState(
       isLoading: isLoading ?? this.isLoading,
+      isMsgSendingLoading: isMsgSendingLoading ?? this.isMsgSendingLoading,
 
       error: error,
 
@@ -97,10 +101,10 @@ class SupportNotifier extends Notifier<SupportState> {
     final result = await api.getChatMessages(id: id);
 
     result.fold(
-          (failure) {
+      (failure) {
         state = state.copyWith(isLoading: false, error: failure.message);
       },
-          (response) {
+      (response) {
         state = state.copyWith(
           isLoading: false,
           error: null,
@@ -169,14 +173,14 @@ class SupportNotifier extends Notifier<SupportState> {
     File? ownerImageFile,
     required BuildContext context,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isMsgSendingLoading: true, error: null);
 
     String customerImageUrl = '';
 
     final hasValidImage =
         ownerImageFile != null &&
-            ownerImageFile.path.isNotEmpty &&
-            await ownerImageFile.exists();
+        ownerImageFile.path.isNotEmpty &&
+        await ownerImageFile.exists();
 
     if (hasValidImage) {
       final uploadResult = await api.userProfileUpload(
@@ -184,8 +188,8 @@ class SupportNotifier extends Notifier<SupportState> {
       );
 
       customerImageUrl = uploadResult.fold(
-            (failure) => '',
-            (success) => success.message.toString(),
+        (failure) => '',
+        (success) => success.message.toString(),
       );
     }
 
@@ -198,14 +202,14 @@ class SupportNotifier extends Notifier<SupportState> {
     );
 
     result.fold(
-          (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
+      (failure) {
+        state = state.copyWith(isMsgSendingLoading: false, error: failure.message);
         AppSnackBar.error(context, failure.message);
         return failure.message;
       },
-          (response) {
+      (response) {
         state = state.copyWith(
-          isLoading: false,
+          isMsgSendingLoading: false,
           error: null,
           sendMessageResponse: response,
         );
