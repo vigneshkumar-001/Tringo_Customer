@@ -437,7 +437,7 @@ class Request {
       );
 
       AppLogger.log.i(
-        "GET RESPONSE \n API: $url \n RESPONSE: ${response.toString()}",
+        "GET RESPONSE \n API: $url \nToken: $token\nSessionToken: $sessionToken\nRESPONSE: ${response.toString()}",
       );
       return response;
     } catch (e,st) {

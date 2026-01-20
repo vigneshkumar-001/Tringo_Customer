@@ -1,22 +1,28 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Screens/support_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/controller/support_notifier.dart';
 
-import '../../../../../../Core/Utility/app_Images.dart';
-import '../../../../../../Core/Utility/app_color.dart';
-import '../../../../../../Core/Utility/google_font.dart';
-import '../../../../../../Core/Widgets/common_container.dart';
-import '../../Support Chat Screen/Screen/support_chat_screen.dart';
+import '../../../../../Core/Utility/app_Images.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/Widgets/common_container.dart';
+import 'support_chat_screen.dart';
 
-class CreateSupport extends StatefulWidget {
+class CreateSupport extends ConsumerStatefulWidget {
   const CreateSupport({super.key});
 
   @override
-  State<CreateSupport> createState() => _CreateSupportState();
+  ConsumerState<CreateSupport> createState() => _CreateSupportState();
 }
 
-class _CreateSupportState extends State<CreateSupport>
+class _CreateSupportState extends ConsumerState<CreateSupport>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -137,12 +143,15 @@ class _CreateSupportState extends State<CreateSupport>
 
   @override
   Widget build(BuildContext context) {
+    final data = ref.watch(supportNotifier.notifier);
+    final state = ref.watch(supportNotifier);
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
-          
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -188,9 +197,9 @@ class _CreateSupportState extends State<CreateSupport>
                   maxLines: 8,
                   decoration: _fieldDeco(),
                 ),
-          
+
                 SizedBox(height: 25),
-          
+
                 CommonContainer.containerTitle(
                   context: context,
                   title: 'Upload Photo',
@@ -199,7 +208,7 @@ class _CreateSupportState extends State<CreateSupport>
                       'Please upload a clear photo of your shop signboard.',
                 ),
                 SizedBox(height: 10),
-          
+
                 InkWell(
                   onTap: _showPickOptions,
                   borderRadius: BorderRadius.circular(16),
@@ -234,7 +243,8 @@ class _CreateSupportState extends State<CreateSupport>
                                 child: Image.file(
                                   File(_picked!.path),
                                   width: double.infinity,
-                                  height: double.infinity, // ✅ fill the container
+                                  height:
+                                      double.infinity, // ✅ fill the container
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -261,21 +271,41 @@ class _CreateSupportState extends State<CreateSupport>
                           ),
                   ),
                 ),
-          
+
                 SizedBox(height: 40),
-          
+
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
-                  imagePath: AppImages.rightSideArrow,
-                  onTap: () {
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(builder: (context) => SupportChatScreen()),
-                    // );
+                  imagePath: state.isLoading ? null : AppImages.rightSideArrow,
+
+                  onTap: () async {
+                    final File? imageFile =
+                        (_picked != null && _picked!.path.isNotEmpty)
+                        ? File(_picked!.path)
+                        : null;
+                    AppLogger.log.w(imageFile);
+                    final err = await data.createSupportTicket(
+                      subject: _subjectCtrl.text.trim(),
+                      description: _descCtrl.text.trim(),
+                      ownerImageFile: imageFile,
+                      context: context,
+                    );
+                    if (!context.mounted) return;
+
+                    if (err == null) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => SupportScreen()),
+                        (route) => false, // Remove all previous routes
+                      );
+                    } else {
+                      AppSnackBar.error(context, err); // ✅ current error
+                    }
                   },
-                  text: Text('Create Ticket'),
+                  text: state.isLoading
+                      ? AppLoader.circularLoader()
+                      : Text('Create Ticket'),
                 ),
-          
               ],
             ),
           ),
