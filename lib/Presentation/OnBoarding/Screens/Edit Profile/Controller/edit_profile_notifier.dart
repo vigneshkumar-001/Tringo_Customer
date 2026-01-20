@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 import '../../../../../Api/DataSource/api_data_source.dart';
 import '../../../../../Core/Utility/app_prefs.dart';
 import '../Model/edit_number_otp_response.dart';
@@ -125,6 +126,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       (response) async {
         final token = response.data?.verificationToken ?? '';
         if (token.isNotEmpty) {
+          AppLogger.log.i("Token => $token");
           await AppPrefs.setVerificationToken(token);
         }
 
@@ -136,8 +138,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       },
     );
   }
-
-  Future<bool> editProfile({
+  Future<String?> editProfile({
     required String displayName,
     required String email,
     required String gender,
@@ -145,7 +146,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     File? ownerImageFile,
     required String phoneNumber,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     String customerImageUrl = '';
 
@@ -156,8 +157,9 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     if (hasValidImage) {
       final uploadResult =
       await apiDataSource.userProfileUpload(imageFile: ownerImageFile);
+
       customerImageUrl = uploadResult.fold(
-            (failure) => failure.message,
+            (failure) => '',
             (success) => success.message.toString(),
       );
     }
@@ -174,14 +176,19 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     return result.fold(
           (failure) {
         state = state.copyWith(isLoading: false, error: failure.message);
-        return false;
+        return failure.message; // ✅ return current error
       },
           (response) {
-        state = state.copyWith(isLoading: false, editProfileResponse: response);
-        return true; // ✅ success
+        state = state.copyWith(
+          isLoading: false,
+          editProfileResponse: response,
+          clearError: true,
+        );
+        return null; // ✅ success
       },
     );
   }
+
 
   void resetState() {
     state = EditProfileState.initial();
