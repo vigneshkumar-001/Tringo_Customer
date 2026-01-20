@@ -8,6 +8,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Utility/date_time_converter.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/controller/support_notifier.dart';

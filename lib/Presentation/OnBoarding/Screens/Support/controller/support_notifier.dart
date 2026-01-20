@@ -59,7 +59,7 @@ class SupportState {
       chatMessageResponse: chatMessageResponse ?? this.chatMessageResponse,
       sendMessageResponse: sendMessageResponse ?? this.sendMessageResponse,
       createSupportResponse:
-          createSupportResponse ?? this.createSupportResponse,
+      createSupportResponse ?? this.createSupportResponse,
 
       // activeEnquiryId: activeEnquiryId,
     );
@@ -81,11 +81,11 @@ class SupportNotifier extends Notifier<SupportState> {
     final result = await api.supportList();
 
     result.fold(
-      (failure) {
+          (failure) {
         state = state.copyWith(isLoading: false, error: failure.message);
         AppSnackBar.error(context, failure.message);
       },
-      (response) {
+          (response) {
         state = state.copyWith(
           isLoading: false,
           error: null,
@@ -127,8 +127,8 @@ class SupportNotifier extends Notifier<SupportState> {
 
     final hasValidImage =
         ownerImageFile != null &&
-        ownerImageFile.path.isNotEmpty &&
-        await ownerImageFile.exists();
+            ownerImageFile.path.isNotEmpty &&
+            await ownerImageFile.exists();
 
     if (hasValidImage) {
       final uploadResult = await api.userProfileUpload(
@@ -136,8 +136,8 @@ class SupportNotifier extends Notifier<SupportState> {
       );
 
       customerImageUrl = uploadResult.fold(
-        (failure) => '',
-        (success) => success.message.toString(),
+            (failure) => '',
+            (success) => success.message.toString(),
       );
     }
 
@@ -149,12 +149,12 @@ class SupportNotifier extends Notifier<SupportState> {
     );
 
     result.fold(
-      (failure) {
+          (failure) {
         state = state.copyWith(isLoading: false, error: failure.message);
         AppSnackBar.error(context, failure.message);
         return failure.message;
       },
-      (response) {
+          (response) {
         state = state.copyWith(
           isLoading: false,
           error: null,

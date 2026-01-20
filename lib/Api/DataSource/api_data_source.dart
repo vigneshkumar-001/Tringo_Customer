@@ -35,6 +35,7 @@ import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_respo
 import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Profile Screen/Model/delete_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
+import '../../Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/create_support_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/send_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'

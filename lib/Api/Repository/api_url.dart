@@ -18,7 +18,13 @@ class ApiUrl {
   static const String imageUrl = "${base}api/media/image-save";
   static const String supportTicketsList = "${base}api/v1/support/tickets";
 
+  static String getChatMessages({required String id}) {
+    return "${base}api/v1/support/tickets/$id";
+  }
 
+  static String sendMessage({required String ticketId,  }) {
+    return "${base}api/v1/support/tickets/$ticketId/messages";
+  }
 
   // static String imageUrl =
   //     "https://next.fenizotechnologies.com/Adrox/api/image-save";

@@ -231,7 +231,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                             companyName: data.englishName.toString(),
                             location:
                                 '${data.addressEn},${data.city}${data.state} ',
-                            fieldName: 'Company',
+                            fieldName: data.distanceLabel.toString(),
                             ratingStar: data.rating.toString(),
                             ratingCount: data.ratingCount.toString(),
                             time: data.closeTime,
