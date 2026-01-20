@@ -286,7 +286,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Future<bool?> _askToEnableLocationServices() {
     return showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(backgroundColor: AppColor.white,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColor.white,
         title: const Text("Turn on Location"),
         content: const Text(
           "Please enable Location Services to show your current address.",
@@ -609,11 +610,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     builder: (context) => ProfileScreen(
                                       coins: state.homeResponse?.data.user.coins
                                           .toString(),
-                                       gender : state.homeResponse?.data.user.gender
+                                      gender: state
+                                          .homeResponse
+                                          ?.data
+                                          .user
+                                          .gender
                                           .toString(),
-                                       dob : state.homeResponse?.data.user.dob
+                                      dob: state.homeResponse?.data.user.dob
                                           .toString(),
-                                       email : state.homeResponse?.data.user.email
+                                      email: state.homeResponse?.data.user.email
                                           .toString(),
 
                                       url:
@@ -1442,8 +1447,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     location:
                                                         '${services.addressEn},'
                                                         '${services.city},${services.state} ',
-                                                    fieldName: services
-                                                        .ownershipTypeLabel,
+                                                    fieldName:
+                                                        services.distanceLabel,
                                                     ratingStar: services.rating
                                                         .toString(),
                                                     ratingCount: services

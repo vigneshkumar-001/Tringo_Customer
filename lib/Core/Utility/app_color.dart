@@ -61,5 +61,4 @@ class AppColor {
   static const charcoalBrown = Color(0xff1B1009);
   static const pink = Color(0xffC04798);
   static const blushPink = Color(0xffF6E8E3);
-
 }

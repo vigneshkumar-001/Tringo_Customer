@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Screens/support_chat_screen.dart';
 
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_loader.dart';
@@ -144,7 +145,8 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => CreateSupport(),
+                              builder: (context) =>
+                                  SupportChatScreen(id: ticket.id),
                             ),
                           );
                         },
@@ -159,33 +161,6 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                   },
                 ),
 
-                /*  SizedBox(height: 35),
-                CommonContainer.horizonalDivider(),
-                SizedBox(height: 35),
-                CommonContainer.supportBox(
-                  imageTextColor: AppColor.green,
-                  onTap: () {},
-                  containerColor: AppColor.green.withOpacity(0.2),
-                  image: AppImages.greenTick,
-                  imageText: 'Solved',
-                  mainText:
-                      'Transaction Failed due to some reason, i don’t ...',
-                  timingText: 'Created on 15.02.25',
-                ),
-
-                SizedBox(height: 35),
-                CommonContainer.horizonalDivider(),
-                SizedBox(height: 35),
-                CommonContainer.supportBox(
-                  imageTextColor: AppColor.yellow,
-                  onTap: () {},
-                  containerColor: AppColor.yellow.withOpacity(0.2),
-                  image: AppImages.orangeClock,
-                  imageText: 'Pending',
-                  mainText:
-                      'Transaction Failed due to some reason, i don’t ...',
-                  timingText: 'Created on 15.02.25',
-                ),*/
                 SizedBox(height: 50),
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
