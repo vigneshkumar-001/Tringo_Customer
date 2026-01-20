@@ -268,10 +268,10 @@ class _CreateSupportState extends State<CreateSupport>
                   buttonColor: AppColor.darkBlue,
                   imagePath: AppImages.rightSideArrow,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SupportChatScreen()),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (context) => SupportChatScreen()),
+                    // );
                   },
                   text: Text('Create Ticket'),
                 ),
