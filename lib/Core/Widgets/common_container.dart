@@ -1083,8 +1083,6 @@ class CommonContainer {
     );
   }
 
-
-
   static serviceDetails({
     VoidCallback? onTap,
     required String filedName,
@@ -2140,6 +2138,7 @@ class CommonContainer {
       ),
     );
   }
+
   static Widget gradientContainer({
     required String text,
     String? locationImage,
@@ -2173,7 +2172,9 @@ class CommonContainer {
 
           //  NO Flexible/Expanded here
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220), // adjust if needed
+            constraints: const BoxConstraints(
+              maxWidth: 220,
+            ), // adjust if needed
             child: Text(
               text,
               overflow: TextOverflow.ellipsis,
@@ -2243,8 +2244,6 @@ class CommonContainer {
   //     ),
   //   );
   // }
-
-
 
   static Widget glowAvatarUniversal({
     required ImageProvider
@@ -3133,6 +3132,64 @@ class CommonContainer {
           ],
         ),
       ),
+    );
+  }
+
+  static Widget supportBox({
+    required Color containerColor,
+    required String image,
+    required String imageText,
+    required String mainText,
+    required String timingText,
+  }) {
+    return Row(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: containerColor,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              children: [
+                Image.asset(image, height: 25.5),
+                SizedBox(height: 5),
+                Text(
+                  imageText,
+                  style: GoogleFont.Mulish(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                mainText,
+                style: GoogleFont.Mulish(color: AppColor.black),
+              ),
+              SizedBox(height: 9),
+              Text(
+                timingText,
+                style: GoogleFont.Mulish(
+                  fontSize: 12,
+                  color: AppColor.black.withOpacity(0.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

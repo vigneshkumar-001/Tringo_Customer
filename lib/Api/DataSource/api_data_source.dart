@@ -24,6 +24,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/s
 
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_verify_response.dart';
+import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_profile_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';
@@ -1083,4 +1084,52 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
+  Future<Either<Failure, EditProfileResponse>> editProfile({
+    required String displayName,
+    required String email,
+    required String gender,
+    required String dateOfBirth,
+    required String avatarUrl,
+    required String phoneNumber,
+    required String phoneVerificationToken,
+  }) async {
+    String url = ApiUrl.editProfile;
+
+    final response = await Request.sendRequest(
+      url,
+      {
+        "phoneNumber": "+91$phoneNumber",
+        "displayName": displayName,
+        "email": email,
+        "gender": gender,
+        "dateOfBirth": dateOfBirth,
+        "avatarUrl": avatarUrl,
+        "phoneVerificationToken": phoneVerificationToken,
+      },
+      'Post',
+      true,
+    );
+
+    if (response is! DioException) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(EditProfileResponse.fromJson(response.data));
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Login failed"),
+          );
+        }
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
+      }
+    } else {
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+    }
+  }
 }

@@ -7,6 +7,7 @@ import '../../../../../Api/DataSource/api_data_source.dart';
 import '../../../../../Core/Utility/app_prefs.dart';
 import '../Model/edit_number_otp_response.dart';
 import '../Model/edit_number_verify_response.dart';
+import '../Model/edit_profile_response.dart';
 
 class EditProfileState {
   final bool isLoading;
@@ -16,6 +17,7 @@ class EditProfileState {
   final String? error;
   final EditNumberVerifyResponse? editNumberVerifyResponse;
   final EditNumberOtpResponse? editNumberOtpResponse;
+  final EditProfileResponse? editProfileResponse;
 
   const EditProfileState({
     this.isLoading = false,
@@ -25,6 +27,7 @@ class EditProfileState {
     this.error,
     this.editNumberVerifyResponse,
     this.editNumberOtpResponse,
+    this.editProfileResponse,
   });
 
   factory EditProfileState.initial() => const EditProfileState();
@@ -36,6 +39,7 @@ class EditProfileState {
     String? error,
     EditNumberVerifyResponse? editNumberVerifyResponse,
     EditNumberOtpResponse? editNumberOtpResponse,
+    EditProfileResponse? editProfileResponse,
     bool clearError = false,
   }) {
     return EditProfileState(
@@ -47,6 +51,7 @@ class EditProfileState {
           editNumberVerifyResponse ?? this.editNumberVerifyResponse,
       editNumberOtpResponse:
           editNumberOtpResponse ?? this.editNumberOtpResponse,
+      editProfileResponse: editProfileResponse ?? this.editProfileResponse,
     );
   }
 }
@@ -127,6 +132,50 @@ class ShopNotifier extends Notifier<EditProfileState> {
           editNumberOtpResponse: response,
         );
         return response.data?.verified == true; // ✅ verified true/false
+      },
+    );
+  }
+
+  Future<bool> editProfile({
+    required String displayName,
+    required String email,
+    required String gender,
+    required String dateOfBirth,
+    required String avatarUrl,
+    required String phoneNumber,
+    required String phoneVerificationToken,
+  }) async {
+    if (state.isVerifyingOtp) return false;
+
+    state = state.copyWith(isVerifyingOtp: true, clearError: true);
+
+    final result = await apiDataSource.editProfile(
+      avatarUrl: avatarUrl,
+      phoneNumber: phoneNumber,
+      dateOfBirth: dateOfBirth,
+      displayName: displayName,
+      email: email,
+      gender: gender,
+      phoneVerificationToken: phoneVerificationToken,
+    );
+
+    return result.fold(
+      (failure) {
+        state = state.copyWith(isVerifyingOtp: false, error: failure.message);
+        return false;
+      },
+      (response) async {
+        final token = response.data?.verificationToken ?? '';
+        if (token.isNotEmpty) {
+          await AppPrefs.setVerificationToken(token);
+        }
+
+        state = state.copyWith(
+          isVerifyingOtp: false,
+          editProfileResponse: response,
+        );
+
+        return response.data?.verified == true;
       },
     );
   }

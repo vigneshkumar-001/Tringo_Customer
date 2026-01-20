@@ -14,6 +14,7 @@ import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/login_mobile_number.dart';
+import '../Support/Support Screen/Screen/support_screen.dart';
 import 'Controller/profile_notifier.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -463,7 +464,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SupportScreen()),
+                    );
+                  },
                   label: 'Support',
                   iconPath: AppImages.support,
                   iconHeight: 25,
