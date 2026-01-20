@@ -143,4 +143,5 @@ class AppImages {
   static String greenTick = 'Assets/Images/greenTick.png';
   static String orangeClock = 'Assets/Images/OrangeClock.png';
   static String iImage = 'Assets/Images/I_Image.png';
+  static String sendImage = 'Assets/Images/sendImage.png';
 }

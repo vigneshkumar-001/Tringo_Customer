@@ -142,7 +142,7 @@ class _CreateSupportState extends State<CreateSupport>
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
-          
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -188,9 +188,9 @@ class _CreateSupportState extends State<CreateSupport>
                   maxLines: 8,
                   decoration: _fieldDeco(),
                 ),
-          
+
                 SizedBox(height: 25),
-          
+
                 CommonContainer.containerTitle(
                   context: context,
                   title: 'Upload Photo',
@@ -199,7 +199,7 @@ class _CreateSupportState extends State<CreateSupport>
                       'Please upload a clear photo of your shop signboard.',
                 ),
                 SizedBox(height: 10),
-          
+
                 InkWell(
                   onTap: _showPickOptions,
                   borderRadius: BorderRadius.circular(16),
@@ -234,7 +234,8 @@ class _CreateSupportState extends State<CreateSupport>
                                 child: Image.file(
                                   File(_picked!.path),
                                   width: double.infinity,
-                                  height: double.infinity, // ✅ fill the container
+                                  height:
+                                      double.infinity, // ✅ fill the container
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -261,21 +262,20 @@ class _CreateSupportState extends State<CreateSupport>
                           ),
                   ),
                 ),
-          
+
                 SizedBox(height: 40),
-          
+
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
                   imagePath: AppImages.rightSideArrow,
                   onTap: () {
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(builder: (context) => SupportChatScreen()),
-                    // );
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(builder: (context) => SupportChatScreen()),
+                 );
                   },
                   text: Text('Create Ticket'),
                 ),
-          
               ],
             ),
           ),

@@ -57,6 +57,7 @@ class AppColor {
   static const aliceBlue = Color(0xffECF3F8);
   static const babyBlue = Color(0xffEDF7FD);
   static const mediumBlue = Color(0xff267DB9);
+  static const midnightBlue = Color(0xff14212B);
   static const charcoalBrown = Color(0xff1B1009);
   static const pink = Color(0xffC04798);
   static const blushPink = Color(0xffF6E8E3);
