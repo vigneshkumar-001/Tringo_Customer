@@ -16,7 +16,7 @@ class ApiUrl {
   static const String contactInfo = "${base}api/v1/contacts/sync";
   static const String editProfile = "${base}api/v1/customer/profile";
   static const String imageUrl = "${base}api/media/image-save";
-  static const String editProfile = "${base}api/v1/customer/profile";
+
 
   // static String imageUrl =
   //     "https://next.fenizotechnologies.com/Adrox/api/image-save";
