@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../../../Core/Utility/app_Images.dart';
 import '../../../../../../Core/Utility/app_color.dart';
 import '../../../../../../Core/Utility/google_font.dart';
 import '../../../../../../Core/Widgets/common_container.dart';
@@ -45,7 +48,7 @@ class _CreateSupportState extends State<CreateSupport>
   InputDecoration _fieldDeco() {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF2F2F2), // light grey like screenshot
+      fillColor: const Color(0xFFF2F2F2),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -60,6 +63,75 @@ class _CreateSupportState extends State<CreateSupport>
         borderSide: BorderSide.none,
       ),
     );
+  }
+
+  Future<void> _showPickOptions() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: Text('Camera', style: GoogleFont.Mulish()),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickFromCamera();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_outlined),
+                  title: Text('Gallery', style: GoogleFont.Mulish()),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickFromGallery();
+                  },
+                ),
+                const SizedBox(height: 6),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    final x = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+    if (!mounted) return;
+    setState(() => _picked = x);
+  }
+
+  Future<void> _pickFromGallery() async {
+    final x = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (!mounted) return;
+    setState(() => _picked = x);
+  }
+
+  void _removeImage() {
+    setState(() => _picked = null);
   }
 
   @override
@@ -102,19 +174,106 @@ class _CreateSupportState extends State<CreateSupport>
                 textInputAction: TextInputAction.next,
                 decoration: _fieldDeco(),
               ),
-                SizedBox(height: 18),
-                Text(
+              SizedBox(height: 18),
+              Text(
                 'Description',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style: GoogleFont.Mulish(color: AppColor.mildBlack),
               ),
-                SizedBox(height: 10),
+              SizedBox(height: 10),
               TextField(
                 controller: _descCtrl,
-                maxLines: 6,
+                maxLines: 8,
                 decoration: _fieldDeco(),
               ),
 
-                SizedBox(height: 18),
+              SizedBox(height: 18),
+
+              CommonContainer.containerTitle(
+                context: context,
+                title: 'Upload Photo',
+                image: AppImages.iImage,
+                infoMessage:
+                    'Please upload a clear photo of your shop signboard.',
+              ),
+              SizedBox(height: 10),
+
+              InkWell(
+                onTap: _showPickOptions, // ✅ camera/gallery sheet
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  height: 56,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F2F2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: (_picked == null)
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(AppImages.galleryImage, height: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Upload Image',
+                              style: GoogleFont.Mulish(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Stack(
+                          children: [
+                            // ✅ image preview inside container
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.file(
+                                File(_picked!.path),
+                                width: double.infinity,
+                                height: 56,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+
+                            // ✅ close icon
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: InkWell(
+                                onTap: _removeImage,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.55),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+
+              SizedBox(height: 12),
+
+              // Preview (optional)
+              if (_picked != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    File(_picked!.path),
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
             ],
           ),
         ),
