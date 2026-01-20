@@ -7,6 +7,7 @@ import '../../../../../Api/DataSource/api_data_source.dart';
 import '../../../../../Core/Utility/app_prefs.dart';
 import '../Model/edit_number_otp_response.dart';
 import '../Model/edit_number_verify_response.dart';
+import '../Model/edit_profile_response.dart';
 
 class EditProfileState {
   final bool isLoading;
@@ -16,6 +17,7 @@ class EditProfileState {
   final String? error;
   final EditNumberVerifyResponse? editNumberVerifyResponse;
   final EditNumberOtpResponse? editNumberOtpResponse;
+  final EditProfileResponse? editProfileResponse;
 
   const EditProfileState({
     this.isLoading = false,
@@ -25,6 +27,7 @@ class EditProfileState {
     this.error,
     this.editNumberVerifyResponse,
     this.editNumberOtpResponse,
+    this.editProfileResponse,
   });
 
   factory EditProfileState.initial() => const EditProfileState();
@@ -36,6 +39,7 @@ class EditProfileState {
     String? error,
     EditNumberVerifyResponse? editNumberVerifyResponse,
     EditNumberOtpResponse? editNumberOtpResponse,
+    EditProfileResponse? editProfileResponse,
     bool clearError = false,
   }) {
     return EditProfileState(
@@ -47,11 +51,13 @@ class EditProfileState {
           editNumberVerifyResponse ?? this.editNumberVerifyResponse,
       editNumberOtpResponse:
           editNumberOtpResponse ?? this.editNumberOtpResponse,
+
+      editProfileResponse: editProfileResponse ?? this.editProfileResponse,
     );
   }
 }
 
-class ShopNotifier extends Notifier<EditProfileState> {
+class EditProfileNotifier extends Notifier<EditProfileState> {
   final ApiDataSource apiDataSource = ApiDataSource();
 
   String _onlyIndian10(String input) {
@@ -131,12 +137,58 @@ class ShopNotifier extends Notifier<EditProfileState> {
     );
   }
 
+  Future<bool> editProfile({
+    required String displayName,
+    required String email,
+    required String gender,
+    required String dateOfBirth,
+    File? ownerImageFile,
+    required String phoneNumber,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    String customerImageUrl = '';
+
+    final hasValidImage = ownerImageFile != null &&
+        ownerImageFile.path.isNotEmpty &&
+        await ownerImageFile.exists();
+
+    if (hasValidImage) {
+      final uploadResult =
+      await apiDataSource.userProfileUpload(imageFile: ownerImageFile);
+      customerImageUrl = uploadResult.fold(
+            (failure) => failure.message,
+            (success) => success.message.toString(),
+      );
+    }
+
+    final result = await apiDataSource.editProfile(
+      displayName: displayName,
+      email: email,
+      gender: gender,
+      dateOfBirth: dateOfBirth,
+      avatarUrl: customerImageUrl,
+      phoneNumber: phoneNumber,
+    );
+
+    return result.fold(
+          (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        return false;
+      },
+          (response) {
+        state = state.copyWith(isLoading: false, editProfileResponse: response);
+        return true; // ✅ success
+      },
+    );
+  }
+
   void resetState() {
     state = EditProfileState.initial();
   }
 }
 
-final shopCategoryNotifierProvider =
-    NotifierProvider.autoDispose<ShopNotifier, EditProfileState>(
-      ShopNotifier.new,
+final editProfileNotifierProvider =
+    NotifierProvider.autoDispose<EditProfileNotifier, EditProfileState>(
+      EditProfileNotifier.new,
     );

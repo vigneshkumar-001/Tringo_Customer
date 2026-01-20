@@ -440,8 +440,8 @@ class Request {
         "GET RESPONSE \n API: $url \n RESPONSE: ${response.toString()}",
       );
       return response;
-    } catch (e) {
-      AppLogger.log.e('GET API: $url \n ERROR: $e');
+    } catch (e,st) {
+      AppLogger.log.e('GET API: $url \n ERROR: $e\n Stack Trace: $st');
       return null;
     }
   }

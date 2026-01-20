@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Model/edit_profile_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
 
@@ -22,6 +23,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/p
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
 
+import '../../Core/Utility/app_prefs.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_verify_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
@@ -601,7 +603,6 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
-
   Future<Either<Failure, UserImageResponse>> userProfileUpload({
     required File imageFile,
   }) async {
@@ -611,6 +612,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
 
       String url = ApiUrl.imageUrl;
+
       FormData formData = FormData.fromMap({
         'images': await MultipartFile.fromFile(
           imageFile.path,
@@ -619,27 +621,74 @@ class ApiDataSource extends BaseApiDataSource {
       });
 
       final response = await Request.formData(url, formData, 'POST', true);
-      Map<String, dynamic> responseData =
-          jsonDecode(response.data) as Map<String, dynamic>;
+
+      late final Map<String, dynamic> responseData;
+      final data = response.data;
+
+      if (data is String) {
+        responseData = jsonDecode(data) as Map<String, dynamic>;
+      } else if (data is Map<String, dynamic>) {
+        responseData = data;
+      } else {
+        return Left(ServerFailure("Unexpected response format"));
+      }
+
       if (response.statusCode == 200) {
         if (responseData['status'] == true) {
           return Right(UserImageResponse.fromJson(responseData));
         } else {
-          return Left(ServerFailure(responseData['message']));
+          return Left(ServerFailure((responseData['message'] ?? '').toString()));
         }
-      } else if (response is Response && response.statusCode == 409) {
-        return Left(ServerFailure(responseData['message']));
-      } else if (response is Response) {
-        return Left(ServerFailure(responseData['message'] ?? "Unknown error"));
+      } else if (response.statusCode == 409) {
+        return Left(ServerFailure((responseData['message'] ?? '').toString()));
       } else {
-        return Left(ServerFailure("Unexpected error"));
+        return Left(ServerFailure((responseData['message'] ?? "Unknown error").toString()));
       }
     } catch (e) {
-      // CommonLogger.log.e(e);
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure('Something went wrong'));
     }
   }
+
+
+  // Future<Either<Failure, UserImageResponse>> userProfileUpload({
+  //   required File imageFile,
+  // }) async {
+  //   try {
+  //     if (!await imageFile.exists()) {
+  //       return Left(ServerFailure('Image file does not exist.'));
+  //     }
+  //
+  //     String url = ApiUrl.imageUrl;
+  //     FormData formData = FormData.fromMap({
+  //       'images': await MultipartFile.fromFile(
+  //         imageFile.path,
+  //         filename: imageFile.path.split('/').last,
+  //       ),
+  //     });
+  //
+  //     final response = await Request.formData(url, formData, 'POST', true);
+  //     Map<String, dynamic> responseData =
+  //         jsonDecode(response.data) as Map<String, dynamic>;
+  //     if (response.statusCode == 200) {
+  //       if (responseData['status'] == true) {
+  //         return Right(UserImageResponse.fromJson(responseData));
+  //       } else {
+  //         return Left(ServerFailure(responseData['message']));
+  //       }
+  //     } else if (response is Response && response.statusCode == 409) {
+  //       return Left(ServerFailure(responseData['message']));
+  //     } else if (response is Response) {
+  //       return Left(ServerFailure(responseData['message'] ?? "Unknown error"));
+  //     } else {
+  //       return Left(ServerFailure("Unexpected error"));
+  //     }
+  //   } catch (e) {
+  //     AppLogger.log.e(e);
+  //     print(e);
+  //     return Left(ServerFailure('Something went wrong'));
+  //   }
+  // }
 
   Future<Either<Failure, EnquiryResponse>> putEnquiry({
     required String serviceId,
@@ -1083,4 +1132,53 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
+  Future<Either<Failure, EditProfileResponse>> editProfile({
+    required String displayName,
+    required String email,
+    required String gender,
+    required String dateOfBirth,
+      String? avatarUrl,
+    required String phoneNumber,
+  }) async {
+    String url = ApiUrl.editProfile;
+    final verificationToken = await AppPrefs.getVerificationToken();
+    final response = await Request.sendRequest(
+      url,
+      {
+        "displayName": displayName,
+        "email": email,
+        "gender": gender,
+        "dateOfBirth": dateOfBirth,
+        "avatarUrl": avatarUrl,
+        "phoneNumber": phoneNumber,
+        "phoneVerificationToken": verificationToken,
+        //   "primaryCity": "Madurai",
+        //   "primaryState": "Tamil Nadu"
+      },
+      'PATCH',
+      true,
+    );
+
+    if (response is! DioException) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data['status'] == true) {
+          return Right(EditProfileResponse.fromJson(response.data));
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Login failed"),
+          );
+        }
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? "Something went wrong"),
+        );
+      }
+    } else {
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+    }
+  }
 }

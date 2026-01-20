@@ -96,6 +96,9 @@ class HomeData {
 class AppUser {
   final String id;
   final String name;
+  final String email;
+  final String dob;
+  final String gender;
   final String phoneNumber;
   final String? avatarUrl;
   final int coins;
@@ -106,6 +109,9 @@ class AppUser {
   const AppUser({
     required this.id,
     required this.name,
+    required this. gender ,
+    required this.  email  ,
+    required this.  dob   ,
     required this.phoneNumber,
     required this.avatarUrl,
     required this.coins,
@@ -118,6 +124,9 @@ class AppUser {
     return AppUser(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
+      gender: json['gender'] ?? '',
+       dob : json['dob'] ?? '',
+       email : json['email'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       avatarUrl: json['avatarUrl'],
       coins: json['coins'] ?? 0,
@@ -131,6 +140,9 @@ class AppUser {
     return {
       'id': id,
       'name': name,
+      'gender': gender,
+      'dob': dob,
+      'email': email,
       'phoneNumber': phoneNumber,
       'avatarUrl': avatarUrl,
       'coins': coins,
