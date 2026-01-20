@@ -1,0 +1,139 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:tringo_app/Api/DataSource/api_data_source.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Screens/create_support.dart';
+
+import '../../Login Screen/Controller/login_notifier.dart';
+import '../Model/create_support_response.dart';
+
+class SupportState {
+  final bool isLoading;
+
+  final String? error;
+
+  final SupportListResponse? supportListResponse;
+  final CreateSupportResponse? createSupportResponse;
+
+  const SupportState({
+    this.isLoading = true,
+    this.error,
+    this.supportListResponse,
+    this.createSupportResponse,
+  });
+
+  factory SupportState.initial() => const SupportState();
+
+  SupportState copyWith({
+    bool? isLoading,
+
+    String? error,
+
+    SupportListResponse? supportListResponse,
+    CreateSupportResponse? createSupportResponse,
+  }) {
+    return SupportState(
+      isLoading: isLoading ?? this.isLoading,
+
+      error: error,
+
+      supportListResponse: supportListResponse ?? this.supportListResponse,
+      createSupportResponse:
+          createSupportResponse ?? this.createSupportResponse,
+
+      // activeEnquiryId: activeEnquiryId,
+    );
+  }
+}
+
+class SupportNotifier extends Notifier<SupportState> {
+  late final ApiDataSource api;
+
+  @override
+  SupportState build() {
+    api = ref.read(apiDataSourceProvider);
+    return SupportState.initial();
+  }
+
+  Future<void> supportList({required BuildContext context}) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    final result = await api.supportList();
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        AppSnackBar.error(context, failure.message);
+      },
+      (response) {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          supportListResponse: response,
+        );
+      },
+    );
+  }
+
+  Future<String?> createSupportTicket({
+    required String subject,
+    required String description,
+
+    File? ownerImageFile,
+    required BuildContext context,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    String customerImageUrl = '';
+
+    final hasValidImage =
+        ownerImageFile != null &&
+        ownerImageFile.path.isNotEmpty &&
+        await ownerImageFile.exists();
+
+    if (hasValidImage) {
+      final uploadResult = await api.userProfileUpload(
+        imageFile: ownerImageFile,
+      );
+
+      customerImageUrl = uploadResult.fold(
+        (failure) => '',
+        (success) => success.message.toString(),
+      );
+    }
+
+    final result = await api.createSupportTicket(
+      attachments: customerImageUrl,
+      description: description,
+      imageUrl: customerImageUrl,
+      subject: subject,
+    );
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+        AppSnackBar.error(context, failure.message);
+        return failure.message;
+      },
+      (response) {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          createSupportResponse: response,
+        );
+        return response.data;
+      },
+    );
+    return null;
+  }
+}
+
+final supportNotifier = NotifierProvider<SupportNotifier, SupportState>(
+  SupportNotifier.new,
+);

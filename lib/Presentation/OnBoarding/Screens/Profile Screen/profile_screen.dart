@@ -14,7 +14,7 @@ import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/login_mobile_number.dart';
-import '../Support/Support Screen/Screen/support_screen.dart';
+import '../Support/Screens/support_screen.dart';
 import 'Controller/profile_notifier.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
