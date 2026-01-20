@@ -255,7 +255,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     final success =
         st.deleteResponse?.status == true &&
-            st.deleteResponse?.data.deleted == true;
+        st.deleteResponse?.data.deleted == true;
 
     if (!mounted) return;
 
@@ -268,7 +268,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       AppSnackBar.error(context, st.error ?? "Delete failed");
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
