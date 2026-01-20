@@ -3012,6 +3012,7 @@ class CommonContainer {
       ],
     );
   }
+
   static Widget fillProfileContainer({
     required TextEditingController controller,
     required String hint,
@@ -3022,8 +3023,8 @@ class CommonContainer {
     String? rightLabel,
     VoidCallback? onTap,
     bool readOnly = false,
-    String? selectedImage,        // local file path
-    String? networkImageUrl,      // url from API
+    String? selectedImage, // local file path
+    String? networkImageUrl, // url from API
 
     String? Function(String?)? validator,
   }) {
@@ -3031,9 +3032,10 @@ class CommonContainer {
     final bool hasLabel = rightLabel != null && rightLabel.isNotEmpty;
     final bool showRightSection = hasIcon || hasLabel;
 
-    final bool hasLocalImage = selectedImage != null && selectedImage.isNotEmpty;
+    final bool hasLocalImage =
+        selectedImage != null && selectedImage.isNotEmpty;
     final bool hasNetworkImage =
-    (networkImageUrl != null && networkImageUrl.isNotEmpty);
+        (networkImageUrl != null && networkImageUrl.isNotEmpty);
 
     Widget leftWidget;
 
@@ -3095,10 +3097,7 @@ class CommonContainer {
           maxLength: maxLength,
           validator: validator,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          style: GoogleFont.Mulish(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: GoogleFont.Mulish(fontWeight: FontWeight.w700, fontSize: 18),
           decoration: InputDecoration(
             counterText: '',
             border: InputBorder.none,
@@ -3176,54 +3175,146 @@ class CommonContainer {
     required Color containerColor,
     required String image,
     required String imageText,
+    required Color imageTextColor,
     required String mainText,
     required String timingText,
+    VoidCallback? onTap,
   }) {
-    return Row(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: containerColor,
-            borderRadius: BorderRadius.circular(15),
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: containerColor,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                children: [
+                  Image.asset(image, height: 25.5),
+                  SizedBox(height: 5),
+                  Text(
+                    imageText,
+                    style: GoogleFont.Mulish(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: imageTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          SizedBox(width: 20),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset(image, height: 25.5),
-                SizedBox(height: 5),
                 Text(
-                  imageText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  mainText,
+                  style: GoogleFont.Mulish(color: AppColor.black),
+                ),
+                SizedBox(height: 9),
+                Text(
+                  timingText,
                   style: GoogleFont.Mulish(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.blue,
+                    fontSize: 12,
+                    color: AppColor.black.withOpacity(0.4),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                mainText,
-                style: GoogleFont.Mulish(color: AppColor.black),
-              ),
-              SizedBox(height: 9),
-              Text(
-                timingText,
-                style: GoogleFont.Mulish(
-                  fontSize: 12,
-                  color: AppColor.black.withOpacity(0.4),
+        ],
+      ),
+    );
+  }
+
+  static Widget containerTitle({
+    required String title,
+    required String image,
+    String? infoMessage,
+    VoidCallback? onTap,
+    BuildContext? context,
+  }) {
+    return Row(
+      children: [
+        Text(title, style: GoogleFont.Mulish(color: AppColor.mildBlack)),
+        SizedBox(width: 7),
+        InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: () {
+            if (onTap != null) {
+              onTap();
+            } else if (context != null && infoMessage != null) {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  backgroundColor: Colors.white,
+                  contentPadding: const EdgeInsets.all(20),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Image.asset(image, height: 18, width: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            title,
+                            style: GoogleFont.Mulish(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColor.mildBlack,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        infoMessage,
+                        style: GoogleFont.Mulish(
+                          color: AppColor.mediumLightGray,
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(height: 18),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.skyBlue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text(
+                            'Got it',
+                            style: GoogleFont.Mulish(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              );
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColor.iceBlue,
+              borderRadius: BorderRadius.circular(50),
+            ),
+            padding: const EdgeInsets.all(5),
+            child: Image.asset(image, height: 10),
           ),
         ),
       ],
