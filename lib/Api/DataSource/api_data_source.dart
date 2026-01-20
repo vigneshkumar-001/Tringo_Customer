@@ -1233,6 +1233,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
+      AppLogger.log.e(e);
       print(e);
       return Left(ServerFailure(e.toString()));
     }

@@ -160,8 +160,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                           image: imageAsset,
                           imageText: statusText,
                           mainText: ticket.subject,
-                          timingText:
-                              'Created on ${DateAndTimeConvert.formatDateTime(ticket.lastMessageAt.toIso8601String(), showTime: false)}',
+                          timingText: 'Created on ${ticket.createdAt}',
                         ),
                       );
                     },
