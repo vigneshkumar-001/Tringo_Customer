@@ -607,6 +607,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => ProfileScreen(
+                                      coins: state.homeResponse?.data.user.coins
+                                          .toString(),
+                                       gender : state.homeResponse?.data.user.gender
+                                          .toString(),
+                                       dob : state.homeResponse?.data.user.dob
+                                          .toString(),
+                                       email : state.homeResponse?.data.user.email
+                                          .toString(),
+
                                       url:
                                           state
                                               .homeResponse
