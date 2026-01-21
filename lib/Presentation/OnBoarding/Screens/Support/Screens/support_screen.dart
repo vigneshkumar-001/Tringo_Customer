@@ -43,12 +43,15 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   Widget build(BuildContext context) {
     final state = ref.watch(supportNotifier);
     final supportListResponse = state.supportListResponse;
+
+    // 1️⃣ Loading state
     if (state.isLoading && supportListResponse == null) {
       return Scaffold(
         body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
       );
     }
 
+    // 2️⃣ Error state
     if (!state.isLoading && state.error != null) {
       return Scaffold(
         body: Center(
@@ -64,6 +67,49 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
         ),
       );
     }
+
+    // 3️⃣ Empty support list
+    if (supportListResponse?.data.isEmpty ?? true) {
+      return Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Centered No Data message
+              Expanded(
+                child: Center(
+                  child: NoDataScreen(
+                    onRefresh: () async {
+                      await ref
+                          .read(supportNotifier.notifier)
+                          .supportList(context: context);
+                    },
+                    showBottomButton: false, // We handle button manually
+                  ),
+                ),
+              ),
+
+              // Button at the bottom
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: CommonContainer.button(
+                  buttonColor: AppColor.darkBlue,
+                  imagePath: AppImages.rightSideArrow,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CreateSupport()),
+                    );
+                  },
+                  text: const Text('Create Ticket'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 4️⃣ Normal list
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
@@ -77,6 +123,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
               child: Column(
                 children: [
+                  // Header
                   Stack(
                     alignment: Alignment.center,
                     children: [
@@ -97,12 +144,14 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                     ],
                   ),
                   SizedBox(height: 30),
+
+                  // Support List
                   ListView.builder(
                     shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: supportListResponse?.data.length ?? 0,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: supportListResponse!.data.length,
                     itemBuilder: (context, index) {
-                      final ticket = supportListResponse!.data[index];
+                      final ticket = supportListResponse.data[index];
 
                       // Map status to color and image
                       Color containerColor;
@@ -126,14 +175,13 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                         case SupportStatus.closed:
                           containerColor = AppColor.gray84.withOpacity(0.2);
                           imageTextColor = AppColor.gray84;
-                          imageAsset =
-                              AppImages.closeImage; // add your closed icon
+                          imageAsset = AppImages.closeImage;
                           statusText = 'Closed';
                           break;
                         case SupportStatus.OPEN:
                           containerColor = AppColor.blue.withOpacity(0.2);
                           imageTextColor = AppColor.blue;
-                          imageAsset = AppImages.timing; // add your closed icon
+                          imageAsset = AppImages.timing;
                           statusText = 'Opened';
                           break;
                         default:
@@ -173,12 +221,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => CreateSupport(),
-                        ),
+                        MaterialPageRoute(builder: (_) => CreateSupport()),
                       );
                     },
-                    text: Text('Create Ticket'),
+                    text: const Text('Create Ticket'),
                   ),
                 ],
               ),
@@ -188,4 +234,154 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
       ),
     );
   }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   final state = ref.watch(supportNotifier);
+  //   final supportListResponse = state.supportListResponse;
+  //   if (state.isLoading && supportListResponse == null) {
+  //     return Scaffold(
+  //       body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
+  //     );
+  //   }
+  //
+  //   if (!state.isLoading && state.error != null) {
+  //     return Scaffold(
+  //       body: Center(
+  //         child: NoDataScreen(
+  //           onRefresh: () async {
+  //             await ref
+  //                 .read(supportNotifier.notifier)
+  //                 .supportList(context: context);
+  //           },
+  //           showBottomButton: false,
+  //           showTopBackArrow: false,
+  //         ),
+  //       ),
+  //     );
+  //   }
+  //   return Scaffold(
+  //     body: SafeArea(
+  //       child: RefreshIndicator(
+  //         onRefresh: () async {
+  //           await ref
+  //               .read(supportNotifier.notifier)
+  //               .supportList(context: context);
+  //         },
+  //         child: SingleChildScrollView(
+  //           child: Padding(
+  //             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+  //             child: Column(
+  //               children: [
+  //                 Stack(
+  //                   alignment: Alignment.center,
+  //                   children: [
+  //                     Align(
+  //                       alignment: Alignment.centerLeft,
+  //                       child: CommonContainer.leftSideArrow(
+  //                         onTap: () => Navigator.pop(context),
+  //                       ),
+  //                     ),
+  //                     Text(
+  //                       'Support',
+  //                       style: GoogleFont.Mulish(
+  //                         fontSize: 16,
+  //                         fontWeight: FontWeight.w400,
+  //                         color: AppColor.mildBlack,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 SizedBox(height: 30),
+  //                 ListView.builder(
+  //                   shrinkWrap: true,
+  //                   physics: NeverScrollableScrollPhysics(),
+  //                   itemCount: supportListResponse?.data.length ?? 0,
+  //                   itemBuilder: (context, index) {
+  //                     final ticket = supportListResponse!.data[index];
+  //
+  //                     // Map status to color and image
+  //                     Color containerColor;
+  //                     Color imageTextColor;
+  //                     String imageAsset;
+  //                     String statusText;
+  //
+  //                     switch (ticket.status) {
+  //                       case SupportStatus.pending:
+  //                         containerColor = AppColor.yellow.withOpacity(0.2);
+  //                         imageTextColor = AppColor.yellow;
+  //                         imageAsset = AppImages.orangeClock;
+  //                         statusText = 'Pending';
+  //                         break;
+  //                       case SupportStatus.resolved:
+  //                         containerColor = AppColor.green.withOpacity(0.2);
+  //                         imageTextColor = AppColor.green;
+  //                         imageAsset = AppImages.greenTick;
+  //                         statusText = 'Solved';
+  //                         break;
+  //                       case SupportStatus.closed:
+  //                         containerColor = AppColor.gray84.withOpacity(0.2);
+  //                         imageTextColor = AppColor.gray84;
+  //                         imageAsset =
+  //                             AppImages.closeImage; // add your closed icon
+  //                         statusText = 'Closed';
+  //                         break;
+  //                       case SupportStatus.OPEN:
+  //                         containerColor = AppColor.blue.withOpacity(0.2);
+  //                         imageTextColor = AppColor.blue;
+  //                         imageAsset = AppImages.timing; // add your closed icon
+  //                         statusText = 'Opened';
+  //                         break;
+  //                       default:
+  //                         containerColor = AppColor.blue.withOpacity(0.2);
+  //                         imageTextColor = AppColor.blue;
+  //                         imageAsset = AppImages.timing;
+  //                         statusText = 'Unknown';
+  //                     }
+  //
+  //                     return Padding(
+  //                       padding: const EdgeInsets.all(8.0),
+  //                       child: CommonContainer.supportBox(
+  //                         imageTextColor: imageTextColor,
+  //                         onTap: () {
+  //                           Navigator.push(
+  //                             context,
+  //                             MaterialPageRoute(
+  //                               builder: (context) =>
+  //                                   SupportChatScreen(id: ticket.id),
+  //                             ),
+  //                           );
+  //                         },
+  //                         containerColor: containerColor,
+  //                         image: imageAsset,
+  //                         imageText: statusText,
+  //                         mainText: ticket.subject,
+  //                         timingText: 'Created on ${ticket.createdAt}',
+  //                       ),
+  //                     );
+  //                   },
+  //                 ),
+  //
+  //                 SizedBox(height: 50),
+  //                 CommonContainer.button(
+  //                   buttonColor: AppColor.darkBlue,
+  //                   imagePath: AppImages.rightSideArrow,
+  //                   onTap: () {
+  //                     Navigator.push(
+  //                       context,
+  //                       MaterialPageRoute(
+  //                         builder: (context) => CreateSupport(),
+  //                       ),
+  //                     );
+  //                   },
+  //                   text: Text('Create Ticket'),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }
