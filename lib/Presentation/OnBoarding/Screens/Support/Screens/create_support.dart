@@ -301,12 +301,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                     if (err == null) {
                       AppLogger.log.i("Navigation to home called");
                       // ✅ Navigate to home safely using GoRouter
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SupportScreen(),
-                        ),
-                      );
+                      Navigator.pop(context);
                     } else {
                       // Show error
                       AppSnackBar.error(context, err);
