@@ -167,7 +167,9 @@ class _EditProfileState extends ConsumerState<EditProfile> {
     AppLogger.log.i("EditProfile dob => ${widget.dob}");
 
     nameController = TextEditingController(text: widget.name ?? '');
-    mobileController = TextEditingController(text: widget.phone ?? '');
+    mobileController = TextEditingController(
+      text: _normalizeIndianPhone10(widget.phone ?? ''),
+    );
     emailController = TextEditingController(text: widget.email ?? '');
     genderController = TextEditingController(text: widget.gender ?? '');
 
@@ -240,6 +242,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                   transitionBuilder: (child, animation) =>
                       FadeTransition(opacity: animation, child: child),
                   child: OwnerVerifyField(
+
                     controller: mobileController,
                     isLoading: state.isSendingOtp,
                     isOtpVerifying: state.isVerifyingOtp,
@@ -454,6 +457,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                         onTap: state.isLoading
                             ? null
                             : () async {
+
                                 final dob = dateOfBirthController.text.trim();
                                 final isIso = RegExp(
                                   r'^\d{4}-\d{2}-\d{2}$',

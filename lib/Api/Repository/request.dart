@@ -441,7 +441,7 @@ class Request {
       );
       return response;
     } catch (e,st) {
-      AppLogger.log.e('GET API: $url \n ERROR: $e\n Stack Trace: $st');
+      AppLogger.log.e('GET API: $url \n ERROR: $e\n\nStack Trace: $st');
       return null;
     }
   }
