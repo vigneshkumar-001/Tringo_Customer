@@ -15,6 +15,7 @@ import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/login_mobile_number.dart';
 import '../Support/Screens/support_screen.dart';
+import '../wallet/Screens/wallet_screens.dart';
 import 'Controller/profile_notifier.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -300,37 +301,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       },
                     ),
                     Spacer(),
-                    DottedBorder(
-                      color: AppColor.mistGray,
-                      dashPattern: [4.0, 2.0],
-                      borderType: dotted.BorderType.RRect,
-                      padding: EdgeInsets.all(10),
-                      radius: Radius.circular(18),
-                      child: Row(
-                        children: [
-                          Image.asset(
-                            AppImages.coinImage,
-                            height: 16,
-                            width: 17.33,
-                            color: AppColor.darkBlue,
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WalletScreens(),
                           ),
-                          SizedBox(width: 6),
-                          Text(
-                            widget.coins.toString() ?? '',
-                            style: GoogleFont.Mulish(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 12,
+                        );
+                      },
+                      child: DottedBorder(
+                        color: AppColor.mistGray,
+                        dashPattern: [4.0, 2.0],
+                        borderType: dotted.BorderType.RRect,
+                        padding: EdgeInsets.all(10),
+                        radius: Radius.circular(18),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              AppImages.coinImage,
+                              height: 16,
+                              width: 17.33,
                               color: AppColor.darkBlue,
                             ),
-                          ),
-                          Text(
-                            ' Tcoins',
-                            style: GoogleFont.Mulish(
-                              fontSize: 12,
-                              color: AppColor.darkBlue,
+                            SizedBox(width: 6),
+                            Text(
+                              widget.coins.toString() ?? '',
+                              style: GoogleFont.Mulish(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                                color: AppColor.darkBlue,
+                              ),
                             ),
-                          ),
-                        ],
+                            Text(
+                              ' Tcoins',
+                              style: GoogleFont.Mulish(
+                                fontSize: 12,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

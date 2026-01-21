@@ -29,6 +29,7 @@ import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../../Smart Connect/smart_connect_guide.dart';
+import '../../wallet/Screens/wallet_screens.dart';
 
 final callerIdAskedProvider = StateProvider<bool>((ref) => false);
 
@@ -556,36 +557,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               padding: const EdgeInsets.symmetric(
                                 vertical: 8.0,
                               ),
-                              child: DottedBorder(
-                                color: AppColor.lightBlueBorder,
-                                dashPattern: [4.0, 2.0],
-                                borderType: dotted.BorderType.RRect,
-                                padding: EdgeInsets.all(10),
-                                radius: Radius.circular(18),
-                                child: Row(
-                                  children: [
-                                    Image.asset(
-                                      AppImages.coinImage,
-                                      height: 16,
-                                      width: 17.33,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => WalletScreens(),
                                     ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      home.data.user.coins.toString(),
-                                      style: GoogleFont.Mulish(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 12,
-                                        color: AppColor.white,
+                                  );
+                                },
+                                child: DottedBorder(
+                                  color: AppColor.lightBlueBorder,
+                                  dashPattern: [4.0, 2.0],
+                                  borderType: dotted.BorderType.RRect,
+                                  padding: EdgeInsets.all(10),
+                                  radius: Radius.circular(18),
+                                  child: Row(
+                                    children: [
+                                      Image.asset(
+                                        AppImages.coinImage,
+                                        height: 16,
+                                        width: 17.33,
                                       ),
-                                    ),
-                                    Text(
-                                      ' Tcoins',
-                                      style: GoogleFont.Mulish(
-                                        fontSize: 12,
-                                        color: AppColor.white,
+                                      SizedBox(width: 6),
+                                      Text(
+                                        home.data.user.coins.toString(),
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 12,
+                                          color: AppColor.white,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      Text(
+                                        ' Tcoins',
+                                        style: GoogleFont.Mulish(
+                                          fontSize: 12,
+                                          color: AppColor.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
