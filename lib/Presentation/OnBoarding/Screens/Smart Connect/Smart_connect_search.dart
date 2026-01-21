@@ -291,7 +291,7 @@ class _Suggest {
   const _Suggest(this.title, this.category);
 }
 
-// ===== Example pages (replace with your real screens) =====
+// ===== Example pages (replace with your real Screens) =====
 class ProductDetailPage extends StatelessWidget {
   final String title;
   const ProductDetailPage({super.key, required this.title});

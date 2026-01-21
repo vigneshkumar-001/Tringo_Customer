@@ -5,7 +5,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Mod
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/service_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/services_list_response.dart';
 
-// These seem unused here but if other screens use them you can keep
+// These seem unused here but if other Screens use them you can keep
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
@@ -94,7 +94,7 @@ class ServiceNotifier extends Notifier<ServiceState> {
     );
   }
 
-  // You can keep this for other screens if they use it
+  // You can keep this for other Screens if they use it
   Future<void> viewAllServices({
     required String shopId,
     bool force = false,
@@ -114,7 +114,7 @@ class ServiceNotifier extends Notifier<ServiceState> {
   }
 }
 
-// 🔹 Old-style global Notifier (can still be used by other screens)
+// 🔹 Old-style global Notifier (can still be used by other Screens)
 final serviceNotifierProvider = NotifierProvider<ServiceNotifier, ServiceState>(
   ServiceNotifier.new,
 );

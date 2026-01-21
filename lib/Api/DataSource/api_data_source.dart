@@ -1065,43 +1065,86 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(response.message ?? "Unknown Dio error"));
     }
   }
-
   Future<Either<Failure, EditNumberOtpResponse>> changeOtpRequest({
     required String phone,
     required String type,
     required String code,
   }) async {
-    String url = ApiUrl.changeNumberOtpVerify;
+    try {
+      String url = ApiUrl.changeNumberOtpVerify;
 
-    final response = await Request.sendRequest(
-      url,
-      {"phone": "+91$phone", "code": code, "type": type},
-      'Post',
-      true,
-    );
+      final response = await Request.sendRequest(
+        url,
+        {"phone": "+91$phone", "code": code, "type": type},
+        'Post',
+        true,
+      );
 
-    if (response is! DioException) {
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (response.data['status'] == true) {
-          return Right(EditNumberOtpResponse.fromJson(response.data));
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(EditNumberOtpResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "OTP verification failed"),
+            );
+          }
         } else {
           return Left(
-            ServerFailure(response.data['message'] ?? "Login failed"),
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
           );
         }
       } else {
-        return Left(
-          ServerFailure(response.data['message'] ?? "Something went wrong"),
-        );
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Network error"));
       }
-    } else {
-      final errorData = response.response?.data;
-      if (errorData is Map && errorData.containsKey('message')) {
-        return Left(ServerFailure(errorData['message']));
-      }
-      return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+    } on TimeoutException {
+      return Left(ServerFailure("Request timed out. Please try again."));
+    } catch (e) {
+      return Left(ServerFailure("Unexpected error occurred"));
     }
   }
+
+  // Future<Either<Failure, EditNumberOtpResponse>> changeOtpRequest({
+  //   required String phone,
+  //   required String type,
+  //   required String code,
+  // }) async
+  // {
+  //   String url = ApiUrl.changeNumberOtpVerify;
+  //
+  //   final response = await Request.sendRequest(
+  //     url,
+  //     {"phone": "+91$phone", "code": code, "type": type},
+  //     'Post',
+  //     true,
+  //   );
+  //
+  //   if (response is! DioException) {
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       if (response.data['status'] == true) {
+  //         return Right(EditNumberOtpResponse.fromJson(response.data));
+  //       } else {
+  //         return Left(
+  //           ServerFailure(response.data['message'] ?? "Login failed"),
+  //         );
+  //       }
+  //     } else {
+  //       return Left(
+  //         ServerFailure(response.data['message'] ?? "Something went wrong"),
+  //       );
+  //     }
+  //   } else {
+  //     final errorData = response.response?.data;
+  //     if (errorData is Map && errorData.containsKey('message')) {
+  //       return Left(ServerFailure(errorData['message']));
+  //     }
+  //     return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+  //   }
+  // }
 
   Future<Either<Failure, DeleteResponse>> deleteAccount() async {
     try {
@@ -1232,8 +1275,9 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e) {
+    } catch (e,st) {
       AppLogger.log.e(e);
+      AppLogger.log.e(st);
       print(e);
       return Left(ServerFailure(e.toString()));
     }

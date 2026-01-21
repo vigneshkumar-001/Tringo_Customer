@@ -658,7 +658,7 @@ class _OwnerVerifyFieldState extends State<OwnerVerifyField> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          "Get OTP",
+                          "Verify",
                           style: GoogleFont.Mulish(
                             color: AppColor.blue,
                             fontWeight: FontWeight.bold,
@@ -814,7 +814,7 @@ class _OwnerVerifyFieldState extends State<OwnerVerifyField> {
                         controller: otpControllers[index],
                         textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
-                        maxLength: 1,
+                        // maxLength: 1,
                         decoration: InputDecoration(
                           counterText: '',
                           filled: true,
@@ -837,12 +837,33 @@ class _OwnerVerifyFieldState extends State<OwnerVerifyField> {
                           ),
                         ),
                         onChanged: (value) {
-                          if (value.isNotEmpty && index < 3) {
+                          // ✅ Handle paste (e.g. "1234")
+                          if (value.length > 1) {
+                            final chars = value.split('');
+                            for (int i = 0; i < otpControllers.length; i++) {
+                              otpControllers[i].text = i < chars.length ? chars[i] : '';
+                            }
+
+                            // move focus to last field
+                            FocusScope.of(context).unfocus();
+                            return;
+                          }
+
+                          // ✅ Normal typing behavior
+                          if (value.isNotEmpty && index < otpControllers.length - 1) {
                             FocusScope.of(context).nextFocus();
                           } else if (value.isEmpty && index > 0) {
                             FocusScope.of(context).previousFocus();
                           }
                         },
+
+                        // onChanged: (value) {
+                        //   if (value.isNotEmpty && index < 3) {
+                        //     FocusScope.of(context).nextFocus();
+                        //   } else if (value.isEmpty && index > 0) {
+                        //     FocusScope.of(context).previousFocus();
+                        //   }
+                        // },
                       ),
                     ),
                   ),
