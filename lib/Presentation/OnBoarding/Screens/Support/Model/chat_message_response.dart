@@ -142,6 +142,7 @@ class Attachment {
   Map<String, dynamic> toJson() => {'url': url};
 }
 
+
 // class ChatMessageResponse {
 //   final bool status;
 //   final ChatMessageResponseData data;
