@@ -813,7 +813,7 @@ class CommonContainer {
                   ),
                 if (FireIcon)
                   Tooltip(
-                    message: fireTooltip ?? 'App Offer 5%',
+                    message: fireTooltip ?? 'App Offer Available',
                     triggerMode: TooltipTriggerMode.tap,
                     showDuration: const Duration(seconds: 2),
                     preferBelow: false,
@@ -1251,234 +1251,6 @@ class CommonContainer {
       ),
     );
   }
-
-  /* static servicesContainer({
-    required String image,
-    required String companyName,
-    required String location,
-    required String fieldName,
-    required String ratingStar,
-    required String ratingCount,
-    required String time,
-    VoidCallback? onTap,
-    bool horizontalDivider = false,
-    bool Verify = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 15.0),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Hero(
-                      tag: 'shopImageHero',
-                      child: Image.asset(
-                        AppImages.imageContainer1,
-                        height: 100,
-                        width: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // sample text block for the card (replace as needed)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (Verify)
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColor.blueGradient1,
-                                  AppColor.blueGradient2,
-                                  AppColor.blueGradient3,
-                                ],
-                                begin: Alignment.centerRight,
-                                end: Alignment.centerLeft,
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.asset(AppImages.verifyTick, height: 14),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Trusted',
-                                    style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 10,
-                                      color: AppColor.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        SizedBox(height: 9),
-                        Text(
-                          // categoryTabs[selectedIndex]["label"],
-                          companyName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: AppColor.darkBlue,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Image.asset(
-                              AppImages.locationImage,
-                              height: 10,
-                              color: AppColor.lightGray2,
-                            ),
-                            const SizedBox(width: 10),
-                            Flexible(
-                              child: Text(
-                                location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFont.Mulish(
-                                  // fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  color: AppColor.lightGray2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              fieldName,
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                color: AppColor.lightGray3,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColor.green,
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize
-                                    .min, // 👈 stops expanding too much
-                                children: [
-                                  Text(
-                                    ratingStar,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: AppColor.white,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Image.asset(AppImages.starImage, height: 9),
-                                  const SizedBox(width: 5),
-                                  Container(
-                                    width: 1.5,
-                                    height: 11,
-                                    decoration: BoxDecoration(
-                                      color: AppColor.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(1),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    ratingCount,
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 12,
-                                      color: AppColor.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Opens Upto ',
-                              style: GoogleFont.Mulish(
-                                fontSize: 9,
-                                color: AppColor.lightGray2,
-                              ),
-                            ),
-                            Text(
-                              time,
-                              style: GoogleFont.Mulish(
-                                fontSize: 9,
-                                color: AppColor.lightGray2,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            CommonContainer.callNowButton(
-              fireOnTap: () {},
-              whatsAppOnTap: () {},
-              messageOnTap: () {},
-              onTap: () {},
-              messageContainer: true,
-            ),
-            SizedBox(height: 20),
-            if (horizontalDivider)
-              Container(
-                width: double.infinity,
-                height: 2,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [
-                      AppColor.white.withOpacity(0.5),
-                      AppColor.white3,
-                      AppColor.white3,
-                      AppColor.white3,
-                      AppColor.white3,
-                      AppColor.white3,
-                      AppColor.white3,
-                      AppColor.white.withOpacity(0.5),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }*/
 
   static leftSideArrow({VoidCallback? onTap, Color = AppColor.white}) {
     return InkWell(
@@ -2972,13 +2744,13 @@ class CommonContainer {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 2),
           decoration: BoxDecoration(
             color: AppColor.green,
             borderRadius: BorderRadius.circular(30),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min, // 👈 stops expanding too much
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 ratingStar!,
@@ -3318,6 +3090,135 @@ class CommonContainer {
           ),
         ),
       ],
+    );
+  }
+
+  static walletSendBox({
+    required String image,
+    VoidCallback? onTap,
+    required String text,
+    double imageHeight = 27,
+  }) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              color: AppColor.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: AppColor.white, width: 1.5),
+            ),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(11.5),
+                  child: Image.asset(image, height: imageHeight),
+                ),
+                // Inner shadow layer
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.black.withOpacity(0.02),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.01),
+                        ],
+                        stops: [0, 1, 1],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 5),
+        Text(
+          text,
+          style: GoogleFont.Mulish(fontSize: 11, color: AppColor.darkBlue),
+        ),
+      ],
+    );
+  }
+
+  static walletHistoryBox({
+    required Color containerColor,
+    required String mainText,
+    String? upiText,
+    required String timeText,
+    required String numberText,
+    required String endText,
+    required Color numberTextColor,
+    required Color endTextColor,
+    bool upiTexts = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: containerColor,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mainText,
+                  style: GoogleFont.Mulish(
+                    fontSize: 16,
+                    color: AppColor.darkBlue,
+                  ),
+                ),
+
+                if (upiTexts)
+                  Text(
+                    upiText ?? '',
+                    style: GoogleFont.Mulish(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColor.blue,
+                    ),
+                  ),
+                SizedBox(height: 4),
+                Text(
+                  timeText,
+                  style: GoogleFont.Mulish(
+                    fontSize: 12,
+                    color: AppColor.gray84,
+                  ),
+                ),
+              ],
+            ),
+            Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  numberText,
+                  style: GoogleFont.Mulish(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: numberTextColor,
+                  ),
+                ),
+                Text(
+                  endText,
+                  style: GoogleFont.Mulish(fontSize: 12, color: endTextColor),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

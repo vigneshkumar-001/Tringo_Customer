@@ -61,4 +61,21 @@ class AppColor {
   static const charcoalBrown = Color(0xff1B1009);
   static const pink = Color(0xffC04798);
   static const blushPink = Color(0xffF6E8E3);
+  static const veryLightMintGreen = Color(0xffE8FFF6);
+  static const brandBlue = Color(0xff00488D);
+  static const accentCyan = Color(0xff42FDFC);
+  static const successGreen = Color(0xff5FD29A);
+  static const linkBlue = Color(0xff0594CE);
+  static const lightMint = Color(0xffE9F9F3);
+  static const positiveGreen = Color(0xff25AD52);
+  static const surfaceBlue = Color(0xffEFF9FE);
+  static const strongBlue = Color(0xff2880E5);
+  static const lightGreenBg = Color(0xffF0F9F3);
+  static const pinkSurface = Color(0xffF9F0F0);
+  static const lightBlueGray = Color(0xffF0F5F9);
+  static const tealBlue = Color(0xff13A0A7);
+  static const tealGreen = Color(0xff18B49E);
+  static const surfaceAqua = Color(0xffE5F8F6);
+  static const coolWhite = Color(0xffF4FBFB);
+  static const infoTeal = Color(0xff15A8A3);
 }

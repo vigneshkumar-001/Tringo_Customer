@@ -144,4 +144,8 @@ class AppImages {
   static String orangeClock = 'Assets/Images/OrangeClock.png';
   static String iImage = 'Assets/Images/I_Image.png';
   static String sendImage = 'Assets/Images/sendImage.png';
+  static String walletBCImage = 'Assets/Images/WalletBCImage.png';
+  static String filter = 'Assets/Images/filter.png';
+  static String iPhoneLogo = 'Assets/Images/IPhoneLogo.png';
+  static String playStore = 'Assets/Images/PlayStore.png';
 }
