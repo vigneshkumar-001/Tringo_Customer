@@ -226,6 +226,8 @@ class TringoOverlayService : Service() {
     }
 
     private fun handleCallState(state: Int) {
+
+        // ✅ once active, keep it true
         if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
             callWasActive = true
         }
@@ -246,6 +248,7 @@ class TringoOverlayService : Service() {
             }
         }
     }
+
 
     // ==========================================================
     // FOREGROUND

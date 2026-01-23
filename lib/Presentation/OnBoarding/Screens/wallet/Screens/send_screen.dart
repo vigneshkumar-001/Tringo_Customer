@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/qr_scan_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/receive_screen.dart';
 
@@ -7,14 +8,14 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 
-class SendScreen extends StatefulWidget {
+class SendScreen extends ConsumerStatefulWidget {
   const SendScreen({super.key});
 
   @override
-  State<SendScreen> createState() => _SendScreenState();
+  ConsumerState<SendScreen> createState() => _SendScreenState();
 }
 
-class _SendScreenState extends State<SendScreen>
+class _SendScreenState extends ConsumerState<SendScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final TextEditingController _messageController = TextEditingController();
@@ -198,6 +199,7 @@ class _SendScreenState extends State<SendScreen>
                         color: AppColor.darkGrey,
                       ),
                     ),
+                    
                     SizedBox(height: 25),
                     Text(
                       'Amount',

@@ -1,20 +1,32 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
+    <!-- Network -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <uses-permission android:name="android.permission.BIND_INCALL_SERVICE" />
-
-
+    <!-- Phone -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
+    <!-- ✅ Dialer recognition (Android 13+ helpful) -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" tools:ignore="ProtectedPermissions"/>
 
+    <!-- Location (you said needed for another screen) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+
+    <!-- Overlay -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- Notifications + Foreground -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
@@ -42,8 +54,31 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- ✅ MUST: qualify for dialer role -->
+            <intent-filter>
+                <action android:name="android.intent.action.DIAL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tel" />
+            </intent-filter>
+
+            <!-- ✅ Strongly recommended -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tel" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.CALL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tel" />
+            </intent-filter>
+
         </activity>
 
+        <!-- Call Screening (optional) -->
         <service
             android:name=".TringoCallScreeningService"
             android:permission="android.permission.BIND_SCREENING_SERVICE"
@@ -53,11 +88,13 @@
             </intent-filter>
         </service>
 
+        <!-- Overlay service -->
         <service
             android:name=".TringoOverlayService"
             android:exported="false"
             android:foregroundServiceType="phoneCall|dataSync" />
 
+        <!-- InCallService (works only when dialer role granted on many phones) -->
         <service
             android:name=".TringoInCallService"
             android:permission="android.permission.BIND_INCALL_SERVICE"
@@ -71,7 +108,14 @@
                 android:value="false" />
         </service>
 
-
+        <!-- ✅ GUARANTEED fallback: call end receiver (works even if dialer role not granted) -->
+        <receiver
+            android:name=".TringoCallEndReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
 
         <meta-data
             android:name="flutterEmbedding"

@@ -43,6 +43,7 @@ import '../../Presentation/OnBoarding/Screens/Support/Model/send_message_respons
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
     show UserProfileResponse;
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/user_image_response.dart';
+import '../../Presentation/OnBoarding/Screens/wallet/Model/wallet_history_response.dart';
 import '../Repository/api_url.dart';
 import '../Repository/failure.dart';
 import '../Repository/request.dart';

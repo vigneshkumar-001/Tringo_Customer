@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 
-class WithdrawScreen extends StatefulWidget {
+class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key});
 
   @override
-  State<WithdrawScreen> createState() => _WithdrawScreenState();
+  ConsumerState<WithdrawScreen> createState() => _WithdrawScreenState();
 }
 
-class _WithdrawScreenState extends State<WithdrawScreen>
+class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
     with SingleTickerProviderStateMixin {
+
   late AnimationController _controller;
   final TextEditingController _uPIIDController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 
-class ReceiveScreen extends StatefulWidget {
+class ReceiveScreen extends ConsumerStatefulWidget {
   const ReceiveScreen({super.key});
 
   @override
-  State<ReceiveScreen> createState() => _ReceiveScreenState();
+  ConsumerState<ReceiveScreen> createState() => _ReceiveScreenState();
 }
 
-class _ReceiveScreenState extends State<ReceiveScreen>
+class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 

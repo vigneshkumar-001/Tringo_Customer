@@ -1,19 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 
-class EnterReview extends StatefulWidget {
+class EnterReview extends ConsumerStatefulWidget{
   const EnterReview({super.key});
 
   @override
-  State<EnterReview> createState() => _EnterReviewState();
+  ConsumerState<EnterReview> createState() => _EnterReviewState();
 }
 
-class _EnterReviewState extends State<EnterReview>
+class _EnterReviewState extends ConsumerState<EnterReview>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final TextEditingController _headingController = TextEditingController();

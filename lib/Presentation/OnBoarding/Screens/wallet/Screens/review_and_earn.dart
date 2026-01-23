@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/qr_scan_screen.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
@@ -7,14 +8,14 @@ import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import 'enter_review.dart';
 
-class ReviewAndEarn extends StatefulWidget {
+class ReviewAndEarn extends ConsumerStatefulWidget {
   const ReviewAndEarn({super.key});
 
   @override
-  State<ReviewAndEarn> createState() => _ReviewAndEarnState();
+  ConsumerState<ReviewAndEarn> createState() => _ReviewAndEarnState();
 }
 
-class _ReviewAndEarnState extends State<ReviewAndEarn>
+class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 

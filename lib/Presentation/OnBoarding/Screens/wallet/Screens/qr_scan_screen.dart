@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-class QrScanScreen extends StatefulWidget {
+class QrScanScreen extends ConsumerStatefulWidget {
   final String? title;
   const QrScanScreen({super.key, this.title});
 
   @override
-  State<QrScanScreen> createState() => _QrScanScreenState();
+  ConsumerState<QrScanScreen> createState() => _QrScanScreenState();
 }
 
-class _QrScanScreenState extends State<QrScanScreen> {
+class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   bool _handled = false;
 
   final MobileScannerController _controller = MobileScannerController(
