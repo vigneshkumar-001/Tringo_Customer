@@ -20,6 +20,9 @@ class ApiUrl {
   static const String supportTicketsList = "${base}api/v1/support/tickets";
   static const String walletHistory = "${base}api/v1/wallet/history?type=ALL";
   static const String privacyPolicy = "${base}api/v1/public/pages/privacy-policy";
+  static const String uIDPersonName = "${base}api/v1/wallet/resolve-uid";
+  static const String uIDSendApi = "${base}api/v1/wallet/transfer";
+  static const String uIDWithRawApi = "${base}api/v1/wallet/withdraw-request";
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";

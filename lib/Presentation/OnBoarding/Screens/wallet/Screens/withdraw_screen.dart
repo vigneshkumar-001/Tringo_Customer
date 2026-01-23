@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_loader.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../Controller/wallet_notifier.dart';
 
 class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key});
@@ -15,25 +19,95 @@ class WithdrawScreen extends ConsumerStatefulWidget {
 
 class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _controller;
   final TextEditingController _uPIIDController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+
+  String _btnAmountText = "Withdraw Request";
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+
+    _amountController.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        final v = _amountController.text.trim();
+        _btnAmountText = v.isEmpty
+            ? "Withdraw Request"
+            : "₹$v Withdraw Request";
+      });
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // keep if you need wallet balance in send screen
+      ref.read(walletNotifier.notifier).walletHistory();
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _uPIIDController.dispose();
+    _amountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _raiseWithdraw() async {
+    final upi = _uPIIDController.text.trim();
+    final amount = _amountController.text.trim();
+
+    if (upi.isEmpty) {
+      AppSnackBar.error(context, "Please enter UPI Id");
+      return;
+    }
+    if (amount.isEmpty) {
+      AppSnackBar.error(context, "Please enter amount");
+      return;
+    }
+
+    final n = num.tryParse(amount);
+    if (n == null || n <= 0) {
+      AppSnackBar.error(context, "Enter valid amount");
+      return;
+    }
+
+    await ref
+        .read(walletNotifier.notifier)
+        .uIDWithRawApi(upiId: upi, tcoin: amount);
+
+    if (!mounted) return;
+
+    final st = ref.read(walletNotifier);
+
+    // ✅ API error message show
+    if (st.error != null && st.error!.trim().isNotEmpty) {
+      AppSnackBar.error(context, st.error!);
+      return;
+    }
+
+    final wr = st.withdrawRequestResponse; // WithdrawRequestResponse?
+    if (wr != null && wr.status == true && wr.data.success == true) {
+      AppSnackBar.success(
+        context,
+        "Withdraw request raised ✅\nRequestId: ${wr.data.requestId}",
+      );
+
+      _amountController.clear();
+      // _uPIIDController.clear(); // optional
+    } else {
+      AppSnackBar.error(context, "Withdraw failed");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final walletState = ref.watch(walletNotifier);
+    final wr = walletState.withdrawRequestResponse;
+
+    final resp = walletState.walletHistoryResponse;
+    final wallet = resp?.data.wallet;
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -102,7 +176,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                               ).createShader(bounds);
                             },
                             child: Text(
-                              '150',
+                              (wallet?.tcoinBalance ?? 0).toString(),
                               style: GoogleFont.Mulish(
                                 fontSize: 42,
                                 color: Colors.white,
@@ -128,14 +202,26 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                       child: Row(
                         children: [
                           Text(
-                            'UID886UI38',
+                            wallet?.uid ?? "—",
                             style: GoogleFont.Mulish(
                               fontSize: 13,
                               color: AppColor.darkBlue,
                             ),
                           ),
                           SizedBox(width: 6),
-                          Image.asset(AppImages.uID, height: 14),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              final uid = (wallet?.uid ?? "").trim();
+                              if (uid.isEmpty) return;
+
+                              await Clipboard.setData(ClipboardData(text: uid));
+
+                              if (!mounted) return;
+                              AppSnackBar.success(context, "UID copied: $uid");
+                            },
+                            child: Image.asset(AppImages.uID, height: 14),
+                          ),
                         ],
                       ),
                     ),
@@ -181,6 +267,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                     SizedBox(height: 10),
                     TextField(
                       controller: _amountController,
+                      keyboardType:
+                          TextInputType.number, // mobile number keypad
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly, // ✅ only 0-9
+                      ],
                       decoration: InputDecoration(
                         hintText: "",
                         filled: true,
@@ -192,20 +283,53 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                         ),
                       ),
                     ),
+                    SizedBox(height: 15),
+
+                    Row(
+                      children: [
+                        Text(
+                          '15TCoin → ',
+                          style: GoogleFont.Mulish(
+                            fontSize: 14,
+                            color: AppColor.darkGrey,
+                          ),
+                        ),
+                        Text(
+                          '₹10',
+                          style: GoogleFont.Mulish(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColor.blue,
+                          ),
+                        ),
+                      ],
+                    ),
                     SizedBox(height: 25),
+
                     CommonContainer.button(
                       buttonColor: AppColor.darkBlue,
-                      onTap: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => ReceiveScreen(),
-                        //   ),
-                        // );
-                      },
-                      text: Text('Raise Withdraw Request'),
-                      imagePath: AppImages.rightSideArrow,
+                      onTap: walletState.isLoading ? null : _raiseWithdraw,
+                      text: walletState.isLoading
+                          ? ThreeDotsLoader()
+                          : Text(_btnAmountText),
+                      imagePath: walletState.isLoading
+                          ? null
+                          : AppImages.rightSideArrow,
                     ),
+
+                    // CommonContainer.button(
+                    //   buttonColor: AppColor.darkBlue,
+                    //   onTap: () {
+                    //     // Navigator.push(
+                    //     //   context,
+                    //     //   MaterialPageRoute(
+                    //     //     builder: (context) => ReceiveScreen(),
+                    //     //   ),
+                    //     // );
+                    //   },
+                    //   text: Text('Raise Withdraw Request'),
+                    //   imagePath: AppImages.rightSideArrow,
+                    // ),
                   ],
                 ),
               ),
