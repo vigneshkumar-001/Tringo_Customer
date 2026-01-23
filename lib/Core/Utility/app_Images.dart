@@ -7,6 +7,7 @@ class AppImages {
   static String searchImage = 'Assets/Images/Search_Image.png';
   static String shopImage = 'Assets/Images/Shops_Image.png';
   static String shopGreenImage = 'Assets/Images/ShopGreen_Image.png';
+  static String paymentBCImage = 'Assets/Images/PaymentScreenBC.png';
   static String shopContainer2 = 'Assets/Images/Shop_Image_2.png';
   static String shopContainer3 = 'Assets/Images/Shop_Image_3.png';
   static String shopContainer4 = 'Assets/Images/Shop_Image_4.png';
@@ -147,4 +148,5 @@ class AppImages {
   static String filter = 'Assets/Images/filter.png';
   static String iPhoneLogo = 'Assets/Images/IPhoneLogo.png';
   static String playStore = 'Assets/Images/PlayStore.png';
+  static String image = 'Assets/Images/image.png';
 }
