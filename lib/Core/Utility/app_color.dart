@@ -15,6 +15,7 @@ class AppColor {
   static const black = Color(0xff000000);
   static const red = Color(0xffF5465C);
   static const mildBlack = Color(0xFF252525);
+  static const emeraldGreen = Color(0xff219F4B);
   static const gray84 = Color(0xFF6D6D6D);
   static const lowGery1 = Color(0xffF2F2F2);
   static const mediumGray = Color(0xff777777);
@@ -78,4 +79,5 @@ class AppColor {
   static const surfaceAqua = Color(0xffE5F8F6);
   static const coolWhite = Color(0xffF4FBFB);
   static const infoTeal = Color(0xff15A8A3);
+  static const aquaTint = Color(0xffE1F9E9);
 }

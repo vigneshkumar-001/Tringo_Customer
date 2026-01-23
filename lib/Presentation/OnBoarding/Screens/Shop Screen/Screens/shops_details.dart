@@ -18,6 +18,7 @@ import '../../Products/Screens/product_details.dart';
 import '../../Services Screen/Controller/service_notifier.dart';
 import '../../Services Screen/Screens/Service_details.dart';
 import '../../Services Screen/Screens/search_service_data.dart';
+import '../../Surprise_Screens/Screens/surprise_screens.dart';
 
 class ShopsDetails extends ConsumerStatefulWidget {
   final String? heroTag; // optional; if null/empty, no hero anim
@@ -697,68 +698,80 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       Clip.none, // allow gift to overflow above
                                   children: [
                                     // Base pill: NOT positioned → Stack takes this size (auto height)
-                                    Container(
-                                      padding: EdgeInsets.fromLTRB(
-                                        24,
-                                        8,
-                                        giftSize + 70,
-                                        18,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                            AppImages.surpriseOffer,
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SurpriseScreens(),
                                           ),
-                                          fit: BoxFit.cover,
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: EdgeInsets.fromLTRB(
+                                          24,
+                                          8,
+                                          giftSize + 70,
+                                          18,
                                         ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.center,
-                                          end: Alignment.centerRight,
-                                          colors: [
-                                            AppColor.lightMintGreen,
-                                            AppColor.lightMintGreen.withOpacity(
-                                              0.5,
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                              AppImages.surpriseOffer,
                                             ),
-                                            // AppColor.lightMintGreen,
-                                            AppColor.whiteSmoke.withOpacity(
-                                              0.99,
+                                            fit: BoxFit.cover,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          gradient: LinearGradient(
+                                            begin: Alignment.center,
+                                            end: Alignment.centerRight,
+                                            colors: [
+                                              AppColor.lightMintGreen,
+                                              AppColor.lightMintGreen
+                                                  .withOpacity(0.5),
+                                              // AppColor.lightMintGreen,
+                                              AppColor.whiteSmoke.withOpacity(
+                                                0.99,
+                                              ),
+                                              AppColor.whiteSmoke.withOpacity(
+                                                0.99,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize
+                                              .min, // 👈 auto height from content
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Surprise Offer',
+                                              style: GoogleFont.Mulish(
+                                                fontSize: 22,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                shadows: const [
+                                                  Shadow(
+                                                    offset: Offset(1, 3),
+                                                    blurRadius: 10,
+                                                    color: Colors.black38,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            AppColor.whiteSmoke.withOpacity(
-                                              0.99,
+                                            Text(
+                                              'Unlock by near the shop',
+                                              style: GoogleFont.Mulish(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize
-                                            .min, // 👈 auto height from content
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Surprise Offer',
-                                            style: GoogleFont.Mulish(
-                                              fontSize: 22,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w900,
-                                              shadows: const [
-                                                Shadow(
-                                                  offset: Offset(1, 3),
-                                                  blurRadius: 10,
-                                                  color: Colors.black38,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Text(
-                                            'Unlock by near the shop',
-                                            style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
                                       ),
                                     ),
 
