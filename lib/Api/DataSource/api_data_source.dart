@@ -13,6 +13,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/h
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/login_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/otp_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/whatsapp_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/referral_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_detail_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_list_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Search%20Screen/Model/search_suggestion_response.dart';
@@ -33,6 +34,7 @@ import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_res
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';
 import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_verify_response.dart';
+import '../../Presentation/OnBoarding/Screens/Privacy Policy/model/terms_and_condition_model.dart';
 import '../../Presentation/OnBoarding/Screens/Profile Screen/Model/delete_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
@@ -96,8 +98,8 @@ class ApiDataSource extends BaseApiDataSource {
       }
 
       return Left(ServerFailure("Request failed"));
-    } catch (_) {
-      return Left(ServerFailure("Unexpected error occurred"));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -148,8 +150,8 @@ class ApiDataSource extends BaseApiDataSource {
       }
 
       return Left(ServerFailure("Request failed"));
-    } catch (_) {
-      return Left(ServerFailure("Unexpected error occurred"));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
   // Future<Either<Failure, LoginResponse>> mobileNumberLogin(
@@ -290,8 +292,8 @@ class ApiDataSource extends BaseApiDataSource {
       }
 
       return Left(ServerFailure("Request failed"));
-    } catch (_) {
-      return Left(ServerFailure("Unexpected error occurred"));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -1415,11 +1417,10 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-  Future<Either<Failure, WalletHistoryResponse>> walletHistory({
-    String counts = "ALL",
-  }) async {
+  Future<Either<Failure, TermsAndConditionResponse>>
+  fetchTermsAndCondition() async {
     try {
-      final String url = ApiUrl.walletHistory;
+      final url = ApiUrl.privacyPolicy;
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -1429,7 +1430,7 @@ class ApiDataSource extends BaseApiDataSource {
 
       if (response?.statusCode == 200 || response?.statusCode == 201) {
         if (data['status'] == true) {
-          return Right(WalletHistoryResponse.fromJson(data));
+          return Right(TermsAndConditionResponse.fromJson(data));
         } else {
           return Left(ServerFailure(data['message'] ?? "Login failed"));
         }
@@ -1444,6 +1445,50 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
       print(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, ReferralResponse>> verifyReferralCode({
+    required String referralCode,
+  }) async {
+    try {
+      final url = ApiUrl.applyReferral;
+
+      final payload = {"referralCode": referralCode};
+
+      final response = await Request.sendRequest(url, payload, 'Post', true);
+
+      final data = response.data;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(ReferralResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Verification failed"));
+        }
+      }
+
+      return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+    }
+    // 🔴 NETWORK / INTERNET ERRORS
+    on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.unknown) {
+        return Left(ServerFailure("No internet connection. Please try again"));
+      }
+
+      final errorData = e.response?.data;
+      if (errorData is Map && errorData['message'] != null) {
+        return Left(ServerFailure(errorData['message']));
+      }
+
+      return Left(ServerFailure("Request failed"));
+    } catch (e,st) {
+      AppLogger.log.e('${e}\n\n${st}');
+
+      print('${e}\n${st}');
+
       return Left(ServerFailure(e.toString()));
     }
   }

@@ -95,6 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ref
           .read(homeNotifierProvider.notifier)
           .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
+
     });
 
     _listenServiceChanges();

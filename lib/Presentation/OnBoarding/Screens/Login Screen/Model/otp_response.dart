@@ -1,13 +1,9 @@
-class  OtpResponse  {
+class OtpResponse {
   final bool status;
   final int code;
   final OtpData? data;
 
-  OtpResponse({
-    required this.status,
-    required this.code,
-    this.data,
-  });
+  OtpResponse({required this.status, required this.code, this.data});
 
   factory OtpResponse.fromJson(Map<String, dynamic> json) {
     return OtpResponse(
@@ -18,11 +14,7 @@ class  OtpResponse  {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'status': status,
-      'code': code,
-      'data': data?.toJson(),
-    };
+    return {'status': status, 'code': code, 'data': data?.toJson()};
   }
 }
 
@@ -31,12 +23,14 @@ class OtpData {
   final String refreshToken;
   final String role;
   final String sessionToken;
+  final bool isReferralApplied;
 
   OtpData({
     required this.accessToken,
     required this.refreshToken,
     required this.role,
     required this.sessionToken,
+    required this.isReferralApplied,
   });
 
   factory OtpData.fromJson(Map<String, dynamic> json) {
@@ -45,6 +39,7 @@ class OtpData {
       refreshToken: json['refreshToken'] ?? '',
       role: json['role'] ?? '',
       sessionToken: json['sessionToken'] ?? '',
+      isReferralApplied: json['isReferralApplied'] ?? '',
     );
   }
 
@@ -54,6 +49,7 @@ class OtpData {
       'refreshToken': refreshToken,
       'role': role,
       'sessionToken': sessionToken,
+      'isReferralApplied': isReferralApplied,
     };
   }
 }

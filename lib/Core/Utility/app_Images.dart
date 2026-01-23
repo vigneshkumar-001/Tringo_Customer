@@ -123,7 +123,6 @@ class AppImages {
   static String uploadPhoto = 'Assets/Images/UploadPhoto.png';
   static String mobileNoInfoBCImage =
       'Assets/Images/MobileNumberInfoBCImage.png';
-
   static String offerDetailsImage = 'Assets/Images/Offer Details Image.png';
   static String refresh = 'Assets/Images/Refresh.png';
   static String qRColor = 'Assets/Images/QR color.png';

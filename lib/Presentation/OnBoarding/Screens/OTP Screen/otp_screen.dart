@@ -116,7 +116,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         //     AppLogger.log.e("❌ Contact sync failed: $e");
         //   }
         // }
-        context.goNamed(AppRoutes.privacyPolicy);
+        if (next.otpResponse?.data?.isReferralApplied == true) {
+          context.goNamed(AppRoutes.privacyPolicy);
+        } else {
+          context.goNamed(AppRoutes.referralScreen);
+        }
+
         notifier.resetState();
       }
       // Login response (used for resend OTP)
