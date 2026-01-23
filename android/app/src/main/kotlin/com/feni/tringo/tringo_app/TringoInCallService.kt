@@ -1,6 +1,8 @@
 package com.feni.tringo.tringo_app
 
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.telecom.Call
 import android.telecom.InCallService
 import android.util.Log
@@ -9,95 +11,80 @@ class TringoInCallService : InCallService() {
 
     private val TAG = "TRINGO_INCALL"
 
-    private var startedForThisCall = false
     private var lastNumber: String = ""
-
-    private var activeCall: Call? = null
-    private var callback: Call.Callback? = null
+    private var shownForThisCall = false
+    private var cb: Call.Callback? = null
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
 
-        activeCall = call
-        startedForThisCall = false
+        shownForThisCall = false
         lastNumber = extractNumber(call)
 
-        Log.d(TAG, "onCallAdded state=${call.state} number=$lastNumber")
+        Log.d(TAG, "✅ onCallAdded state=${call.state} number=$lastNumber")
 
-        val cb = object : Call.Callback() {
+        val callback = object : Call.Callback() {
             override fun onStateChanged(call: Call, state: Int) {
                 super.onStateChanged(call, state)
 
                 val n = extractNumber(call)
                 if (n.isNotBlank()) lastNumber = n
 
-                Log.d(TAG, "stateChanged state=$state number=$lastNumber started=$startedForThisCall")
+                Log.d(TAG, "onStateChanged state=$state number=$lastNumber shown=$shownForThisCall")
 
-                // ✅ Outgoing start trigger (dialing/connecting/active)
-                if (!startedForThisCall && isOutgoingLikeState(state) && lastNumber.isNotBlank()) {
-                    startedForThisCall = true
-
-                    TringoOverlayService.start(
-                        ctx = this@TringoInCallService,
-                        phone = lastNumber,
-                        contactName = "",
-                        showOnCallEnd = true
-                    )
-
-                    Log.d(TAG, "Started Overlay watcher for outgoing: $lastNumber")
-                }
-
-                // ✅ Incoming also: once it becomes ringing/active, start watcher (optional but useful)
-                if (!startedForThisCall && isIncomingLikeState(state) && lastNumber.isNotBlank()) {
-                    startedForThisCall = true
-
-                    TringoOverlayService.start(
-                        ctx = this@TringoInCallService,
-                        phone = lastNumber,
-                        contactName = "",
-                        showOnCallEnd = true
-                    )
-
-                    Log.d(TAG, "Started Overlay watcher for incoming: $lastNumber")
+                if (!shownForThisCall && state == Call.STATE_DISCONNECTED) {
+                    shownForThisCall = true
+                    startOverlayAfterDelay(lastNumber, "DISCONNECTED")
                 }
             }
         }
 
-        callback = cb
+        cb = callback
         try {
-            call.registerCallback(cb)
+            // ✅ More stable
+            call.registerCallback(callback, Handler(Looper.getMainLooper()))
         } catch (e: Exception) {
             Log.e(TAG, "registerCallback failed: ${e.message}", e)
         }
     }
 
     override fun onCallRemoved(call: Call) {
-        Log.d(TAG, "onCallRemoved number=$lastNumber")
-        try {
-            callback?.let { call.unregisterCallback(it) }
-        } catch (_: Exception) {
+        Log.d(TAG, "✅ onCallRemoved number=$lastNumber shown=$shownForThisCall")
+
+        if (!shownForThisCall && lastNumber.isNotBlank()) {
+            shownForThisCall = true
+            startOverlayAfterDelay(lastNumber, "onCallRemoved")
         }
-        callback = null
-        activeCall = null
+
+        try {
+            cb?.let { call.unregisterCallback(it) }
+        } catch (_: Exception) {}
+        cb = null
+
         super.onCallRemoved(call)
     }
 
-    private fun isOutgoingLikeState(state: Int): Boolean {
-        return state == Call.STATE_DIALING ||
-                state == Call.STATE_CONNECTING ||
-                state == Call.STATE_ACTIVE
-    }
+    private fun startOverlayAfterDelay(number: String, from: String) {
+        if (number.isBlank()) {
+            Log.w(TAG, "startOverlayAfterDelay skipped (empty number) from=$from")
+            return
+        }
 
-    private fun isIncomingLikeState(state: Int): Boolean {
-        return state == Call.STATE_RINGING ||
-                state == Call.STATE_ACTIVE
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d(TAG, "🚀 Starting overlay AFTER call end ($from) for: $number")
+            TringoOverlayService.start(
+                ctx = applicationContext,
+                phone = number,
+                contactName = "",
+                showOnCallEnd = false
+            )
+        }, 900)
     }
 
     private fun extractNumber(call: Call): String {
         return try {
             val handle: Uri? = call.details?.handle
-            val raw = handle?.schemeSpecificPart ?: ""
-            raw.trim()
+            (handle?.schemeSpecificPart ?: "").trim()
         } catch (e: Exception) {
             Log.e(TAG, "extractNumber failed: ${e.message}", e)
             ""

@@ -41,6 +41,7 @@ import '../../Presentation/OnBoarding/Screens/Support/Model/send_message_respons
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
     show UserProfileResponse;
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/user_image_response.dart';
+import '../../Presentation/OnBoarding/Screens/wallet/Model/wallet_history_response.dart';
 import '../Repository/api_url.dart';
 import '../Repository/failure.dart';
 import '../Repository/request.dart';
@@ -1065,6 +1066,7 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(response.message ?? "Unknown Dio error"));
     }
   }
+
   Future<Either<Failure, EditNumberOtpResponse>> changeOtpRequest({
     required String phone,
     required String type,
@@ -1086,7 +1088,9 @@ class ApiDataSource extends BaseApiDataSource {
             return Right(EditNumberOtpResponse.fromJson(response.data));
           } else {
             return Left(
-              ServerFailure(response.data['message'] ?? "OTP verification failed"),
+              ServerFailure(
+                response.data['message'] ?? "OTP verification failed",
+              ),
             );
           }
         } else {
@@ -1275,7 +1279,7 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e,st) {
+    } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
       print(e);
@@ -1363,15 +1367,13 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, SendMessageResponse>> sendMessage({
     required String subject,
 
     required String imageUrl,
     required String ticketId,
     required dynamic attachments,
-  }) async
-  {
+  }) async {
     try {
       final String url = ApiUrl.sendMessage(ticketId: ticketId);
       final Map<String, dynamic> body = {
@@ -1413,4 +1415,36 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
+  Future<Either<Failure, WalletHistoryResponse>> walletHistory({
+    String counts = "ALL",
+  }) async {
+    try {
+      final String url = ApiUrl.walletHistory;
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(WalletHistoryResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      print(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

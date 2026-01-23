@@ -1,7 +1,7 @@
 class ApiUrl {
-  // static const String base =
-  //     "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
-  static const String base = "https://bknd.tringobiz.com/";
+  static const String base =
+      "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
+  // static const String base = "https://bknd.tringobiz.com/";
 
   static const String register = "${base}api/v1/auth/request-otp";
   static const String verifyOtp = "${base}api/v1/auth/verify-otp";
@@ -17,6 +17,7 @@ class ApiUrl {
   static const String editProfile = "${base}api/v1/customer/profile";
   static const String imageUrl = "${base}api/media/image-save";
   static const String supportTicketsList = "${base}api/v1/support/tickets";
+  static const String walletHistory = "${base}api/v1/wallet/history?type=ALL";
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";
