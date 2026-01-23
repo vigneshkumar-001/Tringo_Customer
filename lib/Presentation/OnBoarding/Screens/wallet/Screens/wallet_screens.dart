@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -450,7 +451,22 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Image.asset(AppImages.uID, height: 14),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              final uid = (wallet?.uid ?? "").trim();
+                              if (uid.isEmpty) return;
+
+                              await Clipboard.setData(ClipboardData(text: uid));
+
+                              if (!mounted) return;
+                              AppSnackBar.success(
+                                context,
+                                "UID copied: $uid",
+                              );
+                            },
+                            child: Image.asset(AppImages.uID, height: 14),
+                          ),
                         ],
                       ),
                     ),
