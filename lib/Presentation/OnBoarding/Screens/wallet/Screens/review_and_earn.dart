@@ -5,6 +5,7 @@ import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import 'enter_review.dart';
 
 class ReviewAndEarn extends StatefulWidget {
   const ReviewAndEarn({super.key});
@@ -173,26 +174,37 @@ class _ReviewAndEarnState extends State<ReviewAndEarn>
                                     ),
                                     child: Row(
                                       children: [
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Scan Shop’s QR',
-                                              style: GoogleFont.Mulish(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColor.darkBlue,
+                                        InkWell(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    EnterReview(),
                                               ),
-                                            ),
-                                            Text(
-                                              'Review the shop & Get Earnings',
-                                              style: GoogleFont.Mulish(
-                                                fontSize: 12,
-                                                color: AppColor.darkGrey,
+                                            );
+                                          },
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Scan Shop’s QR',
+                                                style: GoogleFont.Mulish(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColor.darkBlue,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                              Text(
+                                                'Review the shop & Get Earnings',
+                                                style: GoogleFont.Mulish(
+                                                  fontSize: 12,
+                                                  color: AppColor.darkGrey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                         SizedBox(width: 30),
                                         InkWell(

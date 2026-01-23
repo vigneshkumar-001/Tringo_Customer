@@ -9,6 +9,7 @@ import '../../../../../Core/Utility/app_loader.dart';
 import '../../../../../Core/Utility/date_time_converter.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
+import '../../Profile Screen/profile_screen.dart';
 import '../Model/support_list_response.dart';
 import '../controller/support_notifier.dart';
 import 'create_support.dart';
@@ -101,7 +102,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                     );
 
                     // 2️⃣ Refresh support list AFTER returning
-                    await ref.read(supportNotifier.notifier).supportList(context: context);
+                    await ref
+                        .read(supportNotifier.notifier)
+                        .supportList(context: context);
                   },
                   text: const Text('Create Ticket'),
                 ),
@@ -133,7 +136,14 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                       Align(
                         alignment: Alignment.centerLeft,
                         child: CommonContainer.leftSideArrow(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () =>
+                              //     Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => ProfileScreen(),
+                              //   ),
+                              // ),
+                              Navigator.pop(context),
                         ),
                       ),
                       Text(
