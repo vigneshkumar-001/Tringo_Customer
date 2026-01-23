@@ -113,7 +113,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
   }
 }
 
-/// OVERLAY WITH TRANSPARENT CENTER
+  /// OVERLAY WITH TRANSPARENT CENTER
 class OverlayWithHole extends StatelessWidget {
   final double scanSize;
   final double borderRadius;

@@ -6,7 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'Core/Utility/app_color.dart';
 import 'Core/app_go_routes.dart';
-import 'Presentation/OnBoarding/Screens/Login Screen/login_mobile_number.dart';
+import 'Presentation/OnBoarding/Screens/Login Screen/Screens/login_mobile_number.dart';
 import 'Presentation/OnBoarding/Screens/Splash_screen.dart';
 import 'Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
 

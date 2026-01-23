@@ -13,7 +13,9 @@ import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
-import '../Login Screen/login_mobile_number.dart';
+import '../Login Screen/Screens/login_mobile_number.dart';
+import '../Login Screen/Screens/referral_screens.dart';
+import '../Privacy Policy/screens/privacy_policy.dart';
 import '../Support/Screens/support_screen.dart';
 import '../wallet/Screens/wallet_screens.dart';
 import 'Controller/profile_notifier.dart';
@@ -479,7 +481,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ReferralScreens()),
+                    );
+                  },
                   label: 'My Referrals',
                   iconPath: AppImages.myReferrals,
                   iconHeight: 25,
@@ -526,7 +533,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PrivacyPolicy()),
+                    );
+                  },
                   label: 'Privacy Policy',
                   iconPath: AppImages.privacyPolicy,
                   iconHeight: 25,
