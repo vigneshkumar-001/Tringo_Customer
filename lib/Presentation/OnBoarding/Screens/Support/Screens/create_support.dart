@@ -148,6 +148,8 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
     final data = ref.watch(supportNotifier.notifier);
     final state = ref.watch(supportNotifier);
 
+    final createSupportResponse = state.createSupportResponse;
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -279,17 +281,52 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
                   imagePath: state.isLoading ? null : AppImages.rightSideArrow,
+
+                  // onTap: () async {
+                  //   final ticket = createSupportResponse?.data.id;
+                  //   // Prepare image file if picked
+                  //   final File? imageFile =
+                  //       (_picked != null && _picked!.path.isNotEmpty)
+                  //       ? File(_picked!.path)
+                  //       : null;
+                  //
+                  //   AppLogger.log.w(imageFile);
+                  //
+                  //   // Call API to create support ticket
+                  //   final err = await data.createSupportTicket(
+                  //     subject: _subjectCtrl.text.trim(),
+                  //     description: _descCtrl.text.trim(),
+                  //     ownerImageFile: imageFile,
+                  //     context: context,
+                  //   );
+                  //
+                  //   if (!context.mounted) return;
+                  //
+                  //   if (err == null) {
+                  //     AppLogger.log.i("Navigation to home called");
+                  //     // ✅ Navigate to home safely using GoRouter
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) =>
+                  //             SupportChatScreen(id: ticket.id),
+                  //       ),
+                  //     );
+                  //     // Navigator.pop(context);
+                  //   } else {
+                  //     // Show error
+                  //     AppSnackBar.error(context, err);
+                  //   }
+                  // },
                   onTap: () async {
-                    // Prepare image file if picked
+                    final notifier = ref.read(supportNotifier.notifier);
+
                     final File? imageFile =
                         (_picked != null && _picked!.path.isNotEmpty)
                         ? File(_picked!.path)
                         : null;
 
-                    AppLogger.log.w(imageFile);
-
-                    // Call API to create support ticket
-                    final err = await data.createSupportTicket(
+                    final ticketId = await notifier.createSupportTicket(
                       subject: _subjectCtrl.text.trim(),
                       description: _descCtrl.text.trim(),
                       ownerImageFile: imageFile,
@@ -298,13 +335,13 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
 
                     if (!context.mounted) return;
 
-                    if (err == null) {
-                      AppLogger.log.i("Navigation to home called");
-                      // ✅ Navigate to home safely using GoRouter
-                      Navigator.pop(context);
-                    } else {
-                      // Show error
-                      AppSnackBar.error(context, err);
+                    if (ticketId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SupportChatScreen(id: ticketId),
+                        ),
+                      );
                     }
                   },
 

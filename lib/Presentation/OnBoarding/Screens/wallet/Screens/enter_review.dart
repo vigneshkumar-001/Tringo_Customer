@@ -19,6 +19,8 @@ class _EnterReviewState extends State<EnterReview>
   final TextEditingController _headingController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
+  int _rating = 0;
+
   @override
   void initState() {
     super.initState();
@@ -247,39 +249,31 @@ class _EnterReviewState extends State<EnterReview>
               Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      AppImages.starImage,
-                      height: 35,
-                      color: AppColor.green,
-                    ),
-                    SizedBox(width: 10),
-                    Image.asset(
-                      AppImages.starImage,
-                      height: 35,
-                      color: AppColor.green,
-                    ),
-                    SizedBox(width: 10),
-                    Image.asset(
-                      AppImages.starImage,
-                      height: 35,
-                      color: AppColor.green,
-                    ),
-                    SizedBox(width: 10),
-                    Image.asset(
-                      AppImages.starImage,
-                      height: 35,
-                      color: AppColor.green,
-                    ),
-                    SizedBox(width: 10),
-                    Image.asset(
-                      AppImages.starImage,
-                      height: 35,
-                      color: AppColor.borderGray,
-                    ),
-                  ],
+                  children: List.generate(5, (index) {
+                    final isSelected = index < _rating;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _rating = index + 1;
+                        });
+                      },
+
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Image.asset(
+                          AppImages.starImage,
+                          height: 35,
+                          color: isSelected
+                              ? AppColor.green
+                              : AppColor.borderGray,
+                        ),
+                      ),
+                    );
+                  }),
                 ),
               ),
+
               SizedBox(height: 35),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),

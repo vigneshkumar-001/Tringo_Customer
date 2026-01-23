@@ -14,10 +14,12 @@ class AppPrefs {
     final sp = await SharedPreferences.getInstance();
     await sp.setString(_kPhoneVerifyToken, token);
   }
+
   static Future<void> setIsProfileCompleted(bool value) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setBool(_isProfileCompleted, value);
   }
+
   static Future<String?> getVerificationToken() async {
     final sp = await SharedPreferences.getInstance();
     final t = sp.getString(_kPhoneVerifyToken);

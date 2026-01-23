@@ -10,6 +10,7 @@ import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
@@ -242,7 +243,6 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                   transitionBuilder: (child, animation) =>
                       FadeTransition(opacity: animation, child: child),
                   child: OwnerVerifyField(
-
                     controller: mobileController,
                     isLoading: state.isSendingOtp,
                     isOtpVerifying: state.isVerifyingOtp,
@@ -457,7 +457,6 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                         onTap: state.isLoading
                             ? null
                             : () async {
-
                                 final dob = dateOfBirthController.text.trim();
                                 final isIso = RegExp(
                                   r'^\d{4}-\d{2}-\d{2}$',
@@ -509,6 +508,7 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                                       builder: (_) => HomeScreen(),
                                     ),
                                   );
+                                  AppPrefs.clearVerificationToken();
                                 } else {
                                   AppSnackBar.error(
                                     context,
