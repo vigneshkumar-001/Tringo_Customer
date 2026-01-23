@@ -6,6 +6,7 @@ import 'package:tringo_app/Api/Repository/failure.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/login_new_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/referral_response.dart';
 
 import '../../../../../Api/DataSource/api_data_source.dart';
 
@@ -18,6 +19,7 @@ import '../Model/whatsapp_response.dart';
 /// --- STATE ---
 class LoginState {
   final bool isLoading;
+  final bool isReferralCodeLoading;
   final bool isResendingOtp;
   final bool isVerifyingOtp;
   final LoginResponse? loginResponse;
@@ -26,10 +28,12 @@ class LoginState {
   final String? error;
   final WhatsappResponse? whatsappResponse;
   final ContactResponse? contactResponse;
+  final ReferralResponse? referralResponse;
 
   const LoginState({
     this.isLoading = false,
     this.isResendingOtp = false,
+    this.isReferralCodeLoading = false,
     this.isVerifyingOtp = false,
     this.loginResponse,
     this.otpResponse,
@@ -37,6 +41,7 @@ class LoginState {
     this.whatsappResponse,
     this.contactResponse,
     this.otpLoginResponse,
+    this.referralResponse,
   });
 
   factory LoginState.initial() => const LoginState();
@@ -44,6 +49,7 @@ class LoginState {
   LoginState copyWith({
     bool? isLoading,
     bool? isResendingOtp,
+    bool? isReferralCodeLoading,
     bool? isVerifyingOtp,
     LoginResponse? loginResponse,
     OtpResponse? otpResponse,
@@ -51,10 +57,13 @@ class LoginState {
     WhatsappResponse? whatsappResponse,
     ContactResponse? contactResponse,
     OtpLoginResponse? otpLoginResponse,
+    ReferralResponse? referralResponse,
   }) {
     return LoginState(
       isLoading: isLoading ?? this.isLoading,
       isResendingOtp: isResendingOtp ?? this.isResendingOtp,
+      isReferralCodeLoading:
+          isReferralCodeLoading ?? this.isReferralCodeLoading,
       isVerifyingOtp: isVerifyingOtp ?? this.isVerifyingOtp,
       loginResponse: loginResponse ?? this.loginResponse,
       otpResponse: otpResponse ?? this.otpResponse,
@@ -62,6 +71,7 @@ class LoginState {
       whatsappResponse: whatsappResponse ?? this.whatsappResponse,
       contactResponse: contactResponse ?? this.contactResponse,
       otpLoginResponse: otpLoginResponse ?? this.otpLoginResponse,
+      referralResponse: referralResponse ?? this.referralResponse,
     );
   }
 }
@@ -331,6 +341,29 @@ class LoginNotifier extends Notifier<LoginState> {
         state = state.copyWith(
           isLoading: false,
           whatsappResponse: response,
+          error: null, // clear old error
+        );
+      },
+    );
+  }
+
+  Future<void> verifyReferralCode({required String referralCode}) async {
+    state = state.copyWith(isReferralCodeLoading: true, error: null);
+
+    final result = await api.verifyReferralCode(referralCode: referralCode);
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          isReferralCodeLoading: false,
+          error: failure.message,
+          referralResponse: null, // clear old success
+        );
+      },
+      (response) {
+        state = state.copyWith(
+          isReferralCodeLoading: false,
+          referralResponse: response,
           error: null, // clear old error
         );
       },

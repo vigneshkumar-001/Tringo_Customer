@@ -1,12 +1,13 @@
 class ApiUrl {
-  // static const String base =
-  //     "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
-  static const String base = "https://bknd.tringobiz.com/";
+  static const String base =
+      "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
+  // static const String base = "https://bknd.tringobiz.com/";
 
   static const String register = "${base}api/v1/auth/request-otp";
   static const String verifyOtp = "${base}api/v1/auth/verify-otp";
   static const String requestLogin = "${base}api/v1/auth/request-login";
   static const String whatsAppVerify = "${base}api/v1/auth/check-whatsapp";
+  static const String applyReferral = "${base}api/v1/auth/apply-referral";
   static const String resendOtp = "${base}api/v1/auth/resend-otp";
   static const String deleteAccount = "${base}api/v1/auth/me";
   // static const String home = "${base}api/v1/public/home";
@@ -17,6 +18,7 @@ class ApiUrl {
   static const String editProfile = "${base}api/v1/customer/profile";
   static const String imageUrl = "${base}api/media/image-save";
   static const String supportTicketsList = "${base}api/v1/support/tickets";
+  static const String privacyPolicy = "${base}api/v1/public/pages/privacy-policy";
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";
@@ -42,6 +44,7 @@ class ApiUrl {
   static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lng";
   }
+
   // static String sendMessage({required String ticketId,  }) {
   //   return "${base}api/v1/support/tickets/$ticketId/messages";
   // }
