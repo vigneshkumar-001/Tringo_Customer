@@ -31,8 +31,10 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
   late AnimationController _controller;
 
   DateTime selectedDate = DateTime.now();
-  String selectedDay = 'Today';
+  int selectedTypeIndex = 0; // old selectedIndex instead use this
+  String selectedDateMode = "Today"; // Today / Yesterday / Custom
 
+  String selectedDay = 'Today';
   int selectedIndex = 0;
 
   // API types
@@ -460,10 +462,7 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                               await Clipboard.setData(ClipboardData(text: uid));
 
                               if (!mounted) return;
-                              AppSnackBar.success(
-                                context,
-                                "UID copied: $uid",
-                              );
+                              AppSnackBar.success(context, "UID copied: $uid");
                             },
                             child: Image.asset(AppImages.uID, height: 14),
                           ),
