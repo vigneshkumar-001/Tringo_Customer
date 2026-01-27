@@ -24,6 +24,9 @@ class ApiUrl {
   static const String uIDPersonName = "${base}api/v1/wallet/resolve-uid";
   static const String uIDSendApi = "${base}api/v1/wallet/transfer";
   static const String uIDWithRawApi = "${base}api/v1/wallet/withdraw-request";
+  static const String referralHistory = "${base}api/v1/wallet/referral";
+  static const String reviewHistory = "${base}api/v1/reviews/history";
+  static const String reviewCreate= "${base}api/v1/reviews";
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";

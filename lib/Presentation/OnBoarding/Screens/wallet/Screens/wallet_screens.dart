@@ -74,6 +74,57 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
     return AppColor.whiteSmoke;
   }
 
+  Map<String, int> _localCountsFromSections(List<Section> sections) {
+    int all = 0, rewards = 0, sent = 0, received = 0, withdraw = 0;
+
+    bool isReward(WalletHistoryItem it) {
+      final title = _norm(it.title);
+      final key = _norm(it.badgeType).isNotEmpty
+          ? _norm(it.badgeType)
+          : _norm(it.badgeLabel);
+
+      if (key == "REWARD" || key == "REWARDS") return true;
+      if (title.contains("BONUS") || title.contains("REWARD")) return true;
+      if (title.contains("SIGNUP")) return true; // Signup Bonus
+      return false;
+    }
+
+    bool isWithdraw(WalletHistoryItem it) {
+      final title = _norm(it.title);
+      final key = _norm(it.badgeType).isNotEmpty
+          ? _norm(it.badgeType)
+          : _norm(it.badgeLabel);
+
+      if (key == "WITHDRAW" || key == "WITHDRAWAL") return true;
+      if (key == "WAITING" && title.contains("WITHDRAW")) return true;
+      if (title.contains("WITHDRAW")) return true;
+      return false;
+    }
+
+    for (final sec in sections) {
+      for (final it in sec.items) {
+        all++;
+
+        final key = _norm(it.badgeType).isNotEmpty
+            ? _norm(it.badgeType)
+            : _norm(it.badgeLabel);
+
+        if (key == "SENT") sent++;
+        if (key == "RECEIVED") received++;
+        if (isWithdraw(it)) withdraw++;
+        if (isReward(it)) rewards++;
+      }
+    }
+
+    return {
+      "ALL": all,
+      "REWARDS": rewards,
+      "SENT": sent,
+      "RECEIVED": received,
+      "WITHDRAW": withdraw,
+    };
+  }
+
   @override
   void initState() {
     super.initState();
@@ -216,11 +267,15 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
       setState(() {
         selectedDay = 'Today';
         selectedDate = DateTime.now();
+
+        selectedIndex = 0; // ✅ reset chips to ALL
       });
     } else if (res == 'Yesterday') {
       setState(() {
         selectedDay = 'Yesterday';
         selectedDate = DateTime.now().subtract(const Duration(days: 1));
+
+        selectedIndex = 0; // ✅ reset chips to ALL
       });
     } else if (res == 'Custom Date') {
       final picked = await showDatePicker(
@@ -252,6 +307,8 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
         setState(() {
           selectedDate = picked;
           selectedDay = _fmt(picked);
+
+          selectedIndex = 0; // ✅ reset chips to ALL
         });
       }
     }
@@ -316,8 +373,11 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
     final dateFiltered = _applyLocalDateFilter(rawSections);
     final typeFiltered = _applyLocalTypeFilter(dateFiltered);
 
+    final localCounts = _localCountsFromSections(dateFiltered);
+
     // ✅ counts-based final decision
-    final selCount = _selectedCount(counts);
+    final selectedType = _types[selectedIndex];
+    final selCount = localCounts[selectedType] ?? 0;
     final sections = (selCount == 0) ? <Section>[] : typeFiltered;
 
     if (walletState.error != null && walletState.error!.isNotEmpty) {
@@ -333,11 +393,11 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
     }
 
     final segments = <String>[
-      _segmentLabel(title: "All", count: counts?.all ?? 0),
-      _segmentLabel(title: "Rewards", count: counts?.rewards ?? 0),
-      _segmentLabel(title: "Sent", count: counts?.sent ?? 0),
-      _segmentLabel(title: "Received", count: counts?.received ?? 0),
-      _segmentLabel(title: "Withdraw", count: counts?.withdraw ?? 0),
+      _segmentLabel(title: "All", count: localCounts["ALL"] ?? 0),
+      _segmentLabel(title: "Rewards", count: localCounts["REWARDS"] ?? 0),
+      _segmentLabel(title: "Sent", count: localCounts["SENT"] ?? 0),
+      _segmentLabel(title: "Received", count: localCounts["RECEIVED"] ?? 0),
+      _segmentLabel(title: "Withdraw", count: localCounts["WITHDRAW"] ?? 0),
     ];
 
     return Scaffold(
@@ -514,10 +574,12 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                           const SizedBox(width: 20),
                           CommonContainer.walletSendBox(
                             onTap: () {
+                              final myUid = (wallet?.uid ?? "").trim();
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => ReceiveScreen(),
+                                  builder: (_) =>
+                                      ReceiveScreen(toUid: myUid, amount: "0"),
                                 ),
                               );
                             },

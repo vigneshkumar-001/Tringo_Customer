@@ -124,7 +124,7 @@ class _SendScreenState extends ConsumerState<SendScreen>
         (ref.read(walletNotifier).walletHistoryResponse?.data.wallet.uid ?? "")
             .trim();
 
-    // ✅ prevent self-transfer (show same API style message)
+    // ✅ prevent self-transfer
     if (myUid.isNotEmpty && uid.toUpperCase() == myUid.toUpperCase()) {
       AppSnackBar.error(context, "CANNOT_SEND_TO_SELF");
       return;
@@ -146,17 +146,24 @@ class _SendScreenState extends ConsumerState<SendScreen>
     }
 
     final res = st.sendTcoinData;
+
     if (res != null && res.success == true) {
       AppSnackBar.success(
         context,
         "Sent successfully. Balance: ${res.fromBalance}",
       );
 
+      final sentUid = uid;
+      final sentAmount = amount;
+
       _amountController.clear();
 
-      Navigator.push(
+      // ✅ Navigate to ReceiveScreen with UID + Amount
+      Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => ReceiveScreen()),
+        MaterialPageRoute(
+          builder: (_) => ReceiveScreen(toUid: sentUid, amount: sentAmount),
+        ),
       );
     } else {
       AppSnackBar.error(context, "Send failed");
@@ -170,13 +177,11 @@ class _SendScreenState extends ConsumerState<SendScreen>
     final resp = walletState.walletHistoryResponse;
     final wallet = resp?.data.wallet;
 
-    // // ✅ full loader only for initial screen loading (optional)
-    // if (walletState.isLoading) {
-    //   return Scaffold(
-    //     body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
-    //   );
-    // }
-
+    if (walletState.isLoading) {
+      return Scaffold(
+        body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(

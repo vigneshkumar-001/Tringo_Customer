@@ -95,7 +95,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ref
           .read(homeNotifierProvider.notifier)
           .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
-
     });
 
     _listenServiceChanges();
@@ -583,7 +582,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       ),
                                       SizedBox(width: 6),
                                       Text(
-                                        home.data.user.coins.toString(),
+                                        (home.data.tcoin?.balance ?? 0)
+                                            .toString(),
+
                                         style: GoogleFont.Mulish(
                                           fontWeight: FontWeight.w900,
                                           fontSize: 12,
@@ -621,7 +622,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => ProfileScreen(
-                                      coins: state.homeResponse?.data.user.coins
+                                      balance: state
+                                          .homeResponse
+                                          ?.data
+                                          .tcoin
+                                          ?.balance
                                           .toString(),
                                       gender: state
                                           .homeResponse

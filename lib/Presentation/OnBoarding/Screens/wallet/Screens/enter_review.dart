@@ -4,11 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../../Shop Screen/Controller/shops_notifier.dart';
+import '../../Shop Screen/Model/shop_details_response.dart';
+import '../../Shop Screen/Screens/shops_details.dart';
+import '../Controller/wallet_notifier.dart';
 
-class EnterReview extends ConsumerStatefulWidget{
-  const EnterReview({super.key});
+class EnterReview extends ConsumerStatefulWidget {
+  final String? shopId;
+  const EnterReview({super.key, this.shopId});
 
   @override
   ConsumerState<EnterReview> createState() => _EnterReviewState();
@@ -26,6 +32,35 @@ class _EnterReviewState extends ConsumerState<EnterReview>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(shopsNotifierProvider.notifier)
+          .showSpecificShopDetails(shopId: widget.shopId ?? '');
+
+      ref.listen<WalletState>(walletNotifier, (prev, next) {
+        final res = next.reviewCreateResponse;
+
+        if (res != null && res.status == true) {
+          AppSnackBar.success(
+            context,
+            res.data.note == "ALREADY_REVIEWED_UPDATED_ONLY"
+                ? "Review updated "
+                : "Review submitted ",
+          );
+
+          _headingController.clear();
+          _descriptionController.clear();
+          setState(() => _rating = 0);
+
+          Navigator.pop(context);
+        }
+
+        if (next.error != null && next.error!.isNotEmpty) {
+          AppSnackBar.error(context, next.error!);
+        }
+      });
+    });
   }
 
   @override
@@ -36,6 +71,51 @@ class _EnterReviewState extends ConsumerState<EnterReview>
 
   @override
   Widget build(BuildContext context) {
+    final walletState = ref.watch(walletNotifier);
+
+    final state = ref.watch(shopsNotifierProvider);
+    final shopsData = state.shopDetailsResponse;
+    final shop = shopsData?.data;
+
+    final shopImageUrl = (shop?.media.isNotEmpty == true)
+        ? shop!.media.first.url
+        : "";
+
+    final isSubmitting = walletState.isMsgSendingLoading;
+
+    ref.listen<WalletState>(walletNotifier, (prev, next) {
+      // ✅ success response வந்தா
+      final res = next.reviewCreateResponse;
+
+      if (res != null && res.status == true) {
+        AppSnackBar.success(
+          context,
+          next.reviewCreateResponse?.data.note ==
+                  "ALREADY_REVIEWED_UPDATED_ONLY"
+              ? "Review updated ✅"
+              : "Review submitted ✅",
+        );
+
+        // ✅ clear
+        _headingController.clear();
+        _descriptionController.clear();
+        setState(() => _rating = 0);
+
+        // ✅ go back
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ShopsDetails(shopId: widget.shopId),
+          ),
+        );
+      }
+
+      // ✅ failure
+      if (next.error != null && next.error!.isNotEmpty) {
+        AppSnackBar.error(context, next.error!);
+      }
+    });
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -101,49 +181,43 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                               ),
                               child: Row(
                                 children: [
-                                  Image.asset(
-                                    AppImages.shopContainer3,
-                                    height: 130,
-                                    width: 115,
-                                  ),
-
-                                  // ClipRRect(
-                                  //   borderRadius: BorderRadius.circular(16),
-                                  //   child:
-                                  //   CachedNetworkImage(
-                                  //     imageUrl: AppImages.shopContainer3,
-                                  //     height: 100,
-                                  //     width: 100,
-                                  //     fit: BoxFit.cover,
-                                  //
-                                  //     placeholder: (context, url) =>
-                                  //         const SizedBox(
-                                  //           height: 100,
-                                  //           width: 100,
-                                  //           child: Center(
-                                  //             child: CircularProgressIndicator(
-                                  //               strokeWidth: 2,
-                                  //             ),
-                                  //           ),
-                                  //         ),
-                                  //     errorWidget: (context, url, error) =>
-                                  //         ClipRRect(
-                                  //           borderRadius: BorderRadius.circular(
-                                  //             16,
-                                  //           ),
-                                  //           child: Container(
-                                  //             height: 100,
-                                  //             width: 100,
-                                  //             color: Colors
-                                  //                 .grey
-                                  //                 .shade300,
-                                  //             child:   Icon(
-                                  //               Icons.broken_image,
-                                  //             ),
-                                  //           ),
-                                  //         ),
-                                  //   ),
+                                  // Image.asset(
+                                  //   AppImages.shopContainer3,
+                                  //   height: 130,
+                                  //   width: 115,
                                   // ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: CachedNetworkImage(
+                                      imageUrl: shopImageUrl,
+                                      height: 100,
+                                      width: 100,
+                                      fit: BoxFit.cover,
+
+                                      placeholder: (context, url) =>
+                                          const SizedBox(
+                                            height: 100,
+                                            width: 100,
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          ),
+                                      errorWidget: (context, url, error) =>
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: Container(
+                                              height: 100,
+                                              width: 100,
+                                              color: Colors.grey.shade300,
+                                              child: Icon(Icons.broken_image),
+                                            ),
+                                          ),
+                                    ),
+                                  ),
                                   SizedBox(width: 14),
                                   Expanded(
                                     child: Padding(
@@ -155,7 +229,7 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Zam Zam Sweets',
+                                            shop?.englishName?.toString() ?? "",
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFont.Mulish(
@@ -164,7 +238,7 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                               color: AppColor.darkBlue,
                                             ),
                                           ),
-                                          SizedBox(height: 6),
+                                          const SizedBox(height: 6),
 
                                           Row(
                                             children: [
@@ -173,10 +247,11 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                                 height: 10,
                                                 color: AppColor.lightGray2,
                                               ),
-                                              SizedBox(width: 3),
+                                              const SizedBox(width: 3),
+
                                               Flexible(
                                                 child: Text(
-                                                  '12, 2, Tirupparankunram Rd, kunram ',
+                                                  "${shop?.addressEn ?? ""}",
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -186,9 +261,12 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(width: 5),
+
+                                              const SizedBox(width: 5),
                                               Text(
-                                                '5Kms',
+                                                shop?.distanceLabel
+                                                        ?.toString() ??
+                                                    "",
                                                 style: GoogleFont.Mulish(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 12,
@@ -197,15 +275,24 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                               ),
                                             ],
                                           ),
-                                          SizedBox(height: 10),
+
+                                          const SizedBox(height: 10),
 
                                           Row(
                                             children: [
                                               CommonContainer.greenStarRating(
-                                                ratingStar: '4.5',
-                                                ratingCount: '16',
+                                                ratingStar:
+                                                    shop?.averageRating
+                                                        ?.toString() ??
+                                                    "0",
+                                                ratingCount:
+                                                    shop?.reviewCount
+                                                        ?.toString() ??
+                                                    "0",
                                               ),
-                                              SizedBox(width: 10),
+
+                                              const SizedBox(width: 10),
+
                                               Text(
                                                 'Opens Upto ',
                                                 style: GoogleFont.Mulish(
@@ -214,7 +301,7 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                                 ),
                                               ),
                                               Text(
-                                                '9Pm',
+                                                shop?.closeTime ?? "",
                                                 style: GoogleFont.Mulish(
                                                   fontSize: 9,
                                                   color: AppColor.lightGray2,
@@ -333,17 +420,46 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                     ),
 
                     SizedBox(height: 25),
+
                     CommonContainer.button(
                       buttonColor: AppColor.darkBlue,
-                      onTap: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => ReceiveScreen(),
-                        //   ),
-                        // );
-                      },
-                      text: Text('Submit Review'),
+                      onTap: isSubmitting
+                          ? null
+                          : () async {
+                              final heading = _headingController.text.trim();
+                              final comment = _descriptionController.text
+                                  .trim();
+
+                              if (_rating == 0) {
+                                AppSnackBar.error(
+                                  context,
+                                  "Please select rating ⭐",
+                                );
+                                return;
+                              }
+
+                              if (heading.isEmpty) {
+                                AppSnackBar.error(context, "Enter heading");
+                                return;
+                              }
+
+                              if (comment.isEmpty) {
+                                AppSnackBar.error(context, "Enter description");
+                                return;
+                              }
+
+                              await ref
+                                  .read(walletNotifier.notifier)
+                                  .reviewCreate(
+                                    shopId: widget.shopId ?? "",
+                                    rating: _rating,
+                                    heading: heading,
+                                    comment: comment,
+                                  );
+                            },
+                      text: isSubmitting
+                          ? const Text("Submitting...")
+                          : const Text("Submit Review"),
                       imagePath: AppImages.rightSideArrow,
                     ),
                   ],
