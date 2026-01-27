@@ -24,7 +24,7 @@ import 'Controller/profile_notifier.dart';
 class ProfileScreen extends ConsumerStatefulWidget {
   final String? url;
   final String? name;
-  final String? coins;
+  final String? balance;
   final String? phnNumber;
   final String? email;
   final String? dob;
@@ -34,7 +34,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
     this.url,
     this.name,
     this.phnNumber,
-    this.coins,
+    this.balance,
     this.email,
     this.dob,
     this.gender,
@@ -329,7 +329,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             SizedBox(width: 6),
                             Text(
-                              widget.coins.toString() ?? '',
+                              widget.balance.toString() ?? '',
                               style: GoogleFont.Mulish(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 12,
@@ -474,12 +474,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SurpriseScreens()),
-                    );
-                  },
+                  // onTap: () {
+                  //   Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(builder: (context) => SurpriseScreens()),
+                  //   );
+                  // },
                   label: 'Earnings',
                   iconPath: AppImages.earnings,
                   iconHeight: 25,
@@ -490,7 +490,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ReferralScreens()),
+                      MaterialPageRoute(
+                        builder: (context) => ReferralScreens(),
+                      ),
                     );
                   },
                   label: 'My Referrals',

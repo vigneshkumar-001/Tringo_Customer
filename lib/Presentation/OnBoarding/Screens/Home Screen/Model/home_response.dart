@@ -1,4 +1,3 @@
-
 class HomeResponse {
   final bool status;
   final HomeData data;
@@ -32,6 +31,8 @@ class HomeData {
   final List<ListingItem> services;
   final List<ListingItem> trendingShops;
   final List<dynamic> foodOffers;
+  final TCoin? tcoin;
+
 
   const HomeData({
     required this.user,
@@ -45,6 +46,8 @@ class HomeData {
     required this.services,
     required this.trendingShops,
     required this.foodOffers,
+    required this.tcoin,
+
   });
 
   factory HomeData.fromJson(Map<String, dynamic> json) {
@@ -70,6 +73,10 @@ class HomeData {
           .map((e) => ListingItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       foodOffers: (json['foodOffers'] as List<dynamic>? ?? []),
+      tcoin: json['tcoin'] != null
+          ? TCoin.fromJson(json['tcoin'] as Map<String, dynamic>)
+          : null,
+
     );
   }
 
@@ -86,6 +93,8 @@ class HomeData {
       'services': services.map((e) => e.toJson()).toList(),
       'trendingShops': trendingShops.map((e) => e.toJson()).toList(),
       'foodOffers': foodOffers,
+      'tcoin': tcoin?.toJson(),
+
     };
   }
 }
@@ -110,9 +119,9 @@ class AppUser {
   const AppUser({
     required this.id,
     required this.name,
-    required this. gender ,
-    required this.  email  ,
-    required this.  dob   ,
+    required this.gender,
+    required this.email,
+    required this.dob,
     required this.phoneNumber,
     required this.avatarUrl,
     required this.coins,
@@ -127,8 +136,8 @@ class AppUser {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       gender: json['gender'] ?? '',
-       dob : json['dob'] ?? '',
-       email : json['email'] ?? '',
+      dob: json['dob'] ?? '',
+      email: json['email'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       avatarUrl: json['avatarUrl'],
       coins: json['coins'] ?? 0,
@@ -431,6 +440,26 @@ class ListingItem {
     if (ownershipType == 'COMPANY') return 'Company';
     if (ownershipType == 'INDIVIDUAL') return 'Individual';
     return ownershipType;
+  }
+}
+
+class TCoin {
+  final int balance;
+  final String uid;
+  final num rate;
+
+  const TCoin({required this.balance, required this.uid, required this.rate});
+
+  factory TCoin.fromJson(Map<String, dynamic> json) {
+    return TCoin(
+      balance: (json['balance'] as num?)?.toInt() ?? 0,
+      uid: json['uid'] ?? '',
+      rate: json['rate'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {"balance": balance, "uid": uid, "rate": rate};
   }
 }
 

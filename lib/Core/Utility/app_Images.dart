@@ -149,4 +149,5 @@ class AppImages {
   static String iPhoneLogo = 'Assets/Images/IPhoneLogo.png';
   static String playStore = 'Assets/Images/PlayStore.png';
   static String image = 'Assets/Images/image.png';
+  static String surpriseOpens = 'Assets/Images/surprise_opens.mp4';
 }
