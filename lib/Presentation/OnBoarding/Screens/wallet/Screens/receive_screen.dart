@@ -29,7 +29,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
     final uid = widget.toUid.trim();
     final amt = widget.amount.trim();
 
-    return "tringo://send?touid=$uid&amount=$amt";
+    return uid;
   }
 
   @override

@@ -109,9 +109,19 @@
         </service>
 
         <!-- ✅ GUARANTEED fallback: call end receiver (works even if dialer role not granted) -->
+        <!-- ✅ Phone state receiver MUST be exported=true (system broadcast) -->
         <receiver
             android:name=".TringoCallEndReceiver"
-            android:exported="false">
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ✅ Incoming call state (RINGING/OFFHOOK/IDLE) receiver -->
+        <receiver
+            android:name=".TringoCallReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>

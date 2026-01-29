@@ -796,6 +796,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                             MaterialPageRoute(
                                               builder: (context) =>
                                                   SurpriseScreens(
+                                                    shopId: shopsData.data?.id.toString()?? '',
                                                     shopLat: double.parse(
                                                       shopsData
                                                               .data

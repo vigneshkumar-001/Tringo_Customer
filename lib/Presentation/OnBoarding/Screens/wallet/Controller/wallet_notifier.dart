@@ -78,10 +78,10 @@ class WalletNotifier extends Notifier<WalletState> {
     return WalletState.initial();
   }
 
-  Future<void> walletHistory({String counts = "ALL"}) async {
+  Future<void> walletHistory({String type = "ALL"}) async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await api.walletHistory();
+    final result = await api.walletHistory(type: type);
 
     result.fold(
       (failure) {
@@ -97,8 +97,8 @@ class WalletNotifier extends Notifier<WalletState> {
     );
   }
 
-  Future<void> fetchUidPersonName(String uid) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> fetchUidPersonName(String uid ,{bool load = true}) async {
+    state = state.copyWith(isLoading: load, error: null);
 
     final result = await api.uIDPersonName(uid: uid);
 
@@ -122,7 +122,7 @@ class WalletNotifier extends Notifier<WalletState> {
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await api.uIDSendApi(tcoin: tcoin, toUid: toUid);
+    final result = await api.uIDSendApi( tCoin : tcoin, toUid: toUid);
 
     result.fold(
       (failure) {

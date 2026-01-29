@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -18,13 +19,19 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
     detectionSpeed: DetectionSpeed.noDuplicates,
   );
 
-  void _onDetect(BarcodeCapture capture) {
+  void _onDetect(BarcodeCapture capture) async {
     if (_handled) return;
 
     final String? value = capture.barcodes.first.rawValue;
     if (value == null || value.isEmpty) return;
 
     _handled = true;
+
+    // VIBRATE / HAPTIC
+    HapticFeedback.vibrate(); // or HapticFeedback.vibrate();
+
+    // Optional: tiny delay so vibration happens before screen closes
+    await Future.delayed(const Duration(milliseconds: 80));
 
     // RETURN SCANNED VALUE
     Navigator.pop(context, value);
@@ -114,7 +121,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   }
 }
 
-  /// OVERLAY WITH TRANSPARENT CENTER
+/// OVERLAY WITH TRANSPARENT CENTER
 class OverlayWithHole extends StatelessWidget {
   final double scanSize;
   final double borderRadius;

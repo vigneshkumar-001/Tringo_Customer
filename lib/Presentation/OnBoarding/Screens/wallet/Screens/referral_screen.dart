@@ -125,11 +125,6 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen>
     _shareLink = data?.shareLink ?? _shareLink;
     _totalReward = data?.totalReferralRewardTcoin ?? _totalReward;
 
-    if (state.error != null && state.error!.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppSnackBar.info(context, state.error!);
-      });
-    }
 
     if (state.isLoading) {
       return Scaffold(
