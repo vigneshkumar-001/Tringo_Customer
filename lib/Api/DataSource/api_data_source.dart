@@ -25,6 +25,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/s
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Model/surprise_offer_response.dart';
 
 import '../../Core/Utility/app_prefs.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
@@ -1426,10 +1427,45 @@ class ApiDataSource extends BaseApiDataSource {
   }
 
   Future<Either<Failure, WalletHistoryResponse>> walletHistory({
-    String counts = "ALL",
+    required String type,
   }) async {
     try {
-      final String url = ApiUrl.walletHistory;
+      final String url = ApiUrl.walletHistory(type: type);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response?.statusCode == 200 || response?.statusCode == 201) {
+          if (response?.data['status'] == true) {
+            return Right(WalletHistoryResponse.fromJson(response?.data));
+          } else {
+            return Left(ServerFailure(response?.data['message'] ?? ""));
+          }
+        } else {
+          return Left(
+            ServerFailure(response?.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(errorData['message'] ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e.toString());
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+  /*
+  Future<Either<Failure, WalletHistoryResponse>> walletHistory({
+    String type = "ALL",
+  }) async {
+    try {
+      final String url = ApiUrl.walletHistory(type: type);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -1453,10 +1489,10 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+     AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
-  }
+  }*/
 
   Future<Either<Failure, UidNameResponse>> uIDPersonName({
     required String uid,
@@ -1500,48 +1536,87 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+  //
+  // Future<Either<Failure, SendTcoinResponse>> uIDSendApi({
+  //   required String toUid,
+  //   required String tcoin,
+  // }) async {
+  //   try {
+  //     final String url = ApiUrl.uIDSendApi;
+  //     final payload = {"toUid": toUid, "tcoin": tcoin};
+  //
+  //     final response = await Request.sendRequest(url, payload, 'Post', true);
+  //
+  //     if (response is DioException) {
+  //       final errorData = response.response?.data;
+  //       if (errorData is Map && errorData['message'] != null) {
+  //         return Left(ServerFailure(errorData['message'].toString()));
+  //       }
+  //       return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+  //     }
+  //
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       final body = response.data;
+  //
+  //       if (body is Map<String, dynamic>) {
+  //         if (body['status'] != true) {
+  //           return Left(
+  //             ServerFailure((body['message'] ?? "Send failed").toString()),
+  //           );
+  //         }
+  //         final parsed = SendTcoinResponse.fromJson(body);
+  //         if (parsed.data.success != true) {
+  //           return Left(
+  //             ServerFailure((body['message'] ?? "Send failed").toString()),
+  //           );
+  //         }
+  //         return Right(parsed);
+  //       }
+  //
+  //       return Left(ServerFailure("Invalid response format"));
+  //     }
+  //
+  //     return Left(ServerFailure("HTTP ${response.statusCode}"));
+  //   } catch (e) {
+  //     return Left(ServerFailure(e.toString()));
+  //   }
+  // }
 
   Future<Either<Failure, SendTcoinResponse>> uIDSendApi({
     required String toUid,
-    required String tcoin,
+    required String tCoin,
   }) async {
     try {
-      final String url = ApiUrl.uIDSendApi;
-      final payload = {"toUid": toUid, "tcoin": tcoin};
+      final String url = ApiUrl.supportTicketsList;
+      final payload = {"toUid": toUid, "tcoin": tCoin};
 
-      final response = await Request.sendRequest(url, payload, 'Post', true);
+      final response = await Request.sendRequest(url, payload, 'POST', true);
 
-      if (response is DioException) {
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(SendTcoinResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
         final errorData = response.response?.data;
-        if (errorData is Map && errorData['message'] != null) {
-          return Left(ServerFailure(errorData['message'].toString()));
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
         }
         return Left(ServerFailure(response.message ?? "Unknown Dio error"));
       }
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = response.data;
-
-        if (body is Map<String, dynamic>) {
-          if (body['status'] != true) {
-            return Left(
-              ServerFailure((body['message'] ?? "Send failed").toString()),
-            );
-          }
-          final parsed = SendTcoinResponse.fromJson(body);
-          if (parsed.data.success != true) {
-            return Left(
-              ServerFailure((body['message'] ?? "Send failed").toString()),
-            );
-          }
-          return Right(parsed);
-        }
-
-        return Left(ServerFailure("Invalid response format"));
-      }
-
-      return Left(ServerFailure("HTTP ${response.statusCode}"));
     } catch (e) {
+      AppLogger.log.e(e.toString());
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1722,6 +1797,87 @@ class ApiDataSource extends BaseApiDataSource {
       }
     } catch (e) {
       AppLogger.log.e(e.toString());
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SurpriseStatusResponse>> surpriseStatusCheck({
+    required double lng,
+    required double lat,
+    required String shopId,
+  }) async {
+    try {
+      final url = ApiUrl.surpriseStatusCheck(
+        lat: lat,
+        lng: lng,
+        shopId: shopId,
+      );
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SurpriseStatusResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e, st) {
+      print('${e}\n${st}');
+      AppLogger.log.e('${e}\n${st}');
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SurpriseStatusResponse>> surpriseClaimed({
+    required double lng,
+    required double lat,
+    required String shopId,
+  }) async {
+    try {
+      final url = ApiUrl.surpriseClaimed(shopId: shopId);
+
+      final response = await Request.sendRequest(
+        url,
+        {"lat": lat, "lng": lng},
+        'Post',
+        true,
+      );
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SurpriseStatusResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e, st) {
+      print('${e}\n${st}');
+      AppLogger.log.e('${e}\n${st}');
       return Left(ServerFailure(e.toString()));
     }
   }

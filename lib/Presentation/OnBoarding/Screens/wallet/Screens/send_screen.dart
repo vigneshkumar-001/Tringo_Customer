@@ -15,7 +15,9 @@ import '../../../../../Core/Widgets/common_container.dart';
 import '../Controller/wallet_notifier.dart';
 
 class SendScreen extends ConsumerStatefulWidget {
-  const SendScreen({super.key});
+  final String uid;
+  final String tCoinBalance;
+  const SendScreen({super.key, required this.uid, required this.tCoinBalance});
 
   @override
   ConsumerState<SendScreen> createState() => _SendScreenState();
@@ -40,11 +42,6 @@ class _SendScreenState extends ConsumerState<SendScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // keep if you need wallet balance in send screen
-      ref.read(walletNotifier.notifier).walletHistory();
-    });
 
     _isUidEmpty = _messageController.text.trim().isEmpty;
 
@@ -74,7 +71,9 @@ class _SendScreenState extends ConsumerState<SendScreen>
 
         setState(() => _isFetchingName = true);
 
-        await ref.read(walletNotifier.notifier).fetchUidPersonName(uid);
+        await ref
+            .read(walletNotifier.notifier)
+            .fetchUidPersonName(uid, load: false);
 
         if (!mounted) return;
 
@@ -254,7 +253,7 @@ class _SendScreenState extends ConsumerState<SendScreen>
                               ).createShader(bounds);
                             },
                             child: Text(
-                              (wallet?.tcoinBalance ?? 0).toString(),
+                              (widget.tCoinBalance ?? 0).toString(),
                               style: GoogleFont.Mulish(
                                 fontSize: 42,
                                 color: Colors.white,
@@ -280,7 +279,7 @@ class _SendScreenState extends ConsumerState<SendScreen>
                       child: Row(
                         children: [
                           Text(
-                            wallet?.uid ?? "—",
+                            widget.uid ?? "—",
                             style: GoogleFont.Mulish(
                               fontSize: 13,
                               color: AppColor.darkBlue,
@@ -290,7 +289,7 @@ class _SendScreenState extends ConsumerState<SendScreen>
                           InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () async {
-                              final uid = (wallet?.uid ?? "").trim();
+                              final uid = (widget.uid ?? "").trim();
                               if (uid.isEmpty) return;
 
                               await Clipboard.setData(ClipboardData(text: uid));
@@ -334,14 +333,26 @@ class _SendScreenState extends ConsumerState<SendScreen>
                         filled: true,
                         fillColor: Colors.grey[200],
                         suffixIcon: InkWell(
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            final result = await Navigator.push<String>(
                               context,
                               MaterialPageRoute(
                                 builder: (_) =>
-                                    QrScanScreen(title: 'Scan QR Code'),
+                                    const QrScanScreen(title: 'Scan QR Code'),
                               ),
                             );
+
+                            if (result != null && result.isNotEmpty) {
+                              _messageController.text = result;
+
+                              // Optional: move cursor to end
+                              _messageController.selection =
+                                  TextSelection.fromPosition(
+                                    TextPosition(
+                                      offset: _messageController.text.length,
+                                    ),
+                                  );
+                            }
                           },
                           borderRadius: BorderRadius.circular(15),
                           child: Padding(
@@ -353,6 +364,7 @@ class _SendScreenState extends ConsumerState<SendScreen>
                             ),
                           ),
                         ),
+
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15),
                           borderSide: BorderSide.none,

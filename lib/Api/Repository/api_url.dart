@@ -18,7 +18,7 @@ class ApiUrl {
   static const String editProfile = "${base}api/v1/customer/profile";
   static const String imageUrl = "${base}api/media/image-save";
   static const String supportTicketsList = "${base}api/v1/support/tickets";
-  static const String walletHistory = "${base}api/v1/wallet/history?type=ALL";
+
   static const String privacyPolicy =
       "${base}api/v1/public/pages/privacy-policy";
   static const String uIDPersonName = "${base}api/v1/wallet/resolve-uid";
@@ -26,7 +26,7 @@ class ApiUrl {
   static const String uIDWithRawApi = "${base}api/v1/wallet/withdraw-request";
   static const String referralHistory = "${base}api/v1/wallet/referral";
   static const String reviewHistory = "${base}api/v1/reviews/history";
-  static const String reviewCreate= "${base}api/v1/reviews";
+  static const String reviewCreate = "${base}api/v1/reviews";
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";
@@ -51,6 +51,27 @@ class ApiUrl {
 
   static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lng";
+  }
+
+  static String surpriseStatusCheck({
+    required double lng,
+    required String shopId,
+    required double lat,
+  }) {
+    return "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
+
+  }
+  static String surpriseClaimed({
+
+    required String shopId,
+
+  }) {
+    return "${base}api/v1/public/shops/$shopId/surprise/claim";
+
+  }
+
+  static String walletHistory({required String type}) {
+    return "${base}api/v1/wallet/history?type=$type";
   }
 
   // static String sendMessage({required String ticketId,  }) {

@@ -11,7 +11,9 @@ import '../../../../../Core/Widgets/common_container.dart';
 import '../Controller/wallet_notifier.dart';
 
 class WithdrawScreen extends ConsumerStatefulWidget {
-  const WithdrawScreen({super.key});
+  final String uid;
+  final String tCoinBalance;
+  const WithdrawScreen( {super.key, required this.uid, required  this.tCoinBalance,});
 
   @override
   ConsumerState<WithdrawScreen> createState() => _WithdrawScreenState();
@@ -28,9 +30,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
     super.initState();
     _controller = AnimationController(vsync: this);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(walletNotifier.notifier).walletHistory();
-    });
+
   }
 
   @override

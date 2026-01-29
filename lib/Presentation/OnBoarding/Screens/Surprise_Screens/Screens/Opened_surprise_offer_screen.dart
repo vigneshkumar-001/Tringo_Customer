@@ -5,16 +5,12 @@ import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 
-class OpenedSurpriseOfferScreen extends StatefulWidget {
-  const OpenedSurpriseOfferScreen({super.key});
+import '../Model/surprise_offer_response.dart';
 
-  @override
-  State<OpenedSurpriseOfferScreen> createState() =>
-      _OpenedSurpriseOfferScreenState();
-}
+class OpenedSurpriseOfferScreen extends StatelessWidget {
+  final SurpriseStatusResponse response;
+  const OpenedSurpriseOfferScreen({super.key, required this.response});
 
-class _OpenedSurpriseOfferScreenState extends State<OpenedSurpriseOfferScreen> {
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -91,7 +87,7 @@ class _OpenedSurpriseOfferScreenState extends State<OpenedSurpriseOfferScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Zam Zam Sweets',
+                                              response.data.shop.name,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFont.Mulish(
@@ -112,7 +108,7 @@ class _OpenedSurpriseOfferScreenState extends State<OpenedSurpriseOfferScreen> {
                                                 SizedBox(width: 3),
                                                 Flexible(
                                                   child: Text(
-                                                    '12, 2, Tirupparankunram Rd, kunram ',
+                                                    response.data.shop.city,
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -125,7 +121,12 @@ class _OpenedSurpriseOfferScreenState extends State<OpenedSurpriseOfferScreen> {
                                                 ),
                                                 SizedBox(width: 5),
                                                 Text(
-                                                  '5Kms',
+                                                  response
+                                                          .data
+                                                          .shop
+                                                          .distanceLabel
+                                                          .toString() ??
+                                                      '',
                                                   style: GoogleFont.Mulish(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 12,
@@ -139,8 +140,17 @@ class _OpenedSurpriseOfferScreenState extends State<OpenedSurpriseOfferScreen> {
                                             Row(
                                               children: [
                                                 CommonContainer.greenStarRating(
-                                                  ratingStar: '4.5',
-                                                  ratingCount: '16',
+                                                  ratingStar:
+                                                      response.data.shop.rating
+                                                          .toString() ??
+                                                      '',
+                                                  ratingCount:
+                                                      response
+                                                          .data
+                                                          .shop
+                                                          .reviewCount
+                                                          .toString() ??
+                                                      '',
                                                 ),
                                                 SizedBox(width: 10),
                                                 Text(
@@ -274,7 +284,7 @@ class _OpenedSurpriseOfferScreenState extends State<OpenedSurpriseOfferScreen> {
 
                         alignment: Alignment.center,
                         child: Text(
-                          'K8KG',
+                          response.data.code.toString() ?? '',
                           style: GoogleFont.Mulish(
                             fontSize: 20,
                             color: AppColor.darkBlue,
