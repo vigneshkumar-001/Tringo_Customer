@@ -60,7 +60,7 @@ class Shop {
   final String id;
   final String name;
   final String imageUrl;
-  final int rating;
+  final double rating;
   final int reviewCount;
   final double distanceKm;
   final String distanceLabel;

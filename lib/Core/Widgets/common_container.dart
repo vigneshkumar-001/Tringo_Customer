@@ -8,6 +8,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
 
 import '../Utility/google_font.dart';
 
@@ -243,21 +244,49 @@ class CommonContainer {
             borderRadius: BorderRadius.circular(15),
             child: heroTag != null
                 ? Hero(
-                    tag: heroTag,
-                    child: Image.asset(
-                      Images,
+                    tag: heroTag!,
+                    child: CachedNetworkImage(
+                      imageUrl: Images,
                       height: 183,
                       width: 257,
                       fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
                     ),
                   )
-                : Image.asset(
-                    Images,
+                : CachedNetworkImage(
+                    imageUrl: Images,
                     height: 183,
                     width: 257,
                     fit: BoxFit.cover,
+                    placeholder: (context, url) =>
+                        Center(child: AppLoader.circularLoader()),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
                   ),
           ),
+
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(15),
+          //   child: heroTag != null
+          //       ? Hero(
+          //           tag: heroTag,
+          //           child: Image.asset(
+          //             Images,
+          //             height: 183,
+          //             width: 257,
+          //             fit: BoxFit.cover,
+          //           ),
+          //         )
+          //       : Image.asset(
+          //           Images,
+          //           height: 183,
+          //           width: 257,
+          //           fit: BoxFit.cover,
+          //         ),
+          // ),
           Positioned(
             top: 0,
             left: 0,
@@ -418,22 +447,22 @@ class CommonContainer {
                           ratingCount: ratingCount,
                           ratingStar: ratingStar,
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Max',
-                          style: GoogleFont.Mulish(
-                            fontSize: 9,
-                            color: AppColor.lightGray2,
-                          ),
-                        ),
-                        Text(
-                          time,
-                          style: GoogleFont.Mulish(
-                            fontSize: 9,
-                            color: AppColor.lightGray2,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                        // const SizedBox(width: 10),
+                        // Text(
+                        //   'Max',
+                        //   style: GoogleFont.Mulish(
+                        //     fontSize: 9,
+                        //     color: AppColor.lightGray2,
+                        //   ),
+                        // ),
+                        // Text(
+                        //   time,
+                        //   style: GoogleFont.Mulish(
+                        //     fontSize: 9,
+                        //     color: AppColor.lightGray2,
+                        //     fontWeight: FontWeight.w800,
+                        //   ),
+                        // ),
                       ],
                     ),
                   ],

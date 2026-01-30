@@ -8,6 +8,7 @@ import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
 
+
 import '../../Login Screen/Controller/login_notifier.dart';
 
 class homeState {
