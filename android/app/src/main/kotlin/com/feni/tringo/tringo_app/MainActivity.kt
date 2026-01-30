@@ -15,6 +15,7 @@ import android.telephony.SubscriptionInfo
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -25,13 +26,15 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "sim_info"
     private val TAG = "TRINGO_NATIVE"
 
-    // ✅ Existing
     private val REQ_ROLE_CALL_SCREENING = 9001
     private var pendingRoleResult: MethodChannel.Result? = null
 
-    // ✅ NEW: Default Dialer Role
     private val REQ_ROLE_DIALER = 9002
     private var pendingDialerResult: MethodChannel.Result? = null
+
+    // ✅ Permission request for READ_PHONE_STATE
+    private val REQ_PHONE_STATE = 9101
+    private var pendingPhonePermResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -40,15 +43,23 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
 
-                    // ---------------- ✅ Background restricted (Android 9+ ActivityManager) ----------------
+                    // ✅ Request READ_PHONE_STATE from native
+                    "requestReadPhoneState" -> {
+                        requestReadPhoneStateNative(result)
+                    }
+
+                    "debugPhonePerm" -> {
+                        val ok = hasReadPhoneState()
+                        Log.d(TAG, "debugPhonePerm => READ_PHONE_STATE granted=$ok")
+                        result.success(ok)
+                    }
+
                     "isBackgroundRestricted" -> {
                         try {
                             val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
                             val restricted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                 am.isBackgroundRestricted
-                            } else {
-                                false
-                            }
+                            } else false
                             Log.d(TAG, "isBackgroundRestricted => $restricted")
                             result.success(restricted)
                         } catch (e: Exception) {
@@ -57,29 +68,22 @@ class MainActivity : FlutterActivity() {
                         }
                     }
 
-                    // ---------------- ✅ Open battery/app settings (FIXED: open Tringo App info page) ----------------
                     "openBatteryUnrestrictedSettings" -> {
-                        Log.d(TAG, "openBatteryUnrestrictedSettings invoked")
                         openBatteryUnrestrictedSettingsBestEffort()
                         result.success(true)
                     }
 
                     "openBatterySettingsDirect" -> {
-                        Log.d(TAG, "openBatterySettingsDirect invoked")
-                        openAppDetails() // ✅ direct app info
+                        openAppDetails()
                         result.success(true)
                     }
 
                     "isAppInPowerSaveMode" -> {
-                        val ok = isAppInPowerSaveMode()
-                        Log.d(TAG, "isAppInPowerSaveMode => $ok")
-                        result.success(ok)
+                        result.success(isAppInPowerSaveMode())
                     }
 
-                    // ---------------- SIM INFO ----------------
                     "getSimInfo" -> result.success(getSimInfoNative())
 
-                    // ---------------- CALLER ID ROLE (ROLE_CALL_SCREENING) ----------------
                     "isDefaultCallerIdApp" -> {
                         val ok = isTringoDefaultCallerIdSpam(this)
                         Log.d(TAG, "isDefaultCallerIdApp => $ok")
@@ -87,11 +91,9 @@ class MainActivity : FlutterActivity() {
                     }
 
                     "requestDefaultCallerIdApp" -> {
-                        Log.d(TAG, "requestDefaultCallerIdApp invoked")
                         requestSetAsDefaultCallerIdSpam(result)
                     }
 
-                    // ---------------- ✅ DEFAULT DIALER ROLE (ROLE_DIALER) ----------------
                     "isDefaultDialerApp" -> {
                         val ok = isTringoDefaultDialer(this)
                         Log.d(TAG, "isDefaultDialerApp => $ok")
@@ -99,21 +101,17 @@ class MainActivity : FlutterActivity() {
                     }
 
                     "requestDefaultDialerApp" -> {
-                        Log.d(TAG, "requestDefaultDialerApp invoked")
                         requestSetAsDefaultDialer(result)
                     }
 
-                    // ---------------- OVERLAY PERMISSION ----------------
                     "isOverlayGranted" -> {
                         val ok = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             Settings.canDrawOverlays(this)
                         } else true
-                        Log.d(TAG, "isOverlayGranted => $ok")
                         result.success(ok)
                     }
 
                     "requestOverlayPermission" -> {
-                        Log.d(TAG, "requestOverlayPermission invoked")
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                             val intent = Intent(
                                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -124,22 +122,11 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
 
-                    // ---------------- ✅ Battery optimization whitelist ----------------
                     "isIgnoringBatteryOptimizations" -> {
-                        val ok = isIgnoringBatteryOptimizations()
-                        Log.d(TAG, "isIgnoringBatteryOptimizations => $ok")
-                        result.success(ok)
+                        result.success(isIgnoringBatteryOptimizations())
                     }
 
-                    // ✅ Optional: Keep this, but DON'T rely on it for Unrestricted battery screen
                     "requestIgnoreBatteryOptimization" -> {
-                        Log.d(TAG, "requestIgnoreBatteryOptimization invoked")
-
-                        if (isIgnoringBatteryOptimizations()) {
-                            result.success(true)
-                            return@setMethodCallHandler
-                        }
-
                         try {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -147,13 +134,13 @@ class MainActivity : FlutterActivity() {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 startActivity(intent)
+                                result.success(true)
                             } else {
                                 openAppDetails()
+                                result.success(false)
                             }
-                            result.success(true)
                         } catch (e: Exception) {
                             Log.e(TAG, "requestIgnoreBatteryOptimization failed: ${e.message}", e)
-                            // fallback -> open app details
                             openAppDetails()
                             result.success(false)
                         }
@@ -164,7 +151,50 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    // ✅ Default caller id/spam role check
+    private fun requestReadPhoneStateNative(result: MethodChannel.Result) {
+        if (hasReadPhoneState()) {
+            result.success(true)
+            return
+        }
+
+        if (pendingPhonePermResult != null) {
+            // already requesting
+            result.success(false)
+            return
+        }
+
+        pendingPhonePermResult = result
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.READ_PHONE_STATE),
+            REQ_PHONE_STATE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQ_PHONE_STATE) {
+            val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            Log.d(TAG, "READ_PHONE_STATE permission result => $granted")
+            pendingPhonePermResult?.success(granted)
+            pendingPhonePermResult = null
+        }
+    }
+
+    private fun hasReadPhoneState(): Boolean {
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED
+        Log.d(TAG, "READ_PHONE_STATE granted: $granted")
+        return granted
+    }
+
     private fun isTringoDefaultCallerIdSpam(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val rm = context.getSystemService(RoleManager::class.java)
@@ -172,21 +202,18 @@ class MainActivity : FlutterActivity() {
         } else false
     }
 
-    // ✅ Request ROLE_CALL_SCREENING
     private fun requestSetAsDefaultCallerIdSpam(result: MethodChannel.Result) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val rm = getSystemService(RoleManager::class.java)
 
                 if (!rm.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-                    Log.d(TAG, "ROLE_CALL_SCREENING not available -> open default apps settings")
                     startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
                     result.success(false)
                     return
                 }
 
                 if (pendingRoleResult != null) {
-                    Log.d(TAG, "Role request already in progress")
                     result.success(isTringoDefaultCallerIdSpam(this))
                     return
                 }
@@ -200,12 +227,10 @@ class MainActivity : FlutterActivity() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "requestDefaultCallerIdApp failed: ${e.message}", e)
-            try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) {}
             result.success(false)
         }
     }
 
-    // ✅ Default Dialer role check
     private fun isTringoDefaultDialer(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val rm = context.getSystemService(RoleManager::class.java)
@@ -213,21 +238,18 @@ class MainActivity : FlutterActivity() {
         } else false
     }
 
-    // ✅ Request ROLE_DIALER
     private fun requestSetAsDefaultDialer(result: MethodChannel.Result) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val rm = getSystemService(RoleManager::class.java)
 
                 if (!rm.isRoleAvailable(RoleManager.ROLE_DIALER)) {
-                    Log.d(TAG, "ROLE_DIALER not available -> open default apps settings")
                     startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
                     result.success(false)
                     return
                 }
 
                 if (pendingDialerResult != null) {
-                    Log.d(TAG, "Dialer role request already in progress")
                     result.success(isTringoDefaultDialer(this))
                     return
                 }
@@ -241,7 +263,6 @@ class MainActivity : FlutterActivity() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "requestDefaultDialerApp failed: ${e.message}", e)
-            try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) {}
             result.success(false)
         }
     }
@@ -252,7 +273,6 @@ class MainActivity : FlutterActivity() {
 
         if (requestCode == REQ_ROLE_CALL_SCREENING) {
             val granted = isTringoDefaultCallerIdSpam(this)
-            Log.d(TAG, "ROLE_CALL_SCREENING result granted=$granted")
             pendingRoleResult?.success(granted)
             pendingRoleResult = null
             return
@@ -260,7 +280,6 @@ class MainActivity : FlutterActivity() {
 
         if (requestCode == REQ_ROLE_DIALER) {
             val granted = isTringoDefaultDialer(this)
-            Log.d(TAG, "ROLE_DIALER result granted=$granted")
             pendingDialerResult?.success(granted)
             pendingDialerResult = null
             return
@@ -274,7 +293,6 @@ class MainActivity : FlutterActivity() {
                 pm.isIgnoringBatteryOptimizations(packageName)
             } else true
         } catch (e: Exception) {
-            Log.e(TAG, "isIgnoringBatteryOptimizations error: ${e.message}", e)
             false
         }
     }
@@ -284,25 +302,18 @@ class MainActivity : FlutterActivity() {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
             pm.isPowerSaveMode
         } catch (e: Exception) {
-            Log.e(TAG, "isAppInPowerSaveMode error: ${e.message}", e)
             false
         }
     }
 
-    // ✅ FIXED: Battery button must open APP INFO page (Tringo -> Battery inside)
     private fun openBatteryUnrestrictedSettingsBestEffort() {
-        Log.d(TAG, "openBatteryUnrestrictedSettingsBestEffort -> open AppDetails first")
-
-        // ✅ 1) ALWAYS OPEN APP DETAILS FIRST (this is correct path to Battery screen)
         if (openAppDetails()) return
 
-        // ✅ 2) OEM fallback (optional)
         if (isPackageInstalled("com.miui.securitycenter")) {
             if (tryStart(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"))) return
             if (tryStart(ComponentName("com.miui.securitycenter", "com.miui.powercenter.PowerMainActivity"))) return
         }
 
-        // ✅ 3) Last fallback
         tryStart(Intent(Settings.ACTION_SETTINGS))
     }
 
@@ -320,7 +331,6 @@ class MainActivity : FlutterActivity() {
             startActivity(intent)
             true
         } catch (e: Exception) {
-            Log.w(TAG, "tryStart failed: action=${intent.action} data=${intent.data} => ${e.message}")
             false
         }
     }
@@ -334,7 +344,6 @@ class MainActivity : FlutterActivity() {
             startActivity(intent)
             true
         } catch (e: Exception) {
-            Log.w(TAG, "tryStart component failed: $component => ${e.message}")
             false
         }
     }
@@ -348,24 +357,14 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun hasPhonePermission(): Boolean {
-        val granted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED
-        Log.d(TAG, "READ_PHONE_STATE granted: $granted")
-        return granted
-    }
-
     private fun getSimInfoNative(): List<Map<String, Any?>> {
-        if (!hasPhonePermission()) return emptyList()
+        if (!hasReadPhoneState()) return emptyList()
 
         val subscriptionManager = getSystemService(SubscriptionManager::class.java) ?: return emptyList()
 
         val list: List<SubscriptionInfo> = try {
             subscriptionManager.activeSubscriptionInfoList ?: emptyList()
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException activeSubscriptionInfoList: ${e.message}")
+        } catch (_: SecurityException) {
             emptyList()
         }
 
@@ -392,8 +391,6 @@ class MainActivity : FlutterActivity() {
         }
     }
 }
-
-
 
 //package com.feni.tringo.tringo_app
 //

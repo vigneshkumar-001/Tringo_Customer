@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_number/mobile_number.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
@@ -78,6 +79,18 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
       debugPrint('$st');
     }
   }
+  Future<bool> ensurePhonePermissionStrict() async {
+    final status = await Permission.phone.status;
+    if (status.isGranted) return true;
+
+    final req = await Permission.phone.request();
+    if (req.isGranted) return true;
+
+    if (req.isPermanentlyDenied) {
+      await openAppSettings();
+    }
+    return false;
+  }
 
   // ✅ default caller id check
   Future<bool> _isDefaultCallerIdApp() async {
@@ -128,18 +141,18 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _ensurePhonePermission();
-
-      // overlay / callerId role logic
-      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-      if (!overlayOk) {
-        await CallerIdRoleHelper.requestOverlayPermission();
+      final ok = await ensurePhonePermissionStrict();
+      if (!ok) {
+        AppSnackBar.error(context, "Phone permission required");
+        return;
       }
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
 
-      // optional: show system popup once (if you want)
-      // await _maybeShowSystemCallerIdPopupOnce();
+      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+      if (!overlayOk) await CallerIdRoleHelper.requestOverlayPermission();
+
+      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
+
 
     // ✅ keep listener (optional for errors)
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (prev, next) {

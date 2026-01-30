@@ -8,6 +8,60 @@ import android.util.Log
 
 class TringoCallEndReceiver : BroadcastReceiver() {
 
+    private val TAG = "TRINGO_CALL_END_RX"
+
+    private val PREF = "tringo_call_state"
+    private val KEY_LAST_NUMBER = "last_number"
+    private val KEY_USER_CLOSED = "user_closed_during_call"
+
+    override fun onReceive(context: Context, intent: Intent) {
+        try {
+            if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED &&
+                intent.action != "android.intent.action.PHONE_STATE"
+            ) return
+
+            val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: ""
+            Log.d(TAG, "onReceive state=$state")
+
+            if (state == TelephonyManager.EXTRA_STATE_IDLE) {
+                val prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                val lastNumber = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
+                val userClosed = prefs.getBoolean(KEY_USER_CLOSED, false)
+
+                Log.d(TAG, "IDLE lastNumber=$lastNumber userClosed=$userClosed")
+
+                // ✅ If user closed during call -> show overlay only after end
+                if (userClosed && lastNumber.isNotBlank()) {
+                    TringoOverlayService.start(
+                        context,
+                        phone = lastNumber,
+                        contactName = "",
+                        showOnCallEnd = true,
+                        launchedByReceiver = true
+                    )
+                }
+
+                // ✅ clear flag after using
+                prefs.edit().putBoolean(KEY_USER_CLOSED, false).apply()
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "CallEndReceiver crash: ${t.message}", t)
+        }
+    }
+}
+
+/*
+
+package com.feni.tringo.tringo_app
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.telephony.TelephonyManager
+import android.util.Log
+
+class TringoCallEndReceiver : BroadcastReceiver() {
+
     companion object {
         private const val TAG = "TRINGO_CALL_END_RX"
         private const val PREF = "tringo_call_state"
@@ -55,6 +109,7 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         prefs.edit().putString(KEY_LAST_STATE, stateStr).apply()
     }
 }
+*/
 
 //package com.feni.tringo.tringo_app
 //
