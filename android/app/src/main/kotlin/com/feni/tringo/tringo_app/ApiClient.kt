@@ -1,20 +1,53 @@
-
 package com.feni.tringo.tringo_app
 
+import android.util.Log
+import com.google.gson.GsonBuilder
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    private const val BASE_URL = "https://bknd.tringobiz.com/"
 
-    private val okHttp by lazy {
+//    private const val BASE_URL = "https://bknd.tringobiz.com/"
+    private const val BASE_URL = "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/"
+    private const val TAG = "TRINGO_HTTP"
+
+    /**
+     * ✅ Logs raw JSON safely using peekBody (does NOT consume response)
+     */
+    private val rawBodyLogger: Interceptor = Interceptor { chain ->
+        val req = chain.request()
+        Log.d(TAG, "→ ${req.method} ${req.url}")
+
+        val res: Response = chain.proceed(req)
+        Log.d(TAG, "← ${res.code} ${res.request.url}")
+
+        try {
+            val peek = res.peekBody(1024 * 1024) // 1MB
+            val bodyStr = peek.string()
+            Log.d(TAG, "BODY: ${if (bodyStr.isNotBlank()) bodyStr else "<empty>"}")
+        } catch (e: Exception) {
+            Log.e(TAG, "peekBody failed: ${e.message}")
+        }
+
+        res
+    }
+
+    private val gson = GsonBuilder()
+        .setLenient()
+        .serializeNulls()
+        .create()
+
+    private val okHttp: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
-            .writeTimeout(5, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            .addInterceptor(rawBodyLogger) // ✅ only this
             .build()
     }
 
@@ -22,27 +55,8 @@ object ApiClient {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttp)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(TringoApi::class.java)
     }
 }
-
-
-
-//package com.feni.tringo.tringo_app
-//
-//import retrofit2.Retrofit
-//import retrofit2.converter.gson.GsonConverterFactory
-//
-//object ApiClient {
-//    private const val BASE_URL = "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/"
-//
-//    val api: TringoApi by lazy {
-//        Retrofit.Builder()
-//            .baseUrl(BASE_URL)
-//            .addConverterFactory(GsonConverterFactory.create())
-//            .build()
-//            .create(TringoApi::class.java)
-//    }
-//}

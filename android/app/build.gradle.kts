@@ -54,6 +54,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     implementation("com.google.android.material:material:1.12.0")
+//    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // ✅ ADD THIS (for loading imageUrl in overlay)
     implementation("io.coil-kt:coil:2.6.0")

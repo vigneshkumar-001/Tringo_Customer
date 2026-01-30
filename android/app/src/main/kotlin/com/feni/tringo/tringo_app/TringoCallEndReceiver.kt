@@ -8,45 +8,53 @@ import android.util.Log
 
 class TringoCallEndReceiver : BroadcastReceiver() {
 
-    private val TAG = "TRINGO_CALL_END_RX"
-
-    private val PREF = "tringo_call_state"
-    private val KEY_LAST_NUMBER = "last_number"
-    private val KEY_USER_CLOSED = "user_closed_during_call"
+    companion object {
+        private const val TAG = "TRINGO_CALL_END_RX"
+        private const val PREF = "tringo_call_state"
+        private const val KEY_LAST_STATE = "last_state"
+        private const val KEY_LAST_NUMBER = "last_number"
+        private const val KEY_USER_CLOSED = "user_closed_during_call"
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
-        try {
-            if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED &&
-                intent.action != "android.intent.action.PHONE_STATE"
-            ) return
+        if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED &&
+            intent.action != "android.intent.action.PHONE_STATE"
+        ) return
 
-            val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: ""
-            Log.d(TAG, "onReceive state=$state")
+        val stateStr = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
+        val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: ""
 
-            if (state == TelephonyManager.EXTRA_STATE_IDLE) {
-                val prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
-                val lastNumber = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
-                val userClosed = prefs.getBoolean(KEY_USER_CLOSED, false)
+        val prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+        val lastState = prefs.getString(KEY_LAST_STATE, "") ?: ""
+        val savedNumber = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
+        val userClosed = prefs.getBoolean(KEY_USER_CLOSED, false)
 
-                Log.d(TAG, "IDLE lastNumber=$lastNumber userClosed=$userClosed")
+        if (number.isNotBlank()) prefs.edit().putString(KEY_LAST_NUMBER, number).apply()
 
-                // ✅ If user closed during call -> show overlay only after end
-                if (userClosed && lastNumber.isNotBlank()) {
-                    TringoOverlayService.start(
-                        context,
-                        phone = lastNumber,
-                        contactName = "",
-                        showOnCallEnd = true,
-                        launchedByReceiver = true
-                    )
-                }
-
-                // ✅ clear flag after using
-                prefs.edit().putBoolean(KEY_USER_CLOSED, false).apply()
-            }
-        } catch (t: Throwable) {
-            Log.e(TAG, "CallEndReceiver crash: ${t.message}", t)
+        val finalNumber = when {
+            number.isNotBlank() -> number
+            savedNumber.isNotBlank() -> savedNumber
+            else -> "UNKNOWN"
         }
+
+        Log.d(TAG, "state=$stateStr lastState=$lastState final=$finalNumber closed=$userClosed")
+
+        val endedNow =
+            (lastState == TelephonyManager.EXTRA_STATE_RINGING || lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) &&
+                    stateStr == TelephonyManager.EXTRA_STATE_IDLE
+
+        if (endedNow && userClosed) {
+            TringoOverlayService.start(
+                ctx = context.applicationContext,
+                phone = finalNumber,
+                contactName = "",
+                showOnCallEnd = true,
+                launchedByReceiver = true
+            )
+            prefs.edit().putBoolean(KEY_USER_CLOSED, false).apply()
+        }
+
+        prefs.edit().putString(KEY_LAST_STATE, stateStr).apply()
     }
 }
 

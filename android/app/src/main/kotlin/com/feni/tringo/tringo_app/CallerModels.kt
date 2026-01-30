@@ -11,10 +11,10 @@ data class CallerLookupResponse(
     val ads: List<AdItem> = emptyList()
 )
 
-data class AdItem(
-    val title: String,
-    val subtitle: String?,
-    val rating: Double?,
-    val imageUrl: String?,
-    val openText: String? = null
-)
+//data class AdItem(
+//    val title: String,
+//    val subtitle: String?,
+//    val rating: Double?,
+//    val imageUrl: String?,
+//    val openText: String? = null
+//)

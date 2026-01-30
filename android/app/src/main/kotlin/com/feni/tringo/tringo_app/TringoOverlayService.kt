@@ -1,7 +1,6 @@
 package com.feni.tringo.tringo_app
 
 import android.Manifest
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -28,7 +27,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import kotlinx.coroutines.*
@@ -46,19 +45,18 @@ class TringoOverlayService : Service() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
-    // ✅ PREFS (Receiver uses same keys)
     private val PREF = "tringo_call_state"
     private val KEY_USER_CLOSED = "user_closed_during_call"
     private val KEY_LAST_NUMBER = "last_number"
 
-    private var adsAdapter: AdsAdapter? = null
+    private var adsAdapter: OverlayAdsAdapter? = null
 
     private var pendingPhone: String = ""
     private var pendingContact: String = ""
 
-    private var userClosedThisSession = false
     private var launchedByReceiver = false
     private var postCallPopupMode = false
+    private var showOnlyAfterEnd = false
 
     private var telephonyManager: TelephonyManager? = null
     private var telephonyCallback: TelephonyCallback? = null
@@ -69,23 +67,64 @@ class TringoOverlayService : Service() {
     private var isWatchingCallEnd = false
     private var lastState: Int = TelephonyManager.CALL_STATE_IDLE
 
-    // ✅ Debounce fix
     private var endConfirmJob: Job? = null
     private var lastNonIdleAt: Long = 0L
-    private var sawRinging = false
-    private var sawOffhook = false
 
-    // ✅ Incoming auto-hide job (5 sec)
     private var incomingAutoHideJob: Job? = null
 
-    // ✅ If receiver wants only-after-end
-    private var showOnlyAfterEnd = false
+    // ✅ debounce
+    private var lastOverlayShownAt: Long = 0L
+    private val OVERLAY_DEBOUNCE_MS = 900L
 
-    // ✅ Durations (as per your requirement)
-    private val INCOMING_SHOW_MS = 5000L   // 5 sec
-    private val POST_CALL_SHOW_MS = 7000L  // 7 sec
+    private var postCallShownOnce = false
+
+    private val INCOMING_SHOW_MS = 10000L
+    private val POST_CALL_SHOW_MS = 15000L
+
+    // ==========================================================
+    // ✅ CACHE (API only once)
+    // ==========================================================
+    private val CACHE_VALID_MS = 90_000L
+    private var cachePhone: String? = null
+    private var cacheAt: Long = 0L
+
+    private var cacheIsShop: Boolean = false
+    private var cacheTitle: String = ""
+    private var cacheSubtitleLine: String = ""
+    private var cacheImageUrl: String = ""
+
+    private var cacheAdsTitle: String = "Advertisements"
+    private var cacheAdsCards: List<OverlayAdCard> = emptyList()
+
+    private fun isCacheValidFor(phone: String): Boolean {
+        val ok = cachePhone == phone && (System.currentTimeMillis() - cacheAt) <= CACHE_VALID_MS
+        Log.d(TAG, "isCacheValidFor($phone) => $ok")
+        return ok
+    }
+
+    private fun saveCache(
+        phone: String,
+        isShop: Boolean,
+        title: String,
+        subtitleLine: String,
+        imageUrl: String,
+        adsTitle: String,
+        adsCards: List<OverlayAdCard>
+    ) {
+        cachePhone = phone
+        cacheAt = System.currentTimeMillis()
+        cacheIsShop = isShop
+        cacheTitle = title
+        cacheSubtitleLine = subtitleLine
+        cacheImageUrl = imageUrl
+        cacheAdsTitle = adsTitle
+        cacheAdsCards = adsCards
+        Log.d(TAG, "CACHE SAVED phone=$phone isShop=$isShop ads=${adsCards.size}")
+    }
 
     companion object {
+        @Volatile var isRunning: Boolean = false
+
         fun start(
             ctx: Context,
             phone: String,
@@ -102,11 +141,9 @@ class TringoOverlayService : Service() {
 
             return try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    try {
-                        ctx.startForegroundService(i)
-                    } catch (t: Throwable) {
-                        // Android 12+ can block FGS start in some cases -> fallback
-                        Log.e("TRINGO_OVERLAY", "startForegroundService blocked => fallback startService: ${t.message}")
+                    try { ctx.startForegroundService(i) }
+                    catch (t: Throwable) {
+                        Log.e("TRINGO_OVERLAY", "startForegroundService blocked => fallback: ${t.message}")
                         ctx.startService(i)
                     }
                 } else {
@@ -122,48 +159,48 @@ class TringoOverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
         pendingPhone = intent?.getStringExtra("phone") ?: ""
         pendingContact = intent?.getStringExtra("contactName") ?: ""
         launchedByReceiver = intent?.getBooleanExtra("launchedByReceiver", false) ?: false
         showOnlyAfterEnd = intent?.getBooleanExtra("showOnCallEnd", false) ?: false
 
-        Log.d(TAG, "onStartCommand phone=$pendingPhone launchedByReceiver=$launchedByReceiver showOnlyAfterEnd=$showOnlyAfterEnd")
+        Log.d(TAG, "onStartCommand phone=$pendingPhone showOnlyAfterEnd=$showOnlyAfterEnd")
 
-        if (pendingPhone.isBlank()) {
-            stopSelf()
-            return START_NOT_STICKY
+        // ✅ NEVER allow UNKNOWN / empty
+        val prefs = getSharedPreferences(PREF, MODE_PRIVATE)
+        if (pendingPhone.isBlank() || pendingPhone.equals("UNKNOWN", true)) {
+            val last = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
+            if (last.isNotBlank() && !last.equals("UNKNOWN", true)) {
+                pendingPhone = last
+            } else {
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
 
-        // ✅ MUST: start as foreground immediately (safe: DATA_SYNC only)
+        // ✅ store final phone
+        prefs.edit().putString(KEY_LAST_NUMBER, pendingPhone).apply()
+
         startForegroundDataSyncSafe()
 
-        // ✅ save last number always (helps receiver)
-        try {
-            getSharedPreferences(PREF, MODE_PRIVATE).edit()
-                .putString(KEY_LAST_NUMBER, pendingPhone)
-                .apply()
-        } catch (_: Exception) {}
-
-        // ✅ overlay permission check
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            showCallerHeadsUp(
-                title = "Tringo Caller ID",
-                message = "Enable overlay permission to show popup",
-                reason = "overlay_permission_missing"
-            )
+            showCallerHeadsUp("Tringo Caller ID", "Enable overlay permission to show popup", "overlay_permission_missing")
             openAppSettings()
             stopSelf()
             return START_NOT_STICKY
         }
 
-        // ✅ If not only-after-end, show now (incoming scenario)
+        postCallShownOnce = false
+
         if (!showOnlyAfterEnd) {
-            showOverlay(pendingPhone, pendingContact)
+            safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
             scheduleIncomingAutoHide()
         }
 
@@ -172,7 +209,7 @@ class TringoOverlayService : Service() {
     }
 
     // ==========================================================
-    // ✅ Foreground: DATA_SYNC safe (no PHONE_CALL type)
+    // Foreground
     // ==========================================================
     private fun startForegroundDataSyncSafe() {
         val channelId = "tringo_overlay_service"
@@ -180,11 +217,7 @@ class TringoOverlayService : Service() {
             val nm = getSystemService(NotificationManager::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 nm.createNotificationChannel(
-                    NotificationChannel(
-                        channelId,
-                        "Tringo Overlay",
-                        NotificationManager.IMPORTANCE_LOW
-                    )
+                    NotificationChannel(channelId, "Tringo Overlay", NotificationManager.IMPORTANCE_LOW)
                 )
             }
 
@@ -198,12 +231,7 @@ class TringoOverlayService : Service() {
                 .build()
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ServiceCompat.startForeground(
-                    this,
-                    101,
-                    notif,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                )
+                ServiceCompat.startForeground(this, 101, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
             } else {
                 startForeground(101, notif)
             }
@@ -213,7 +241,7 @@ class TringoOverlayService : Service() {
     }
 
     // ==========================================================
-    // ✅ PREFS HELPERS
+    // Prefs
     // ==========================================================
     private fun markUserClosedDuringCall(phone: String) {
         try {
@@ -221,7 +249,6 @@ class TringoOverlayService : Service() {
                 .putBoolean(KEY_USER_CLOSED, true)
                 .putString(KEY_LAST_NUMBER, phone)
                 .apply()
-            Log.d(TAG, "Prefs saved: user_closed=true number=$phone")
         } catch (e: Exception) {
             Log.e(TAG, "markUserClosedDuringCall failed: ${e.message}", e)
         }
@@ -232,38 +259,28 @@ class TringoOverlayService : Service() {
             getSharedPreferences(PREF, MODE_PRIVATE).edit()
                 .putBoolean(KEY_USER_CLOSED, false)
                 .apply()
-            Log.d(TAG, "Prefs cleared: user_closed=false")
         } catch (_: Exception) {}
     }
 
     // ==========================================================
-    // ✅ SAFE CALL STATE
+    // Call watch
     // ==========================================================
     private fun hasReadPhoneState(): Boolean {
         val ok = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) ==
                 PackageManager.PERMISSION_GRANTED
-        Log.d(TAG, "has READ_PHONE_STATE? $ok")
         return ok
     }
 
     private fun safeCallState(): Int {
         return try {
             telephonyManager?.callState ?: TelephonyManager.CALL_STATE_IDLE
-        } catch (se: SecurityException) {
-            Log.e(TAG, "❌ safeCallState: READ_PHONE_STATE not granted")
-            TelephonyManager.CALL_STATE_IDLE
-        } catch (e: Exception) {
-            Log.e(TAG, "safeCallState error: ${e.message}", e)
+        } catch (_: Throwable) {
             TelephonyManager.CALL_STATE_IDLE
         }
     }
 
-    // ==========================================================
-    // ✅ WATCH CALL END (DEBOUNCE FIX)
-    // ==========================================================
     private fun startWatchingForCallEnd() {
         if (isWatchingCallEnd) return
-
         if (!hasReadPhoneState()) {
             Log.e(TAG, "READ_PHONE_STATE not granted -> cannot detect call end.")
             return
@@ -272,12 +289,8 @@ class TringoOverlayService : Service() {
         isWatchingCallEnd = true
         endConfirmJob?.cancel()
 
-        sawRinging = false
-        sawOffhook = false
         lastNonIdleAt = System.currentTimeMillis()
-
         lastState = safeCallState()
-        Log.d(TAG, "startWatching: initialState=$lastState")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val cb = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
@@ -288,8 +301,7 @@ class TringoOverlayService : Service() {
             telephonyCallback = cb
             try {
                 telephonyManager?.registerTelephonyCallback(mainExecutor, cb)
-            } catch (e: Exception) {
-                Log.e(TAG, "registerTelephonyCallback failed: ${e.message}", e)
+            } catch (_: Exception) {
                 startWatchingForCallEndLegacy()
             }
         } else {
@@ -300,7 +312,6 @@ class TringoOverlayService : Service() {
     @Suppress("DEPRECATION")
     private fun startWatchingForCallEndLegacy() {
         if (!hasReadPhoneState()) return
-
         val listener = object : android.telephony.PhoneStateListener() {
             override fun onCallStateChanged(state: Int, phoneNumber: String?) {
                 handleCallState(state)
@@ -328,53 +339,38 @@ class TringoOverlayService : Service() {
                 }
                 phoneStateListener = null
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "stopWatchingForCallEnd error: ${e.message}", e)
-        }
+        } catch (_: Exception) {}
     }
 
     private fun handleCallState(state: Int) {
         val now = System.currentTimeMillis()
 
         if (state == TelephonyManager.CALL_STATE_RINGING) {
-            sawRinging = true
             lastNonIdleAt = now
-
-            // ✅ Show overlay on incoming (keep 5 sec)
             if (!showOnlyAfterEnd) {
-                if (overlayView == null) showOverlay(pendingPhone, pendingContact)
+                if (overlayView == null) safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
                 scheduleIncomingAutoHide()
             }
         }
 
         if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
-            sawOffhook = true
             lastNonIdleAt = now
-
-            // ✅ If call picked, keep overlay if already showing; don't auto-hide now
             incomingAutoHideJob?.cancel()
             incomingAutoHideJob = null
         }
 
-        Log.d(TAG, "CallState last=$lastState now=$state sawRinging=$sawRinging sawOffhook=$sawOffhook")
-
-        // ✅ If not IDLE -> cancel end confirm
         if (state != TelephonyManager.CALL_STATE_IDLE) {
             endConfirmJob?.cancel()
             lastState = state
             return
         }
 
-        // ✅ IDLE: confirm stable idle (debounce)
         endConfirmJob?.cancel()
         endConfirmJob = serviceScope.launch {
-            delay(1200) // debounce
-            val cur = safeCallState()
-            if (cur != TelephonyManager.CALL_STATE_IDLE) return@launch
-
+            delay(1200)
+            if (safeCallState() != TelephonyManager.CALL_STATE_IDLE) return@launch
             val idleFor = System.currentTimeMillis() - lastNonIdleAt
             if (idleFor < 900) return@launch
-
             onCallEndedConfirmed()
         }
 
@@ -385,85 +381,88 @@ class TringoOverlayService : Service() {
         incomingAutoHideJob?.cancel()
         incomingAutoHideJob = serviceScope.launch {
             delay(INCOMING_SHOW_MS)
-            // incoming mode only (not post-call)
             if (!postCallPopupMode) removeOverlay()
         }
     }
 
     private fun onCallEndedConfirmed() {
+        if (postCallShownOnce) return
+        postCallShownOnce = true
+
         serviceScope.launch {
             stopWatchingForCallEnd()
 
-            // ✅ Always show overlay after call ends for 7 sec
             postCallPopupMode = true
-            showOverlay(pendingPhone, pendingContact)
+            // ✅ use cache only, no API again
+            safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
 
             delay(POST_CALL_SHOW_MS)
             removeOverlay()
 
             postCallPopupMode = false
-            userClosedThisSession = false
             clearUserClosedFlag()
-
             stopSelf()
         }
     }
 
     // ==========================================================
-    // ✅ OVERLAY UI (same as your current UI)
+    // Overlay show (debounced)
     // ==========================================================
-    private fun showOverlay(phone: String, contactName: String) {
+    private fun safeShowOverlay(phone: String, contactName: String, preferCache: Boolean) {
+        val now = System.currentTimeMillis()
+        if (now - lastOverlayShownAt < OVERLAY_DEBOUNCE_MS) return
+        lastOverlayShownAt = now
+        showOverlay(phone, contactName, preferCache)
+    }
+
+    // ==========================================================
+    // Overlay UI (CACHE FIRST)
+    // ==========================================================
+    private fun showOverlay(phone: String, contactName: String, preferCache: Boolean) {
         removeOverlay()
 
         val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val v = inflater.inflate(R.layout.tringo_overlay, null)
         overlayView = v
 
-        val closeBtn = v.findViewById<View>(R.id.closeBtn)
-        val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
+        val rootFull = v.findViewById<View>(R.id.overlayRootFull)
         val rootCard = v.findViewById<View>(R.id.rootCard)
+        val closeBtn = v.findViewById<View>(R.id.closeBtn)
+
+        // ✅ OUTSIDE TOUCH CLOSE வேண்டாம் => layer hide
+        val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
+        outsideLayer?.visibility = View.GONE
 
         val headerBusiness = v.findViewById<View>(R.id.headerBusiness)
         val headerPerson = v.findViewById<View>(R.id.headerPerson)
-
-        closeBtn?.apply {
-            isClickable = true
-            isFocusable = true
-            setOnClickListener {
-                userClosedThisSession = true
-                markUserClosedDuringCall(pendingPhone)
-                removeOverlay()
-            }
-            bringToFront()
-        }
-
-        outsideLayer?.setOnClickListener {
-            userClosedThisSession = true
-            markUserClosedDuringCall(pendingPhone)
-            removeOverlay()
-        }
 
         val businessTv = v.findViewById<TextView>(R.id.businessNameText)
         val personTv = v.findViewById<TextView>(R.id.personNameText)
         val metaTv = v.findViewById<TextView>(R.id.metaText)
         val smallTop = v.findViewById<TextView>(R.id.smallTopText)
-        val ratingChip = v.findViewById<TextView>(R.id.ratingChip)
 
         val logoBiz = v.findViewById<ImageView>(R.id.logoImageBusiness)
         val logoPerson = v.findViewById<ImageView>(R.id.logoImagePerson)
 
+        val divider = v.findViewById<View>(R.id.dividerLine)
+        val adsTitleTv = v.findViewById<TextView>(R.id.adsTitle)
         val recycler = v.findViewById<RecyclerView>(R.id.adsRecycler)
-        recycler.layoutManager = GridLayoutManager(this, 2)
-        adsAdapter = AdsAdapter(emptyList())
+
+        recycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        adsAdapter = OverlayAdsAdapter()
         recycler.adapter = adsAdapter
 
-        adsAdapter?.submit(dummyAds())
+        divider.visibility = View.GONE
+        adsTitleTv.visibility = View.GONE
+        recycler.visibility = View.GONE
 
         smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
-        businessTv.text = "Loading..."
-        personTv.text = ""
-        metaTv.text = ""
-        ratingChip.visibility = View.GONE
+
+        // ✅ close button ONLY
+        closeBtn?.setOnClickListener {
+            markUserClosedDuringCall(pendingPhone)
+            removeOverlay()
+        }
 
         val flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -481,169 +480,251 @@ class TringoOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                layoutInDisplayCutoutMode =
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            }
         }
 
         try {
             windowManager?.addView(v, params)
         } catch (e: Exception) {
-            showCallerHeadsUp(
-                title = "Tringo Caller ID",
-                message = if (contactName.isNotBlank()) contactName else phone,
-                reason = "addView_failed"
-            )
+            showCallerHeadsUp("Tringo Caller ID", if (contactName.isNotBlank()) contactName else phone, "addView_failed")
             stopSelf()
             return
         }
 
-        attachDragToCard(rootCard, headerPerson, headerBusiness)
+        // ✅ Center exact + draggable
+        centerCardExactly(rootFull, rootCard)
+        attachFreeDragAnywhere(rootFull, rootCard, recycler)
 
-        headerBusiness?.visibility = View.GONE
-        headerPerson?.visibility = View.VISIBLE
+        // default
+        headerBusiness.visibility = View.GONE
+        headerPerson.visibility = View.VISIBLE
         personTv.text = if (contactName.isNotBlank()) contactName else phone
+        businessTv.text = "Loading..."
+        metaTv.text = ""
 
-        // ✅ API load
+        // ✅ 1) CACHE APPLY
+        if (preferCache && isCacheValidFor(phone)) {
+            applyCacheToUi(
+                headerBusiness, headerPerson,
+                businessTv, personTv, metaTv,
+                logoBiz, logoPerson,
+                divider, adsTitleTv, recycler
+            )
+            return
+        }
+
+        // ✅ 2) API CALL if no cache
         serviceScope.launch {
             try {
                 val res = withContext(Dispatchers.IO) { ApiClient.api.phoneInfo(phone) }
-                val data = res.data
-                val cardData = data?.card
-                val details = cardData?.details
-                if (res.status != true || cardData == null) return@launch
 
-                val isShop = (data.type == "OWNER_SHOP")
-                val imgUrl = cardData.imageUrl
+                val dataAny = tryRead(res, "data")
+                val typeStr = (readAny(dataAny, "type") as? String).orEmpty()
+                val cardAny = readAny(dataAny, "card")
 
-                if (isShop) {
-                    headerBusiness?.visibility = View.VISIBLE
-                    headerPerson?.visibility = View.GONE
+                val cardTitle = (readAny(cardAny, "title") as? String)?.trim().orEmpty()
+                val cardSubtitle = (readAny(cardAny, "subtitle") as? String)?.trim().orEmpty()
+                val cardImageUrl = (readAny(cardAny, "imageUrl") as? String)?.trim().orEmpty()
 
-                    val title = cardData.title?.trim().takeUnless { it.isNullOrBlank() } ?: "Unknown Shop"
-                    businessTv.text = title
+                val detailsAny = readAny(cardAny, "details")
+                val cat = (readAny(detailsAny, "category") as? String)?.trim().orEmpty()
+                val opensAt = (readAny(detailsAny, "opensAt") as? String)?.trim().orEmpty()
+                val closesAt = (readAny(detailsAny, "closesAt") as? String)?.trim().orEmpty()
+                val addr = (readAny(detailsAny, "address") as? String)?.trim().orEmpty()
 
-                    val detailsLine = listOfNotNull(
-                        details?.category ?: cardData.subtitle,
-                        details?.closesAt?.let { "Opens Upto $it" },
-                        details?.address
-                    ).joinToString(" • ")
+                val isShop = typeStr.equals("OWNER_SHOP", true)
 
-                    metaTv.text = detailsLine
+                val subtitleLine = listOfNotNull(
+                    (if (cat.isNotBlank()) cat else null) ?: cardSubtitle.takeIf { it.isNotBlank() },
+                    if (opensAt.isNotBlank() && closesAt.isNotBlank()) "$opensAt - $closesAt" else null,
+                    addr.takeIf { it.isNotBlank() }
+                ).joinToString(" • ")
 
-                    logoBiz.load(imgUrl) {
-                        crossfade(true)
-                        placeholder(android.R.drawable.ic_menu_gallery)
-                        error(android.R.drawable.ic_menu_gallery)
-                    }
-                } else {
-                    headerBusiness?.visibility = View.GONE
-                    headerPerson?.visibility = View.VISIBLE
+                // ADS
+                val adsAny = readAny(dataAny, "advertisements")
+                val adsTitle = (readAny(adsAny, "title") as? String)?.trim()
+                    .takeUnless { it.isNullOrBlank() } ?: "Advertisements"
+                val listAny = readAny(adsAny, "items") as? List<*>
+                val rawItems: List<Any> = listAny?.mapNotNull { it as? Any } ?: emptyList()
 
-                    val rawTitle = cardData.title?.trim().orEmpty()
-                    val looksUnregistered =
-                        rawTitle.isBlank() || rawTitle.equals("customer", true) || rawTitle.equals("unknown", true)
-
-                    val finalTitle =
-                        if (looksUnregistered) (if (contactName.isNotBlank()) contactName else phone)
-                        else rawTitle
-
-                    personTv.text = finalTitle
-
-                    logoPerson.load(imgUrl) {
-                        crossfade(true)
-                        placeholder(android.R.drawable.ic_menu_gallery)
-                        error(android.R.drawable.ic_menu_gallery)
-                    }
+                val cards = rawItems.mapIndexed { idx, item ->
+                    OverlayAdCard(
+                        id = pickString(item, "id", "_id") ?: "ad_$idx",
+                        title = pickString(item, "englishName", "title", "name") ?: "Ad ${idx + 1}",
+                        subtitle = buildAdSubtitle(item),
+                        rating = pickDouble(item, "rating", "avgRating"),
+                        ratingCount = pickInt(item, "ratingCount", "totalRatings"),
+                        openText = pickString(item, "openLabel", "openText"),
+                        isTrusted = pickBool(item, "isTrusted", "trusted") ?: false,
+                        imageUrl = pickString(item, "primaryImageUrl", "imageUrl") ?: ""
+                    )
                 }
+
+                saveCache(
+                    phone = phone,
+                    isShop = isShop,
+                    title = cardTitle.ifBlank { if (contactName.isNotBlank()) contactName else phone },
+                    subtitleLine = subtitleLine,
+                    imageUrl = cardImageUrl,
+                    adsTitle = adsTitle,
+                    adsCards = cards
+                )
+
+                applyCacheToUi(
+                    headerBusiness, headerPerson,
+                    businessTv, personTv, metaTv,
+                    logoBiz, logoPerson,
+                    divider, adsTitleTv, recycler
+                )
+
             } catch (e: Exception) {
                 Log.e("TRINGO_API", "API failed: ${e.message}", e)
             }
         }
     }
 
-    private fun dummyAds(): List<AdItem> {
-        return listOf(
-            AdItem("Trusted Shop", "Near you • Best offers", 4.4, null, "Open now"),
-            AdItem("Service Center", "Genuine parts", 4.2, null, "Closes 9 PM"),
-        )
-    }
-
-    private fun attachDragToCard(card: View?, vararg handles: View?) {
-        if (card == null) return
-        val handleViews = handles.filterNotNull().ifEmpty { listOf(card) }
-
-        val display = resources.displayMetrics
-        val screenW = display.widthPixels
-        val screenH = display.heightPixels
-
-        var downRawX = 0f
-        var downRawY = 0f
-        var startTx = 0f
-        var startTy = 0f
-        var dragging = false
-
-        val dragThreshold = 8f
-
-        handleViews.forEach { hv ->
-            hv.isClickable = true
-            hv.isFocusable = true
-
-            hv.setOnTouchListener { _, event ->
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downRawX = event.rawX
-                        downRawY = event.rawY
-                        startTx = card.translationX
-                        startTy = card.translationY
-                        dragging = false
-                        true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val dx = event.rawX - downRawX
-                        val dy = event.rawY - downRawY
-
-                        if (!dragging) {
-                            if (abs(dx) < dragThreshold && abs(dy) < dragThreshold) return@setOnTouchListener true
-                            dragging = true
-                        }
-
-                        var newTx = startTx + dx
-                        var newTy = startTy + dy
-
-                        val cardW = card.width.takeIf { it > 0 } ?: 1
-                        val cardH = card.height.takeIf { it > 0 } ?: 1
-
-                        val maxX = (screenW - cardW) / 2f
-                        val maxY = (screenH - cardH) / 2f
-
-                        newTx = min(max(newTx, -maxX), maxX)
-                        newTy = min(max(newTy, -maxY), maxY)
-
-                        card.translationX = newTx
-                        card.translationY = newTy
-                        true
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        if (!dragging) hv.performClick()
-                        dragging = false
-                        true
-                    }
-                    else -> false
+    // ✅ Perfect center (not top)
+    private fun centerCardExactly(rootFull: View?, card: View?) {
+        if (rootFull == null || card == null) return
+        rootFull.post {
+            card.post {
+                val w = rootFull.width
+                val h = rootFull.height
+                val cw = card.width
+                val ch = card.height
+                if (w > 0 && h > 0 && cw > 0 && ch > 0) {
+                    card.x = ((w - cw) / 2f).coerceAtLeast(0f)
+                    card.y = ((h - ch) / 2f).coerceAtLeast(0f)
                 }
             }
         }
     }
 
-    private fun removeOverlay() {
-        overlayView?.let {
-            try { windowManager?.removeView(it) } catch (_: Exception) {}
+    // ✅ Free drag anywhere (outside touch doesn't close)
+    private fun attachFreeDragAnywhere(rootFull: View?, card: View?, vararg ignoreViews: View?) {
+        if (rootFull == null || card == null) return
+        val ignore = ignoreViews.filterNotNull()
+        val dm = resources.displayMetrics
+        val screenW = dm.widthPixels
+        val screenH = dm.heightPixels
+
+        var downRawX = 0f
+        var downRawY = 0f
+        var startX = 0f
+        var startY = 0f
+        var dragging = false
+        val threshold = 6f
+
+        fun isTouchInsideIgnore(x: Float, y: Float): Boolean {
+            val xi = x.toInt()
+            val yi = y.toInt()
+            val r = android.graphics.Rect()
+            ignore.forEach { v ->
+                v.getGlobalVisibleRect(r)
+                if (r.contains(xi, yi)) return true
+            }
+            return false
         }
+
+        rootFull.setOnTouchListener { _, ev ->
+            if (isTouchInsideIgnore(ev.rawX, ev.rawY)) return@setOnTouchListener false
+
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downRawX = ev.rawX
+                    downRawY = ev.rawY
+                    startX = card.x
+                    startY = card.y
+                    dragging = false
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = ev.rawX - downRawX
+                    val dy = ev.rawY - downRawY
+
+                    if (!dragging) {
+                        if (abs(dx) < threshold && abs(dy) < threshold) return@setOnTouchListener true
+                        dragging = true
+                    }
+
+                    val cw = max(card.width, 1)
+                    val ch = max(card.height, 1)
+
+                    val maxX = (screenW - cw).toFloat().coerceAtLeast(0f)
+                    val maxY = (screenH - ch).toFloat().coerceAtLeast(0f)
+
+                    card.x = (startX + dx).coerceIn(0f, maxX)
+                    card.y = (startY + dy).coerceIn(0f, maxY)
+
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    dragging = false
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun applyCacheToUi(
+        headerBusiness: View?, headerPerson: View?,
+        businessTv: TextView?, personTv: TextView?, metaTv: TextView?,
+        logoBiz: ImageView?, logoPerson: ImageView?,
+        divider: View?, adsTitleTv: TextView?, recycler: RecyclerView?
+    ) {
+        if (cacheIsShop) {
+            headerBusiness?.visibility = View.VISIBLE
+            headerPerson?.visibility = View.GONE
+            businessTv?.text = cacheTitle
+            metaTv?.text = cacheSubtitleLine
+            logoBiz?.load(cacheImageUrl) {
+                crossfade(true)
+                placeholder(android.R.drawable.ic_menu_gallery)
+                error(android.R.drawable.ic_menu_gallery)
+            }
+        } else {
+            headerBusiness?.visibility = View.GONE
+            headerPerson?.visibility = View.VISIBLE
+            personTv?.text = cacheTitle
+            logoPerson?.load(cacheImageUrl) {
+                crossfade(true)
+                placeholder(android.R.drawable.ic_menu_gallery)
+                error(android.R.drawable.ic_menu_gallery)
+            }
+        }
+
+        adsAdapter?.submitList(cacheAdsCards)
+
+        if (cacheAdsCards.isNotEmpty()) {
+            divider?.visibility = View.VISIBLE
+            adsTitleTv?.text = cacheAdsTitle
+            adsTitleTv?.visibility = View.VISIBLE
+            recycler?.visibility = View.VISIBLE
+        } else {
+            divider?.visibility = View.GONE
+            adsTitleTv?.visibility = View.GONE
+            recycler?.visibility = View.GONE
+        }
+
+        Log.d("TRINGO_API", "UI applied from CACHE ads=${cacheAdsCards.size}")
+    }
+
+    private fun buildAdSubtitle(item: Any?): String {
+        val addr = pickString(item, "addressEn", "addressTa") ?: ""
+        val city = pickString(item, "city") ?: ""
+        val state = pickString(item, "state") ?: ""
+        val country = pickString(item, "country") ?: ""
+        val place = listOf(city, state, country).filter { it.isNotBlank() }.joinToString(", ")
+        return listOf(addr, place).filter { it.isNotBlank() }.joinToString(" • ")
+    }
+
+    private fun removeOverlay() {
+        overlayView?.let { try { windowManager?.removeView(it) } catch (_: Exception) {} }
         overlayView = null
     }
 
     override fun onDestroy() {
+        isRunning = false
         incomingAutoHideJob?.cancel()
         incomingAutoHideJob = null
         stopWatchingForCallEnd()
@@ -658,11 +739,11 @@ class TringoOverlayService : Service() {
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
 
         val channelId = "tringo_call_alert"
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = getSystemService(NotificationManager::class.java)
-            val ch = NotificationChannel(channelId, "Tringo Call Alerts", NotificationManager.IMPORTANCE_HIGH)
-            nm.createNotificationChannel(ch)
+            nm.createNotificationChannel(
+                NotificationChannel(channelId, "Tringo Call Alerts", NotificationManager.IMPORTANCE_HIGH)
+            )
         }
 
         val builder = NotificationCompat.Builder(this, channelId)
@@ -675,6 +756,7 @@ class TringoOverlayService : Service() {
             .setOnlyAlertOnce(true)
 
         getSystemService(NotificationManager::class.java).notify(202, builder.build())
+        Log.d(TAG, "HeadsUp shown reason=$reason")
     }
 
     private fun openAppSettings() {
@@ -684,1159 +766,94 @@ class TringoOverlayService : Service() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             startActivity(i)
-        } catch (e: Exception) {
-            Log.e(TAG, "openAppSettings failed: ${e.message}", e)
-        }
-    }
-}
-
-/*
-package com.feni.tringo.tringo_app
-
-import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.content.pm.ServiceInfo
-import android.graphics.PixelFormat
-import android.net.Uri
-import android.os.Build
-import android.os.IBinder
-import android.provider.Settings
-import android.telephony.TelephonyCallback
-import android.telephony.TelephonyManager
-import android.util.Log
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.WindowManager
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import coil.load
-import kotlinx.coroutines.*
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
-
-class TringoOverlayService : Service() {
-
-    private val TAG = "TRINGO_OVERLAY"
-
-    private var windowManager: WindowManager? = null
-    private var overlayView: View? = null
-
-    private val serviceJob = SupervisorJob()
-    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-    private val PREF = "tringo_call_state"
-    private val KEY_USER_CLOSED = "user_closed_during_call"
-    private val KEY_LAST_NUMBER = "last_number"
-
-    private var adsAdapter: AdsAdapter? = null
-
-    private var pendingPhone: String = ""
-    private var pendingContact: String = ""
-
-    private var userClosedThisSession = false
-    private var launchedByReceiver = false
-    private var postCallPopupMode = false
-
-    private var telephonyManager: TelephonyManager? = null
-    private var telephonyCallback: TelephonyCallback? = null
-
-    @Suppress("DEPRECATION")
-    private var phoneStateListener: android.telephony.PhoneStateListener? = null
-
-    private var isWatchingCallEnd = false
-    private var callWasActive = false
-    private var lastState: Int = TelephonyManager.CALL_STATE_IDLE
-
-    companion object {
-        fun start(
-            ctx: Context,
-            phone: String,
-            contactName: String = "",
-            showOnCallEnd: Boolean = false,
-            launchedByReceiver: Boolean = false
-        ): Boolean {
-            val i = Intent(ctx, TringoOverlayService::class.java).apply {
-                putExtra("phone", phone)
-                putExtra("contactName", contactName)
-                putExtra("showOnCallEnd", showOnCallEnd)
-                putExtra("launchedByReceiver", launchedByReceiver)
-            }
-            return try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i)
-                else ctx.startService(i)
-                true
-            } catch (e: Exception) {
-                Log.e("TRINGO_OVERLAY", "start() failed: ${e.message}", e)
-                false
-            }
-        }
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        pendingPhone = intent?.getStringExtra("phone") ?: ""
-        pendingContact = intent?.getStringExtra("contactName") ?: ""
-        launchedByReceiver = intent?.getBooleanExtra("launchedByReceiver", false) ?: false
-
-        startAsForegroundSafe()
-
-        Log.d(TAG, "onStartCommand phone=$pendingPhone launchedByReceiver=$launchedByReceiver")
-
-        if (pendingPhone.isBlank()) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            showCallerHeadsUp(
-                title = "Tringo Caller ID",
-                message = "Enable overlay permission to show popup",
-                reason = "overlay_permission_missing"
-            )
-            openAppSettings()
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        showOverlay(pendingPhone, pendingContact)
-
-        // ✅ call end detect (needs READ_PHONE_STATE)
-        startWatchingForCallEnd()
-
-        return START_STICKY
-    }
-
-    private fun markUserClosedDuringCall(phone: String) {
-        try {
-            getSharedPreferences(PREF, MODE_PRIVATE).edit()
-                .putBoolean(KEY_USER_CLOSED, true)
-                .putString(KEY_LAST_NUMBER, phone)
-                .apply()
-            Log.d(TAG, "Prefs saved: user_closed=true number=$phone")
-        } catch (e: Exception) {
-            Log.e(TAG, "markUserClosedDuringCall failed: ${e.message}", e)
-        }
-    }
-
-    private fun clearUserClosedFlag() {
-        try {
-            getSharedPreferences(PREF, MODE_PRIVATE).edit()
-                .putBoolean(KEY_USER_CLOSED, false)
-                .apply()
         } catch (_: Exception) {}
     }
-    // ==========================================================
-    // ✅ SAFE CALL STATE (NO CRASH)
-    // ==========================================================
-    private fun hasReadPhoneState(): Boolean {
-        val ok = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) ==
-                PackageManager.PERMISSION_GRANTED
-        Log.d(TAG, "has READ_PHONE_STATE? $ok")
-        return ok
-    }
 
-    private fun safeCallState(): Int {
+    // ==========================================================
+    // Reflection helpers
+    // ==========================================================
+    private fun tryRead(obj: Any?, field: String): Any? {
+        if (obj == null) return null
         return try {
-            telephonyManager?.callState ?: TelephonyManager.CALL_STATE_IDLE
-        } catch (se: SecurityException) {
-            Log.e(TAG, "❌ safeCallState: READ_PHONE_STATE not granted")
-            TelephonyManager.CALL_STATE_IDLE
-        } catch (e: Exception) {
-            Log.e(TAG, "safeCallState error: ${e.message}", e)
-            TelephonyManager.CALL_STATE_IDLE
+            val m = obj::class.java.methods.firstOrNull {
+                it.name == "get${field.replaceFirstChar { c -> c.uppercase() }}"
+            }
+            if (m != null) m.invoke(obj) else readAny(obj, field)
+        } catch (_: Exception) {
+            readAny(obj, field)
         }
     }
 
-    // ==========================================================
-    // ✅ WATCH CALL END
-    // ==========================================================
-    private fun startWatchingForCallEnd() {
-        if (isWatchingCallEnd) return
-
-        if (!hasReadPhoneState()) {
-            Log.e(TAG, "READ_PHONE_STATE not granted -> cannot detect call end.")
-            // ✅ No permission => DO NOT start polling (avoid crash)
-            return
-        }
-
-        isWatchingCallEnd = true
-        callWasActive = false
-        lastState = safeCallState()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val cb = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
-                override fun onCallStateChanged(state: Int) {
-                    handleCallState(state)
-                }
-            }
-            telephonyCallback = cb
-            try {
-                telephonyManager?.registerTelephonyCallback(mainExecutor, cb)
-            } catch (e: Exception) {
-                Log.e(TAG, "registerTelephonyCallback failed: ${e.message}", e)
-                startWatchingForCallEndLegacy()
-            }
-        } else {
-            startWatchingForCallEndLegacy()
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun startWatchingForCallEndLegacy() {
-        if (!hasReadPhoneState()) return
-
-        val listener = object : android.telephony.PhoneStateListener() {
-            override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-                handleCallState(state)
-            }
-        }
-        phoneStateListener = listener
-        telephonyManager?.listen(listener, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
-    }
-
-    private fun stopWatchingForCallEnd() {
-        if (!isWatchingCallEnd) return
-        isWatchingCallEnd = false
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                telephonyCallback?.let { telephonyManager?.unregisterTelephonyCallback(it) }
-                telephonyCallback = null
+    private fun readAny(obj: Any?, name: String): Any? {
+        if (obj == null) return null
+        return try {
+            val f = obj::class.java.declaredFields.firstOrNull { it.name == name }
+            if (f != null) {
+                f.isAccessible = true
+                f.get(obj)
             } else {
-                @Suppress("DEPRECATION")
-                phoneStateListener?.let {
-                    telephonyManager?.listen(it, android.telephony.PhoneStateListener.LISTEN_NONE)
+                val m = obj::class.java.methods.firstOrNull {
+                    it.parameterTypes.isEmpty() && (it.name.equals(name, true) ||
+                            it.name.equals("get${name.replaceFirstChar { c -> c.uppercase() }}", true))
                 }
-                phoneStateListener = null
+                m?.invoke(obj)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "stopWatchingForCallEnd error: ${e.message}", e)
+        } catch (_: Exception) {
+            null
         }
     }
 
-    private fun handleCallState(state: Int) {
-        if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
-            callWasActive = true
+    private fun pickString(obj: Any?, vararg keys: String): String? {
+        for (k in keys) {
+            val v = readAny(obj, k)
+            if (v is String && v.trim().isNotEmpty()) return v.trim()
         }
+        return null
+    }
 
-        val endedNow =
-            (lastState == TelephonyManager.CALL_STATE_RINGING || lastState == TelephonyManager.CALL_STATE_OFFHOOK) &&
-                    state == TelephonyManager.CALL_STATE_IDLE
+    private fun pickDouble(obj: Any?, vararg keys: String): Double? {
+        for (k in keys) {
+            val v = readAny(obj, k)
+            when (v) {
+                is Double -> return v
+                is Float -> return v.toDouble()
+                is Int -> return v.toDouble()
+                is Long -> return v.toDouble()
+                is String -> v.toDoubleOrNull()?.let { return it }
+            }
+        }
+        return null
+    }
 
-        Log.d(TAG, "CallState last=$lastState now=$state endedNow=$endedNow userClosed=$userClosedThisSession")
+    private fun pickInt(obj: Any?, vararg keys: String): Int? {
+        for (k in keys) {
+            val v = readAny(obj, k)
+            when (v) {
+                is Int -> return v
+                is Long -> return v.toInt()
+                is Double -> return v.toInt()
+                is Float -> return v.toInt()
+                is String -> v.toIntOrNull()?.let { return it }
+            }
+        }
+        return null
+    }
 
-        lastState = state
-
-        if (endedNow && callWasActive) {
-            serviceScope.launch {
-                stopWatchingForCallEnd()
-                delay(550)
-
-                // ✅ If user closed during call -> show again AFTER call ends
-                if (userClosedThisSession) {
-                    postCallPopupMode = true
-                    showOverlay(pendingPhone, pendingContact)
-
-                    delay(4500)
-                    removeOverlay()
-                } else {
-                    removeOverlay()
+    private fun pickBool(obj: Any?, vararg keys: String): Boolean? {
+        for (k in keys) {
+            val v = readAny(obj, k)
+            when (v) {
+                is Boolean -> return v
+                is String -> {
+                    val s = v.trim().lowercase()
+                    if (s == "true" || s == "1" || s == "yes") return true
+                    if (s == "false" || s == "0" || s == "no") return false
                 }
-
-                userClosedThisSession = false
-                postCallPopupMode = false
-                stopSelf()
+                is Int -> return v != 0
+                is Long -> return v != 0L
             }
         }
-    }
-
-    // ==========================================================
-    // FOREGROUND
-    // ==========================================================
-    private fun startAsForegroundSafe() {
-        val channelId = "tringo_overlay"
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Tringo Overlay",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        }
-
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Tringo")
-            .setContentText("Caller identification running")
-            .setSmallIcon(android.R.drawable.ic_menu_call)
-            .setOngoing(true)
-            .build()
-
-        try {
-            val fgsType =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
-                } else 0
-
-            ServiceCompat.startForeground(this, 101, notification, fgsType)
-        } catch (e: Exception) {
-            startForeground(101, notification)
-        }
-    }
-
-    // ==========================================================
-    // ✅ OVERLAY UI + DUMMY ADS ONLY (NO cardData.ads)
-    // ==========================================================
-    private fun showOverlay(phone: String, contactName: String) {
-        removeOverlay()
-
-        val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val v = inflater.inflate(R.layout.tringo_overlay, null)
-        overlayView = v
-
-        val closeBtn = v.findViewById<View>(R.id.closeBtn)
-        val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
-        val rootCard = v.findViewById<View>(R.id.rootCard)
-
-        val headerBusiness = v.findViewById<View>(R.id.headerBusiness)
-        val headerPerson = v.findViewById<View>(R.id.headerPerson)
-
-        closeBtn?.apply {
-            isClickable = true
-            isFocusable = true
-            setOnClickListener {
-                userClosedThisSession = true
-                removeOverlay()
-            }
-            bringToFront()
-        }
-
-        outsideLayer?.setOnClickListener {
-            userClosedThisSession = true
-            removeOverlay()
-        }
-
-        val businessTv = v.findViewById<TextView>(R.id.businessNameText)
-        val personTv = v.findViewById<TextView>(R.id.personNameText)
-        val metaTv = v.findViewById<TextView>(R.id.metaText)
-        val smallTop = v.findViewById<TextView>(R.id.smallTopText)
-        val ratingChip = v.findViewById<TextView>(R.id.ratingChip)
-
-        val logoBiz = v.findViewById<ImageView>(R.id.logoImageBusiness)
-        val logoPerson = v.findViewById<ImageView>(R.id.logoImagePerson)
-
-        val recycler = v.findViewById<RecyclerView>(R.id.adsRecycler)
-        recycler.layoutManager = GridLayoutManager(this, 2)
-        adsAdapter = AdsAdapter(emptyList())
-        recycler.adapter = adsAdapter
-
-        // ✅ Always dummy ads (safe)
-        adsAdapter?.submit(dummyAds())
-
-        smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
-        businessTv.text = "Loading..."
-        personTv.text = ""
-        metaTv.text = ""
-        ratingChip.visibility = View.GONE
-
-        val flags =
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_PHONE,
-            flags,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                layoutInDisplayCutoutMode =
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            }
-        }
-
-        try {
-            windowManager?.addView(v, params)
-        } catch (e: Exception) {
-            showCallerHeadsUp(
-                title = "Tringo Caller ID",
-                message = if (contactName.isNotBlank()) contactName else phone,
-                reason = "addView_failed"
-            )
-            stopSelf()
-            return
-        }
-
-        attachDragToCard(rootCard, headerPerson, headerBusiness)
-
-        headerBusiness?.visibility = View.GONE
-        headerPerson?.visibility = View.VISIBLE
-        personTv.text = if (contactName.isNotBlank()) contactName else phone
-
-        // ✅ API load: only title/subtitle/image (NO ads mapping)
-        serviceScope.launch {
-            try {
-                val res = withContext(Dispatchers.IO) { ApiClient.api.phoneInfo(phone) }
-                val data = res.data
-                val cardData = data?.card
-                val details = cardData?.details
-                if (res.status != true || cardData == null) return@launch
-
-                val isShop = (data.type == "OWNER_SHOP")
-                val imgUrl = cardData.imageUrl
-
-                if (isShop) {
-                    headerBusiness?.visibility = View.VISIBLE
-                    headerPerson?.visibility = View.GONE
-
-                    val title = cardData.title?.trim().takeUnless { it.isNullOrBlank() } ?: "Unknown Shop"
-                    businessTv.text = title
-
-                    val detailsLine = listOfNotNull(
-                        details?.category ?: cardData.subtitle,
-                        details?.closesAt?.let { "Opens Upto $it" },
-                        details?.address
-                    ).joinToString(" • ")
-
-                    metaTv.text = detailsLine
-
-                    logoBiz.load(imgUrl) {
-                        crossfade(true)
-                        placeholder(android.R.drawable.ic_menu_gallery)
-                        error(android.R.drawable.ic_menu_gallery)
-                    }
-                } else {
-                    headerBusiness?.visibility = View.GONE
-                    headerPerson?.visibility = View.VISIBLE
-
-                    val rawTitle = cardData.title?.trim().orEmpty()
-                    val looksUnregistered =
-                        rawTitle.isBlank() || rawTitle.equals("customer", true) || rawTitle.equals("unknown", true)
-
-                    val finalTitle =
-                        if (looksUnregistered) (if (contactName.isNotBlank()) contactName else phone)
-                        else rawTitle
-
-                    personTv.text = finalTitle
-
-                    logoPerson.load(imgUrl) {
-                        crossfade(true)
-                        placeholder(android.R.drawable.ic_menu_gallery)
-                        error(android.R.drawable.ic_menu_gallery)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("TRINGO_API", "API failed: ${e.message}", e)
-            }
-        }
-    }
-
-    private fun dummyAds(): List<AdItem> {
-        return listOf(
-            AdItem("Trusted Shop", "Near you • Best offers", 4.4, null, "Open now"),
-            AdItem("Service Center", "Genuine parts", 4.2, null, "Closes 9 PM"),
-        )
-    }
-
-    private fun attachDragToCard(card: View?, vararg handles: View?) {
-        if (card == null) return
-        val handleViews = handles.filterNotNull().ifEmpty { listOf(card) }
-
-        val display = resources.displayMetrics
-        val screenW = display.widthPixels
-        val screenH = display.heightPixels
-
-        var downRawX = 0f
-        var downRawY = 0f
-        var startTx = 0f
-        var startTy = 0f
-        var dragging = false
-
-        val dragThreshold = 8f
-
-        handleViews.forEach { hv ->
-            hv.isClickable = true
-            hv.isFocusable = true
-
-            hv.setOnTouchListener { _, event ->
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downRawX = event.rawX
-                        downRawY = event.rawY
-                        startTx = card.translationX
-                        startTy = card.translationY
-                        dragging = false
-                        true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val dx = event.rawX - downRawX
-                        val dy = event.rawY - downRawY
-
-                        if (!dragging) {
-                            if (abs(dx) < dragThreshold && abs(dy) < dragThreshold) return@setOnTouchListener true
-                            dragging = true
-                        }
-
-                        var newTx = startTx + dx
-                        var newTy = startTy + dy
-
-                        val cardW = card.width.takeIf { it > 0 } ?: 1
-                        val cardH = card.height.takeIf { it > 0 } ?: 1
-
-                        val maxX = (screenW - cardW) / 2f
-                        val maxY = (screenH - cardH) / 2f
-
-                        newTx = min(max(newTx, -maxX), maxX)
-                        newTy = min(max(newTy, -maxY), maxY)
-
-                        card.translationX = newTx
-                        card.translationY = newTy
-                        true
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        if (!dragging) hv.performClick()
-                        dragging = false
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }
-    }
-
-    private fun removeOverlay() {
-        overlayView?.let {
-            try { windowManager?.removeView(it) } catch (_: Exception) {}
-        }
-        overlayView = null
-    }
-
-    override fun onDestroy() {
-        stopWatchingForCallEnd()
-        serviceJob.cancel()
-        removeOverlay()
-        super.onDestroy()
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun showCallerHeadsUp(title: String, message: String, reason: String) {
-        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
-
-        val channelId = "tringo_call_alert"
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val nm = getSystemService(NotificationManager::class.java)
-            val ch = NotificationChannel(channelId, "Tringo Call Alerts", NotificationManager.IMPORTANCE_HIGH)
-            nm.createNotificationChannel(ch)
-        }
-
-        val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_menu_call)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
-
-        getSystemService(NotificationManager::class.java).notify(202, builder.build())
-    }
-
-    private fun openAppSettings() {
-        try {
-            val i = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:$packageName")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(i)
-        } catch (e: Exception) {
-            Log.e(TAG, "openAppSettings failed: ${e.message}", e)
-        }
+        return null
     }
 }
-*/
 
-
-//package com.feni.tringo.tringo_app
-//
-//import android.Manifest
-//import android.app.NotificationChannel
-//import android.app.NotificationManager
-//import android.app.Service
-//import android.content.Context
-//import android.content.Intent
-//import android.content.pm.PackageManager
-//import android.content.pm.ServiceInfo
-//import android.graphics.PixelFormat
-//import android.net.Uri
-//import android.os.Build
-//import android.os.IBinder
-//import android.provider.Settings
-//import android.telephony.TelephonyCallback
-//import android.telephony.TelephonyManager
-//import android.util.Log
-//import android.view.Gravity
-//import android.view.LayoutInflater
-//import android.view.MotionEvent
-//import android.view.View
-//import android.view.WindowManager
-//import android.widget.ImageView
-//import android.widget.TextView
-//import androidx.core.app.NotificationCompat
-//import androidx.core.app.NotificationManagerCompat
-//import androidx.core.app.ServiceCompat
-//import androidx.core.content.ContextCompat
-//import androidx.recyclerview.widget.GridLayoutManager
-//import androidx.recyclerview.widget.RecyclerView
-//import coil.load
-//import kotlinx.coroutines.CoroutineScope
-//import kotlinx.coroutines.Dispatchers
-//import kotlinx.coroutines.SupervisorJob
-//import kotlinx.coroutines.delay
-//import kotlinx.coroutines.launch
-//import kotlinx.coroutines.withContext
-//import kotlin.math.abs
-//import kotlin.math.max
-//import kotlin.math.min
-//
-//class TringoOverlayService : Service() {
-//
-//    private val TAG = "TRINGO_OVERLAY"
-//
-//    private var windowManager: WindowManager? = null
-//    private var overlayView: View? = null
-//
-//    private val serviceJob = SupervisorJob()
-//    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-//
-//    private var adsAdapter: AdsAdapter? = null
-//
-//    private var pendingPhone: String = ""
-//    private var pendingContact: String = ""
-//
-//    // ✅ user close pannina remember
-//    private var userClosedThisSession = false
-//
-//    // ✅ receiver-la irundhu start aacha
-//    private var launchedByReceiver = false
-//
-//    // ✅ post-call popup mode (auto dismiss)
-//    private var postCallPopupMode = false
-//
-//    private var telephonyManager: TelephonyManager? = null
-//    private var telephonyCallback: TelephonyCallback? = null
-//
-//    @Suppress("DEPRECATION")
-//    private var phoneStateListener: android.telephony.PhoneStateListener? = null
-//
-//    private var isWatchingCallEnd = false
-//    private var callWasActive = false
-//    private var lastState: Int = TelephonyManager.CALL_STATE_IDLE
-//
-//    companion object {
-//        fun start(
-//            ctx: Context,
-//            phone: String,
-//            contactName: String = "",
-//            showOnCallEnd: Boolean = false, // kept for compatibility
-//            launchedByReceiver: Boolean = false
-//        ): Boolean {
-//            val i = Intent(ctx, TringoOverlayService::class.java).apply {
-//                putExtra("phone", phone)
-//                putExtra("contactName", contactName)
-//                putExtra("showOnCallEnd", showOnCallEnd)
-//                putExtra("launchedByReceiver", launchedByReceiver)
-//            }
-//            return try {
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i)
-//                else ctx.startService(i)
-//                true
-//            } catch (e: Exception) {
-//                Log.e("TRINGO_OVERLAY", "start() failed: ${e.message}", e)
-//                false
-//            }
-//        }
-//    }
-//
-//    override fun onCreate() {
-//        super.onCreate()
-//        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-//        telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-//    }
-//
-//    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-//
-//        pendingPhone = intent?.getStringExtra("phone") ?: ""
-//        pendingContact = intent?.getStringExtra("contactName") ?: ""
-//        launchedByReceiver = intent?.getBooleanExtra("launchedByReceiver", false) ?: false
-//
-//        startAsForegroundSafe()
-//
-//        Log.d(TAG, "onStartCommand phone=$pendingPhone launchedByReceiver=$launchedByReceiver")
-//
-//        if (pendingPhone.isBlank()) {
-//            stopSelf()
-//            return START_NOT_STICKY
-//        }
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-//            showCallerHeadsUp(
-//                title = "Tringo Caller ID",
-//                message = "Enable overlay permission to show popup",
-//                reason = "overlay_permission_missing"
-//            )
-//            openAppSettings()
-//            stopSelf()
-//            return START_NOT_STICKY
-//        }
-//
-//        // ✅ show immediately on call
-//        showOverlay(pendingPhone, pendingContact)
-//
-//        // ✅ always watch call end
-//        startWatchingForCallEnd()
-//
-//        return START_STICKY
-//    }
-//
-//    // ==========================================================
-//    // ✅ WATCH CALL END
-//    // ==========================================================
-//    private fun startWatchingForCallEnd() {
-//        if (isWatchingCallEnd) return
-//
-//        val hasReadPhoneState =
-//            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) ==
-//                    PackageManager.PERMISSION_GRANTED
-//
-//        if (!hasReadPhoneState) {
-//            Log.e(TAG, "READ_PHONE_STATE not granted -> cannot detect call end.")
-//            return
-//        }
-//
-//        isWatchingCallEnd = true
-//        callWasActive = false
-//        lastState = telephonyManager?.callState ?: TelephonyManager.CALL_STATE_IDLE
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//            val cb = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
-//                override fun onCallStateChanged(state: Int) {
-//                    handleCallState(state)
-//                }
-//            }
-//            telephonyCallback = cb
-//            try {
-//                telephonyManager?.registerTelephonyCallback(mainExecutor, cb)
-//            } catch (e: Exception) {
-//                Log.e(TAG, "registerTelephonyCallback failed: ${e.message}", e)
-//                startWatchingForCallEndLegacy()
-//            }
-//        } else {
-//            startWatchingForCallEndLegacy()
-//        }
-//    }
-//
-//    @Suppress("DEPRECATION")
-//    private fun startWatchingForCallEndLegacy() {
-//        val listener = object : android.telephony.PhoneStateListener() {
-//            override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-//                handleCallState(state)
-//            }
-//        }
-//        phoneStateListener = listener
-//        telephonyManager?.listen(listener, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
-//    }
-//
-//    private fun stopWatchingForCallEnd() {
-//        if (!isWatchingCallEnd) return
-//        isWatchingCallEnd = false
-//
-//        try {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//                telephonyCallback?.let { telephonyManager?.unregisterTelephonyCallback(it) }
-//                telephonyCallback = null
-//            } else {
-//                @Suppress("DEPRECATION")
-//                phoneStateListener?.let {
-//                    telephonyManager?.listen(it, android.telephony.PhoneStateListener.LISTEN_NONE)
-//                }
-//                phoneStateListener = null
-//            }
-//        } catch (e: Exception) {
-//            Log.e(TAG, "stopWatchingForCallEnd error: ${e.message}", e)
-//        }
-//    }
-//
-//    private fun handleCallState(state: Int) {
-//        if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
-//            callWasActive = true
-//        }
-//
-//        val endedNow =
-//            (lastState == TelephonyManager.CALL_STATE_RINGING || lastState == TelephonyManager.CALL_STATE_OFFHOOK) &&
-//                    state == TelephonyManager.CALL_STATE_IDLE
-//
-//        Log.d(TAG, "CallState last=$lastState now=$state endedNow=$endedNow userClosed=$userClosedThisSession")
-//
-//        lastState = state
-//
-//        if (endedNow && callWasActive) {
-//            serviceScope.launch {
-//                stopWatchingForCallEnd()
-//                delay(550)
-//
-//                // ✅ If user closed popup during call -> show again AFTER call ends
-//                if (userClosedThisSession) {
-//                    postCallPopupMode = true
-//                    showOverlay(pendingPhone, pendingContact)
-//
-//                    // ✅ Auto dismiss post-call popup
-//                    delay(4500)
-//                    removeOverlay()
-//
-//                } else {
-//                    // ✅ user close pannala -> just remove (avoid stuck)
-//                    removeOverlay()
-//                }
-//
-//                // ✅ reset for next call
-//                userClosedThisSession = false
-//                postCallPopupMode = false
-//                stopSelf()
-//            }
-//        }
-//    }
-//
-//    // ==========================================================
-//    // FOREGROUND
-//    // ==========================================================
-//    private fun startAsForegroundSafe() {
-//        val channelId = "tringo_overlay"
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            val channel = NotificationChannel(
-//                channelId,
-//                "Tringo Overlay",
-//                NotificationManager.IMPORTANCE_LOW
-//            )
-//            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-//        }
-//
-//        val notification = NotificationCompat.Builder(this, channelId)
-//            .setContentTitle("Tringo")
-//            .setContentText("Caller identification running")
-//            .setSmallIcon(android.R.drawable.ic_menu_call)
-//            .setOngoing(true)
-//            .build()
-//
-//        try {
-//            val fgsType =
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-//                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-//                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-//                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
-//                } else 0
-//
-//            ServiceCompat.startForeground(this, 101, notification, fgsType)
-//        } catch (e: Exception) {
-//            startForeground(101, notification)
-//        }
-//    }
-//
-//    // ==========================================================
-//    // ✅ OVERLAY UI (உன் code same, only close behavior fixed)
-//    // ==========================================================
-//    private fun showOverlay(phone: String, contactName: String) {
-//        removeOverlay()
-//
-//        val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-//        val v = inflater.inflate(R.layout.tringo_overlay, null)
-//        overlayView = v
-//
-//        val closeBtn = v.findViewById<View>(R.id.closeBtn)
-//        val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
-//        val rootCard = v.findViewById<View>(R.id.rootCard)
-//
-//        val headerBusiness = v.findViewById<View>(R.id.headerBusiness)
-//        val headerPerson = v.findViewById<View>(R.id.headerPerson)
-//
-//        closeBtn?.apply {
-//            isClickable = true
-//            isFocusable = true
-//            setOnClickListener {
-//                // ✅ remember user closed during call
-//                userClosedThisSession = true
-//                removeOverlay()
-//                // watcher already running -> call end வந்ததும் மீண்டும் open ஆகும்
-//            }
-//            bringToFront()
-//        }
-//
-//        outsideLayer?.setOnClickListener {
-//            userClosedThisSession = true
-//            removeOverlay()
-//        }
-//
-//        val businessTv = v.findViewById<TextView>(R.id.businessNameText)
-//        val personTv = v.findViewById<TextView>(R.id.personNameText)
-//        val metaTv = v.findViewById<TextView>(R.id.metaText)
-//        val smallTop = v.findViewById<TextView>(R.id.smallTopText)
-//        val ratingChip = v.findViewById<TextView>(R.id.ratingChip)
-//
-//        val logoBiz = v.findViewById<ImageView>(R.id.logoImageBusiness)
-//        val logoPerson = v.findViewById<ImageView>(R.id.logoImagePerson)
-//
-//        val recycler = v.findViewById<RecyclerView>(R.id.adsRecycler)
-//        recycler.layoutManager = GridLayoutManager(this, 2)
-//        adsAdapter = AdsAdapter(emptyList())
-//        recycler.adapter = adsAdapter
-//
-//        smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
-//        businessTv.text = "Loading..."
-//        personTv.text = ""
-//        metaTv.text = ""
-//        ratingChip.visibility = View.GONE
-//
-//        val flags =
-//            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-//                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-//                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-//
-//        val params = WindowManager.LayoutParams(
-//            WindowManager.LayoutParams.MATCH_PARENT,
-//            WindowManager.LayoutParams.MATCH_PARENT,
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-//                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-//            else
-//                WindowManager.LayoutParams.TYPE_PHONE,
-//            flags,
-//            PixelFormat.TRANSLUCENT
-//        ).apply {
-//            gravity = Gravity.TOP or Gravity.START
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//                layoutInDisplayCutoutMode =
-//                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-//            }
-//        }
-//
-//        try {
-//            windowManager?.addView(v, params)
-//        } catch (e: Exception) {
-//            showCallerHeadsUp(
-//                title = "Tringo Caller ID",
-//                message = if (contactName.isNotBlank()) contactName else phone,
-//                reason = "addView_failed"
-//            )
-//            stopSelf()
-//            return
-//        }
-//
-//        attachDragToCard(rootCard, headerPerson, headerBusiness)
-//
-//        headerBusiness?.visibility = View.GONE
-//        headerPerson?.visibility = View.VISIBLE
-//        personTv.text = if (contactName.isNotBlank()) contactName else phone
-//
-//        serviceScope.launch {
-//            try {
-//                val res = withContext(Dispatchers.IO) { ApiClient.api.phoneInfo(phone) }
-//                val data = res.data
-//                val cardData = data?.card
-//                val details = cardData?.details
-//
-//                if (res.status != true || cardData == null) return@launch
-//
-//                val isShop = (data.type == "OWNER_SHOP")
-//                val imgUrl = cardData.imageUrl
-//
-//                if (isShop) {
-//                    headerBusiness?.visibility = View.VISIBLE
-//                    headerPerson?.visibility = View.GONE
-//
-//                    val title = cardData.title?.trim().takeUnless { it.isNullOrBlank() } ?: "Unknown Shop"
-//                    businessTv.text = title
-//
-//                    val detailsLine = listOfNotNull(
-//                        details?.category ?: cardData.subtitle,
-//                        details?.closesAt?.let { "Opens Upto $it" },
-//                        details?.address
-//                    ).joinToString(" • ")
-//
-//                    metaTv.text = detailsLine
-//
-//                    logoBiz.load(imgUrl) {
-//                        crossfade(true)
-//                        placeholder(android.R.drawable.ic_menu_gallery)
-//                        error(android.R.drawable.ic_menu_gallery)
-//                    }
-//                } else {
-//                    headerBusiness?.visibility = View.GONE
-//                    headerPerson?.visibility = View.VISIBLE
-//
-//                    val rawTitle = cardData.title?.trim().orEmpty()
-//                    val looksUnregistered =
-//                        rawTitle.isBlank() || rawTitle.equals("customer", true) || rawTitle.equals("unknown", true)
-//
-//                    val finalTitle =
-//                        if (looksUnregistered) (if (contactName.isNotBlank()) contactName else phone)
-//                        else rawTitle
-//
-//                    personTv.text = finalTitle
-//
-//                    logoPerson.load(imgUrl) {
-//                        crossfade(true)
-//                        placeholder(android.R.drawable.ic_menu_gallery)
-//                        error(android.R.drawable.ic_menu_gallery)
-//                    }
-//                }
-//            } catch (e: Exception) {
-//                Log.e("TRINGO_API", "API failed: ${e.message}", e)
-//            }
-//        }
-//    }
-//
-//    private fun attachDragToCard(card: View?, vararg handles: View?) {
-//        if (card == null) return
-//        val handleViews = handles.filterNotNull().ifEmpty { listOf(card) }
-//
-//        val display = resources.displayMetrics
-//        val screenW = display.widthPixels
-//        val screenH = display.heightPixels
-//
-//        var downRawX = 0f
-//        var downRawY = 0f
-//        var startTx = 0f
-//        var startTy = 0f
-//        var dragging = false
-//
-//        val dragThreshold = 8f
-//
-//        handleViews.forEach { hv ->
-//            hv.isClickable = true
-//            hv.isFocusable = true
-//
-//            hv.setOnTouchListener { _, event ->
-//                when (event.actionMasked) {
-//                    MotionEvent.ACTION_DOWN -> {
-//                        downRawX = event.rawX
-//                        downRawY = event.rawY
-//                        startTx = card.translationX
-//                        startTy = card.translationY
-//                        dragging = false
-//                        true
-//                    }
-//                    MotionEvent.ACTION_MOVE -> {
-//                        val dx = event.rawX - downRawX
-//                        val dy = event.rawY - downRawY
-//
-//                        if (!dragging) {
-//                            if (abs(dx) < dragThreshold && abs(dy) < dragThreshold) return@setOnTouchListener true
-//                            dragging = true
-//                        }
-//
-//                        var newTx = startTx + dx
-//                        var newTy = startTy + dy
-//
-//                        val cardW = card.width.takeIf { it > 0 } ?: 1
-//                        val cardH = card.height.takeIf { it > 0 } ?: 1
-//
-//                        val maxX = (screenW - cardW) / 2f
-//                        val maxY = (screenH - cardH) / 2f
-//
-//                        newTx = min(max(newTx, -maxX), maxX)
-//                        newTy = min(max(newTy, -maxY), maxY)
-//
-//                        card.translationX = newTx
-//                        card.translationY = newTy
-//                        true
-//                    }
-//                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-//                        if (!dragging) hv.performClick()
-//                        dragging = false
-//                        true
-//                    }
-//                    else -> false
-//                }
-//            }
-//        }
-//    }
-//
-//    private fun removeOverlay() {
-//        overlayView?.let {
-//            try { windowManager?.removeView(it) } catch (_: Exception) {}
-//        }
-//        overlayView = null
-//    }
-//
-//    override fun onDestroy() {
-//        stopWatchingForCallEnd()
-//        serviceJob.cancel()
-//        removeOverlay()
-//        super.onDestroy()
-//    }
-//
-//    override fun onBind(intent: Intent?): IBinder? = null
-//
-//    private fun showCallerHeadsUp(title: String, message: String, reason: String) {
-//        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
-//
-//        val channelId = "tringo_call_alert"
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            val nm = getSystemService(NotificationManager::class.java)
-//            val ch = NotificationChannel(channelId, "Tringo Call Alerts", NotificationManager.IMPORTANCE_HIGH)
-//            nm.createNotificationChannel(ch)
-//        }
-//
-//        val builder = NotificationCompat.Builder(this, channelId)
-//            .setSmallIcon(android.R.drawable.ic_menu_call)
-//            .setContentTitle(title)
-//            .setContentText(message)
-//            .setPriority(NotificationCompat.PRIORITY_HIGH)
-//            .setCategory(NotificationCompat.CATEGORY_CALL)
-//            .setAutoCancel(true)
-//            .setOnlyAlertOnce(true)
-//
-//        getSystemService(NotificationManager::class.java).notify(202, builder.build())
-//    }
-//
-//    private fun openAppSettings() {
-//        try {
-//            val i = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-//                data = Uri.parse("package:$packageName")
-//                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-//            }
-//            startActivity(i)
-//        } catch (e: Exception) {
-//            Log.e(TAG, "openAppSettings failed: ${e.message}", e)
-//        }
-//    }
-//}
-//
