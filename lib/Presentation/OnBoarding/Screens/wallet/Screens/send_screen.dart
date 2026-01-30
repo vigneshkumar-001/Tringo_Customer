@@ -17,7 +17,14 @@ import '../Controller/wallet_notifier.dart';
 class SendScreen extends ConsumerStatefulWidget {
   final String uid;
   final String tCoinBalance;
-  const SendScreen({super.key, required this.uid, required this.tCoinBalance});
+  final String? initialToUid;
+
+  const SendScreen({
+    super.key,
+    required this.uid,
+    required this.tCoinBalance,
+    this.initialToUid,
+  });
 
   @override
   ConsumerState<SendScreen> createState() => _SendScreenState();
@@ -42,6 +49,30 @@ class _SendScreenState extends ConsumerState<SendScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final pre = (widget.initialToUid ?? '').trim();
+      if (pre.isEmpty) return;
+
+      _messageController.text = pre;
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _messageController.text.length),
+      );
+
+      // optional: immediately fetch name (no need wait debounce)
+      setState(() => _isFetchingName = true);
+      await ref.read(walletNotifier.notifier).fetchUidPersonName(pre, load: false);
+
+      if (!mounted) return;
+      final res = ref.read(walletNotifier).uidNameResponse;
+      final dn = res?.data.displayName;
+
+      setState(() {
+        _receiverName =
+        (dn != null && dn.trim().isNotEmpty) ? dn.trim() : "Unknown";
+        _isFetchingName = false;
+      });
+    });
 
     _isUidEmpty = _messageController.text.trim().isEmpty;
 
