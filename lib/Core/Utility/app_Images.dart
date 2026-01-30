@@ -150,4 +150,5 @@ class AppImages {
   static String playStore = 'Assets/Images/PlayStore.png';
   static String image = 'Assets/Images/image.png';
   static String surpriseOpens = 'Assets/Images/surprise_opens.mp4';
+  static String qrCodeLogo = 'Assets/Images/qr_code_Logo.png';
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -20,6 +21,7 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/map_urls.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigatebar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/food_details_bottombar.dart';
@@ -28,7 +30,11 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_sho
 import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
+import '../../Shop Screen/Controller/shops_notifier.dart';
 import '../../Smart Connect/smart_connect_guide.dart';
+import '../../wallet/Screens/enter_review.dart';
+import '../../wallet/Screens/qr_scan_screen.dart';
+import '../../wallet/Screens/send_screen.dart';
 import '../../wallet/Screens/wallet_screens.dart';
 
 final callerIdAskedProvider = StateProvider<bool>((ref) => false);
@@ -99,32 +105,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     _listenServiceChanges();
   }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //
-  //   WidgetsBinding.instance.addObserver(this);
-  //
-  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-  //     if (!overlayOk) {
-  //       await CallerIdRoleHelper.requestOverlayPermission();
-  //     }
-  //     await CallerIdRoleHelper.maybeAskOnce(ref: ref);
-  //   });
-  //
-  //   textController = TextEditingController();
-  //   Future.microtask(() async {
-  //     final loc = await _initLocationFlow();
-  //
-  //     ref
-  //         .read(homeNotifierProvider.notifier)
-  //         .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
-  //   });
-  //   _initLocationFlow();
-  //   _listenServiceChanges();
-  // }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
@@ -361,6 +341,114 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: SlideTransition(
             position: animation.drive(tween),
             child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openQrAndAskAction(BuildContext context) async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const QrScanScreen(title: 'Scan QR Code'),
+      ),
+    );
+
+    if (result == null || result.trim().isEmpty) return;
+
+    final payload = QrScanPayload.fromScanValue(result);
+
+    if (!(payload.canPay || payload.canReview)) {
+      AppSnackBar.error(context, "Invalid QR");
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 4,
+                width: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                "Choose Action",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 14),
+
+              // ✅ PAY
+              ListTile(
+                enabled: payload.canPay,
+                leading: const Icon(Icons.account_balance_wallet_rounded),
+                title: const Text("Pay"),
+                onTap: payload.canPay
+                    ? () {
+                        Navigator.pop(context);
+
+                        // ✅ SendScreen open + auto fill UID
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SendScreen(
+                              uid: "YOUR_UID", // <-- your current user uid
+                              tCoinBalance: "0", // <-- your balance
+                              initialToUid: payload.toUid ?? "",
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+
+              // ✅ REVIEW
+              ListTile(
+                enabled: payload.canReview,
+                leading: const Icon(Icons.rate_review_rounded),
+                title: const Text("Review"),
+                onTap: payload.canReview
+                    ? () {
+                        Navigator.pop(context);
+
+                        final shopId = (payload.shopId ?? '').trim();
+                        if (shopId.isEmpty) {
+                          AppSnackBar.error(context, "ShopId missing in QR");
+                          return;
+                        }
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EnterReview(shopId: shopId), // ✅ correct
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+
+              const SizedBox(height: 10),
+            ],
           ),
         );
       },
@@ -855,29 +943,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                             ),
 
-                            SizedBox(width: 12),
-                            InkWell(
-                              onTap: () async {
-                                // 1) Scroll HomeScreen to top (nice quick animation)
-                                if (_homeScrollCtrl.hasClients) {
-                                  await _homeScrollCtrl.animateTo(
-                                    0,
-                                    duration: const Duration(milliseconds: 350),
-                                    curve: Curves.easeOut,
-                                  );
-                                }
+                            SizedBox(width: 14),
 
-                                // 2) Slide the next page up from bottom
-                                if (!mounted) return;
-                                await Navigator.of(
-                                  context,
-                                ).push(slideUpRoute(const SmartConnectGuide()));
-                              },
-                              child: Image.asset(
-                                AppImages.aiGuideImage,
-                                height: 45,
+                            InkWell(
+                              onTap: () => _openQrAndAskAction(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 13,
+                                  vertical: 15,
+                                ),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColor.brightGray,
+                                ),
+                                child: Image.asset(
+                                  AppImages.qrCodeLogo,
+                                  height: 20,
+                                ),
                               ),
                             ),
+
+                            // InkWell(
+                            //   onTap: () async {
+                            //     // 1) Scroll HomeScreen to top (nice quick animation)
+                            //     if (_homeScrollCtrl.hasClients) {
+                            //       await _homeScrollCtrl.animateTo(
+                            //         0,
+                            //         duration: const Duration(milliseconds: 350),
+                            //         curve: Curves.easeOut,
+                            //       );
+                            //     }
+                            //
+                            //     // 2) Slide the next page up from bottom
+                            //     if (!mounted) return;
+                            //     await Navigator.of(
+                            //       context,
+                            //     ).push(slideUpRoute(const SmartConnectGuide()));
+                            //   },
+                            //   child: Image.asset(
+                            //     AppImages.aiGuideImage,
+                            //     height: 45,
+                            //   ),
+                            // ),
                           ],
                         ),
                       ],
@@ -1919,5 +2026,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
     );
+  }
+}
+
+class QrScanPayload {
+  final String? toUid;
+  final String? shopId;
+  final String? action;
+  final List<String> options; // ["DETAIL","REVIEW","SEND_TCOIN"]
+
+  const QrScanPayload({
+    this.toUid,
+    this.shopId,
+    this.action,
+    this.options = const [],
+  });
+
+  bool get canPay => options.contains('SEND_TCOIN') || (toUid ?? '').isNotEmpty;
+  bool get canReview => options.contains('REVIEW') || (shopId ?? '').isNotEmpty;
+
+  static QrScanPayload fromScanValue(String raw) {
+    final v = raw.trim();
+
+    // Case A: your deepLink = hoppr://qr?payload=BASE64URL_JSON
+    final uri = Uri.tryParse(v);
+    final payloadParam = uri?.queryParameters['payload'];
+
+    if (payloadParam != null && payloadParam.trim().isNotEmpty) {
+      try {
+        final jsonMap = _decodeBase64UrlJson(payloadParam.trim());
+        return QrScanPayload(
+          toUid: jsonMap['toUid']?.toString(),
+          shopId: jsonMap['shopId']?.toString(),
+          action: jsonMap['action']?.toString(),
+          options: _readOptions(jsonMap),
+        );
+      } catch (_) {
+        // fallthrough to plain uid
+      }
+    }
+
+    // Case B: if scanned value itself is a UID (ex: UIDA8189F085)
+    return QrScanPayload(
+      toUid: v.isNotEmpty ? v : null,
+      options: const ['SEND_TCOIN'],
+    );
+  }
+
+  static Map<String, dynamic> _decodeBase64UrlJson(String b64url) {
+    var s = b64url.replaceAll('-', '+').replaceAll('_', '/');
+    while (s.length % 4 != 0) {
+      s += '=';
+    }
+    final bytes = base64Decode(s);
+    final decoded = utf8.decode(bytes);
+    final map = jsonDecode(decoded);
+    return (map as Map).cast<String, dynamic>();
+  }
+
+  static List<String> _readOptions(Map<String, dynamic> jsonMap) {
+    final opts = jsonMap['options'];
+    if (opts is List) {
+      return opts
+          .map((e) => (e is Map ? e['key'] : null)?.toString())
+          .whereType<String>()
+          .map((e) => e.trim().toUpperCase())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return const [];
   }
 }
