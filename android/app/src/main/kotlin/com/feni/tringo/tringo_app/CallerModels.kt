@@ -1,3 +1,4 @@
+
 package com.feni.tringo.tringo_app
 
 data class CallerLookupResponse(
@@ -17,4 +18,3 @@ data class AdItem(
     val imageUrl: String?,
     val openText: String? = null
 )
-
