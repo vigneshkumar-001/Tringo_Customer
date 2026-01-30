@@ -5,8 +5,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+
+// ✅ add: import your wallet notifier
+import '../Controller/wallet_notifier.dart'; // <-- adjust path if different
 
 class ReceiveScreen extends ConsumerStatefulWidget {
   final String toUid;
@@ -24,8 +28,6 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 
   // ✅ QR format (you can change this)
   String get _qrData {
-    // example format:
-    // tringo://send?touid=xxx&amount=10
     final uid = widget.toUid.trim();
     final amt = widget.amount.trim();
 
@@ -36,6 +38,11 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+
+    // ✅ CALL API ON LOAD
+    Future.microtask(() {
+      ref.read(walletNotifier.notifier).walletQrCode();
+    });
   }
 
   @override
@@ -53,10 +60,62 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
     ).showSnackBar(SnackBar(content: Text("Copied: $text")));
   }
 
+  // ✅ NEW: build QR widget from URL (fallback to generated QR)
+  Widget _buildQrWidget({required String? qrImageUrl}) {
+    final url = (qrImageUrl ?? '').trim();
+
+    // If API url available -> show image
+    if (url.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          url,
+          width: 210,
+          height: 210,
+          fit: BoxFit.contain,
+          // ✅ optional loading
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return SizedBox(
+              width: 210,
+              height: 210,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: AppColor.black,
+                  backgroundColor: AppColor.white.withOpacity(0.15),
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? (loadingProgress.cumulativeBytesLoaded /
+                            (loadingProgress.expectedTotalBytes ?? 1))
+                      : null,
+                ),
+              ),
+            );
+          },
+          // ✅ if URL broken -> fallback to generated QR
+          errorBuilder: (_, __, ___) {
+            return QrImageView(
+              data: _qrData,
+              size: 210,
+              backgroundColor: Colors.white,
+            );
+          },
+        ),
+      );
+    }
+
+    // URL not available -> fallback generated QR
+    return QrImageView(data: _qrData, size: 210, backgroundColor: Colors.white);
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = widget.toUid.trim();
     final amt = widget.amount.trim();
+
+    // ✅ watch wallet state
+    final wState = ref.watch(walletNotifier);
+    final qrUrl = wState.walletQrResponse?.data.qrImageUrl;
 
     return Scaffold(
       backgroundColor: AppColor.whiteSmoke,
@@ -87,7 +146,6 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
                   ],
                 ),
                 const SizedBox(height: 43),
-
                 Container(
                   decoration: BoxDecoration(
                     color: AppColor.white,
@@ -100,12 +158,8 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
                     ),
                     child: Column(
                       children: [
-                        // ✅ GENERATED QR CODE
-                        QrImageView(
-                          data: _qrData,
-                          size: 210,
-                          backgroundColor: Colors.white,
-                        ),
+                        // ✅ SHOW qrImageUrl IMAGE HERE (fallback to QrImageView)
+                        _buildQrWidget(qrImageUrl: qrUrl),
 
                         const SizedBox(height: 20),
 
@@ -154,11 +208,36 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
                             ),
                             const SizedBox(width: 8),
                             InkWell(
-                              onTap: () => _copyText(uid),
+                              onTap: () async {
+                                final uid = widget.toUid.trim();
+                                if (uid.isEmpty) return;
+                                await Clipboard.setData(
+                                  ClipboardData(text: uid),
+                                );
+                                if (!mounted) return;
+                                AppSnackBar.success(
+                                  context,
+                                  "UID copied: $uid",
+                                );
+                              },
                               child: Image.asset(AppImages.uIDBlue, height: 14),
                             ),
                           ],
                         ),
+
+                        // ✅ optional: show API error
+                        if ((wState.error ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            wState.error!,
+                            style: GoogleFont.Mulish(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -172,16 +251,23 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
   }
 }
 
+///old ///
 // import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:tringo_app/Core/Utility/app_Images.dart';
+// import 'package:qr_flutter/qr_flutter.dart';
 //
+// import '../../../../../Core/Utility/app_Images.dart';
 // import '../../../../../Core/Utility/app_color.dart';
+// import '../../../../../Core/Utility/app_snackbar.dart';
 // import '../../../../../Core/Utility/google_font.dart';
 // import '../../../../../Core/Widgets/common_container.dart';
 //
 // class ReceiveScreen extends ConsumerStatefulWidget {
-//   const ReceiveScreen({super.key});
+//   final String toUid;
+//   final String amount;
+//
+//   const ReceiveScreen({super.key, required this.toUid, required this.amount});
 //
 //   @override
 //   ConsumerState<ReceiveScreen> createState() => _ReceiveScreenState();
@@ -190,6 +276,14 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 // class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 //     with SingleTickerProviderStateMixin {
 //   late AnimationController _controller;
+//
+//   // ✅ QR format (you can change this)
+//   String get _qrData {
+//     final uid = widget.toUid.trim();
+//     final amt = widget.amount.trim();
+//
+//     return uid;
+//   }
 //
 //   @override
 //   void initState() {
@@ -203,8 +297,20 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 //     super.dispose();
 //   }
 //
+//   Future<void> _copyText(String text) async {
+//     await Clipboard.setData(ClipboardData(text: text));
+//     if (!mounted) return;
+//
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(SnackBar(content: Text("Copied: $text")));
+//   }
+//
 //   @override
 //   Widget build(BuildContext context) {
+//     final uid = widget.toUid.trim();
+//     final amt = widget.amount.trim();
+//
 //     return Scaffold(
 //       backgroundColor: AppColor.whiteSmoke,
 //       body: SafeArea(
@@ -233,18 +339,29 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 //                     ),
 //                   ],
 //                 ),
-//                 SizedBox(height: 43),
+//                 const SizedBox(height: 43),
+//
 //                 Container(
 //                   decoration: BoxDecoration(
 //                     color: AppColor.white,
 //                     borderRadius: BorderRadius.circular(20),
 //                   ),
 //                   child: Padding(
-//                     padding: const EdgeInsets.symmetric(horizontal: 57,vertical: 66),
+//                     padding: const EdgeInsets.symmetric(
+//                       horizontal: 35,
+//                       vertical: 45,
+//                     ),
 //                     child: Column(
 //                       children: [
-//                         Image.asset(AppImages.qRCode, height: 200),
-//                         SizedBox(height: 31),
+//                         // ✅ GENERATED QR CODE
+//                         QrImageView(
+//                           data: _qrData,
+//                           size: 210,
+//                           backgroundColor: Colors.white,
+//                         ),
+//
+//                         const SizedBox(height: 20),
+//
 //                         Text(
 //                           'Scan QR',
 //                           style: GoogleFont.Mulish(
@@ -253,7 +370,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 //                             color: AppColor.darkBlue,
 //                           ),
 //                         ),
-//                         SizedBox(height: 11),
+//
+//                         const SizedBox(height: 8),
+//
 //                         Text(
 //                           '( or )',
 //                           style: GoogleFont.Mulish(
@@ -262,28 +381,46 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 //                             color: AppColor.borderGray,
 //                           ),
 //                         ),
-//                         SizedBox(height: 11),
+//
+//                         const SizedBox(height: 14),
+//
+//                         // ✅ UID
 //                         Text(
-//                           'Use this UID',
+//                           'Send To UID',
 //                           style: GoogleFont.Mulish(
 //                             fontSize: 14,
 //                             fontWeight: FontWeight.w700,
 //                             color: AppColor.blue,
 //                           ),
 //                         ),
-//                         SizedBox(height: 11),
+//                         const SizedBox(height: 8),
+//
 //                         Row(
 //                           mainAxisAlignment: MainAxisAlignment.center,
 //                           children: [
 //                             Text(
-//                               'UID886UI38',
+//                               uid.isEmpty ? "—" : uid,
 //                               style: GoogleFont.Mulish(
 //                                 fontSize: 13,
 //                                 color: AppColor.darkBlue,
 //                               ),
 //                             ),
-//                             SizedBox(width: 6),
-//                             Image.asset(AppImages.uIDBlue, height: 14),
+//                             const SizedBox(width: 8),
+//                             InkWell(
+//                               onTap: () async {
+//                                 final uid = widget.toUid.trim();
+//                                 if (uid.isEmpty) return;
+//                                 await Clipboard.setData(
+//                                   ClipboardData(text: uid),
+//                                 );
+//                                 if (!mounted) return;
+//                                 AppSnackBar.success(
+//                                   context,
+//                                   "UID copied: $uid",
+//                                 );
+//                               },
+//                               child: Image.asset(AppImages.uIDBlue, height: 14),
+//                             ),
 //                           ],
 //                         ),
 //                       ],
@@ -298,3 +435,5 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
 //     );
 //   }
 // }
+//
+//

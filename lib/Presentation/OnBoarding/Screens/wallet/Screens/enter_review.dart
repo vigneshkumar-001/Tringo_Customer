@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_loader.dart';
 import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
@@ -76,6 +77,7 @@ class _EnterReviewState extends ConsumerState<EnterReview>
     final state = ref.watch(shopsNotifierProvider);
     final shopsData = state.shopDetailsResponse;
     final shop = shopsData?.data;
+    final isShopLoading = state.isLoading && shop == null;
 
     final shopImageUrl = (shop?.media.isNotEmpty == true)
         ? shop!.media.first.url
@@ -147,183 +149,355 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                   ],
                 ),
               ),
-
-              Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(AppImages.walletBCImage),
+              if (isShopLoading) ...[
+                const SizedBox(height: 30),
+                ThreeDotsLoader(dotColor: AppColor.darkBlue),
+                const SizedBox(height: 30),
+              ] else ...[
+                Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(AppImages.walletBCImage),
+                    ),
+                    gradient: LinearGradient(
+                      colors: [AppColor.white, AppColor.surfaceAqua],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(25),
+                      bottomRight: Radius.circular(25),
+                    ),
                   ),
-                  gradient: LinearGradient(
-                    colors: [AppColor.white, AppColor.surfaceAqua],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(24),
-                      onTap: () {},
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 15,
-                        ),
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 15.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  // Image.asset(
-                                  //   AppImages.shopContainer3,
-                                  //   height: 130,
-                                  //   width: 115,
-                                  // ),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: CachedNetworkImage(
-                                      imageUrl: shopImageUrl,
-                                      height: 100,
-                                      width: 100,
-                                      fit: BoxFit.cover,
-
-                                      placeholder: (context, url) =>
-                                          const SizedBox(
-                                            height: 100,
-                                            width: 100,
-                                            child: Center(
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
-                                          ),
-                                      errorWidget: (context, url, error) =>
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            child: Container(
+                  child: Column(
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () {},
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 15,
+                          ),
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 15.0,
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: CachedNetworkImage(
+                                        imageUrl: shopImageUrl,
+                                        height: 100,
+                                        width: 100,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) =>
+                                            const SizedBox(
                                               height: 100,
                                               width: 100,
-                                              color: Colors.grey.shade300,
-                                              child: Icon(Icons.broken_image),
-                                            ),
-                                          ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 14),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        right: 50.0,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            shop?.englishName?.toString() ?? "",
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 16,
-                                              color: AppColor.darkBlue,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-
-                                          Row(
-                                            children: [
-                                              Image.asset(
-                                                AppImages.locationImage,
-                                                height: 10,
-                                                color: AppColor.lightGray2,
+                                              child: Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
                                               ),
-                                              const SizedBox(width: 3),
-
-                                              Flexible(
-                                                child: Text(
-                                                  "${shop?.addressEn ?? ""}",
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
+                                            ),
+                                        errorWidget: (context, url, error) =>
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              child: Container(
+                                                height: 100,
+                                                width: 100,
+                                                color: Colors.grey.shade300,
+                                                child: const Icon(
+                                                  Icons.broken_image,
+                                                ),
+                                              ),
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 50.0,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              shop?.englishName?.toString() ??
+                                                  "",
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFont.Mulish(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 16,
+                                                color: AppColor.darkBlue,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                Image.asset(
+                                                  AppImages.locationImage,
+                                                  height: 10,
+                                                  color: AppColor.lightGray2,
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Flexible(
+                                                  child: Text(
+                                                    "${shop?.addressEn ?? ""}",
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: GoogleFont.Mulish(
+                                                      fontSize: 12,
+                                                      color:
+                                                          AppColor.lightGray2,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  shop?.distanceLabel
+                                                          ?.toString() ??
+                                                      "",
                                                   style: GoogleFont.Mulish(
+                                                    fontWeight: FontWeight.bold,
                                                     fontSize: 12,
+                                                    color: AppColor.lightGray3,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                CommonContainer.greenStarRating(
+                                                  ratingStar:
+                                                      shop?.averageRating
+                                                          ?.toString() ??
+                                                      "0",
+                                                  ratingCount:
+                                                      shop?.reviewCount
+                                                          ?.toString() ??
+                                                      "0",
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  'Opens Upto ',
+                                                  style: GoogleFont.Mulish(
+                                                    fontSize: 9,
                                                     color: AppColor.lightGray2,
                                                   ),
                                                 ),
-                                              ),
-
-                                              const SizedBox(width: 5),
-                                              Text(
-                                                shop?.distanceLabel
-                                                        ?.toString() ??
-                                                    "",
-                                                style: GoogleFont.Mulish(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
-                                                  color: AppColor.lightGray3,
+                                                Text(
+                                                  shop?.closeTime ?? "",
+                                                  style: GoogleFont.Mulish(
+                                                    fontSize: 9,
+                                                    color: AppColor.lightGray2,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-
-                                          const SizedBox(height: 10),
-
-                                          Row(
-                                            children: [
-                                              CommonContainer.greenStarRating(
-                                                ratingStar:
-                                                    shop?.averageRating
-                                                        ?.toString() ??
-                                                    "0",
-                                                ratingCount:
-                                                    shop?.reviewCount
-                                                        ?.toString() ??
-                                                    "0",
-                                              ),
-
-                                              const SizedBox(width: 10),
-
-                                              Text(
-                                                'Opens Upto ',
-                                                style: GoogleFont.Mulish(
-                                                  fontSize: 9,
-                                                  color: AppColor.lightGray2,
-                                                ),
-                                              ),
-                                              Text(
-                                                shop?.closeTime ?? "",
-                                                style: GoogleFont.Mulish(
-                                                  fontSize: 9,
-                                                  color: AppColor.lightGray2,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
+              // Container(
+              //   decoration: BoxDecoration(
+              //     image: DecorationImage(
+              //       image: AssetImage(AppImages.walletBCImage),
+              //     ),
+              //     gradient: LinearGradient(
+              //       colors: [AppColor.white, AppColor.surfaceAqua],
+              //       begin: Alignment.topCenter,
+              //       end: Alignment.bottomCenter,
+              //     ),
+              //     borderRadius: BorderRadius.only(
+              //       bottomLeft: Radius.circular(25),
+              //       bottomRight: Radius.circular(25),
+              //     ),
+              //   ),
+              //   child: Column(
+              //     children: [
+              //       InkWell(
+              //         borderRadius: BorderRadius.circular(24),
+              //         onTap: () {},
+              //         child: Padding(
+              //           padding: const EdgeInsets.symmetric(
+              //             horizontal: 20,
+              //             vertical: 15,
+              //           ),
+              //           child: Column(
+              //             children: [
+              //               Padding(
+              //                 padding: const EdgeInsets.symmetric(
+              //                   vertical: 15.0,
+              //                 ),
+              //                 child: Row(
+              //                   children: [
+              //                     // Image.asset(
+              //                     //   AppImages.shopContainer3,
+              //                     //   height: 130,
+              //                     //   width: 115,
+              //                     // ),
+              //                     ClipRRect(
+              //                       borderRadius: BorderRadius.circular(16),
+              //                       child: CachedNetworkImage(
+              //                         imageUrl: shopImageUrl,
+              //                         height: 100,
+              //                         width: 100,
+              //                         fit: BoxFit.cover,
+              //
+              //                         placeholder: (context, url) =>
+              //                             const SizedBox(
+              //                               height: 100,
+              //                               width: 100,
+              //                               child: Center(
+              //                                 child: CircularProgressIndicator(
+              //                                   strokeWidth: 2,
+              //                                 ),
+              //                               ),
+              //                             ),
+              //                         errorWidget: (context, url, error) =>
+              //                             ClipRRect(
+              //                               borderRadius: BorderRadius.circular(
+              //                                 16,
+              //                               ),
+              //                               child: Container(
+              //                                 height: 100,
+              //                                 width: 100,
+              //                                 color: Colors.grey.shade300,
+              //                                 child: Icon(Icons.broken_image),
+              //                               ),
+              //                             ),
+              //                       ),
+              //                     ),
+              //                     SizedBox(width: 14),
+              //                     Expanded(
+              //                       child: Padding(
+              //                         padding: const EdgeInsets.only(
+              //                           right: 50.0,
+              //                         ),
+              //                         child: Column(
+              //                           crossAxisAlignment:
+              //                               CrossAxisAlignment.start,
+              //                           children: [
+              //                             Text(
+              //                               shop?.englishName?.toString() ?? "",
+              //                               maxLines: 1,
+              //                               overflow: TextOverflow.ellipsis,
+              //                               style: GoogleFont.Mulish(
+              //                                 fontWeight: FontWeight.w800,
+              //                                 fontSize: 16,
+              //                                 color: AppColor.darkBlue,
+              //                               ),
+              //                             ),
+              //                             const SizedBox(height: 6),
+              //
+              //                             Row(
+              //                               children: [
+              //                                 Image.asset(
+              //                                   AppImages.locationImage,
+              //                                   height: 10,
+              //                                   color: AppColor.lightGray2,
+              //                                 ),
+              //                                 const SizedBox(width: 3),
+              //
+              //                                 Flexible(
+              //                                   child: Text(
+              //                                     "${shop?.addressEn ?? ""}",
+              //                                     maxLines: 1,
+              //                                     overflow:
+              //                                         TextOverflow.ellipsis,
+              //                                     style: GoogleFont.Mulish(
+              //                                       fontSize: 12,
+              //                                       color: AppColor.lightGray2,
+              //                                     ),
+              //                                   ),
+              //                                 ),
+              //
+              //                                 const SizedBox(width: 5),
+              //                                 Text(
+              //                                   shop?.distanceLabel
+              //                                           ?.toString() ??
+              //                                       "",
+              //                                   style: GoogleFont.Mulish(
+              //                                     fontWeight: FontWeight.bold,
+              //                                     fontSize: 12,
+              //                                     color: AppColor.lightGray3,
+              //                                   ),
+              //                                 ),
+              //                               ],
+              //                             ),
+              //
+              //                             const SizedBox(height: 10),
+              //
+              //                             Row(
+              //                               children: [
+              //                                 CommonContainer.greenStarRating(
+              //                                   ratingStar:
+              //                                       shop?.averageRating
+              //                                           ?.toString() ??
+              //                                       "0",
+              //                                   ratingCount:
+              //                                       shop?.reviewCount
+              //                                           ?.toString() ??
+              //                                       "0",
+              //                                 ),
+              //
+              //                                 const SizedBox(width: 10),
+              //
+              //                                 Text(
+              //                                   'Opens Upto ',
+              //                                   style: GoogleFont.Mulish(
+              //                                     fontSize: 9,
+              //                                     color: AppColor.lightGray2,
+              //                                   ),
+              //                                 ),
+              //                                 Text(
+              //                                   shop?.closeTime ?? "",
+              //                                   style: GoogleFont.Mulish(
+              //                                     fontSize: 9,
+              //                                     color: AppColor.lightGray2,
+              //                                     fontWeight: FontWeight.w800,
+              //                                   ),
+              //                                 ),
+              //                               ],
+              //                             ),
+              //                           ],
+              //                         ),
+              //                       ),
+              //                     ),
+              //                   ],
+              //                 ),
+              //               ),
+              //             ],
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
               SizedBox(height: 40),
               Text(
                 'Give Stars',

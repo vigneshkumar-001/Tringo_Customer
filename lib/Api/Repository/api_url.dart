@@ -18,6 +18,7 @@ class ApiUrl {
   static const String editProfile = "${base}api/v1/customer/profile";
   static const String imageUrl = "${base}api/media/image-save";
   static const String supportTicketsList = "${base}api/v1/support/tickets";
+  static const String walletQrCode = "${base}api/v1/wallet/my-qr";
 
   static const String privacyPolicy =
       "${base}api/v1/public/pages/privacy-policy";

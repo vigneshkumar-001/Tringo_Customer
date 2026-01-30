@@ -33,6 +33,7 @@ import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../../Shop Screen/Controller/shops_notifier.dart';
 import '../../Smart Connect/smart_connect_guide.dart';
+import '../../wallet/Controller/wallet_notifier.dart';
 import '../../wallet/Screens/enter_review.dart';
 import '../../wallet/Screens/qr_scan_screen.dart';
 import '../../wallet/Screens/send_screen.dart';
@@ -362,13 +363,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final payload = QrScanPayload.fromScanValue(result);
 
-    if (!(payload.canPay || payload.canReview)) {
+    final toUid = (payload.toUid ?? '').trim();
+    final shopId = (payload.shopId ?? '').trim();
+
+    final hasUid = toUid.isNotEmpty;
+    final hasShop = shopId.isNotEmpty;
+
+    if (!hasUid && !hasShop) {
       AppSnackBar.error(context, "Invalid QR");
       return;
     }
 
+    // ✅ Ensure wallet loaded (so SendScreen gets uid/balance safely)
+    await _ensureWalletReady();
+
+    final walletState = ref.read(walletNotifier);
+    final wallet = walletState.walletHistoryResponse?.data.wallet;
+
+    // fallback if wallet null
+    final myUid = (wallet?.uid ?? '').toString();
+    final myBal = (wallet?.tcoinBalance ?? 0).toString();
+
     if (!context.mounted) return;
 
+    // ✅ CASE 1: UID ONLY => AUTO NAVIGATE TO SEND SCREEN
+    if (hasUid && !hasShop) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              SendScreen(tCoinBalance: myBal, uid: myUid, initialToUid: toUid),
+        ),
+      );
+      return;
+    }
+
+    // ✅ CASE 2: UID + SHOPID => OPEN PAY/REVIEW SHEET
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -402,21 +432,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
               // ✅ PAY
               ListTile(
-                enabled: payload.canPay,
+                enabled: hasUid,
                 leading: const Icon(Icons.account_balance_wallet_rounded),
                 title: const Text("Pay"),
-                onTap: payload.canPay
+                onTap: hasUid
                     ? () {
                         Navigator.pop(context);
-
-                        // ✅ SendScreen open + auto fill UID
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => SendScreen(
-                              uid: "YOUR_UID", // <-- your current user uid
-                              tCoinBalance: "0", // <-- your balance
-                              initialToUid: payload.toUid ?? "",
+                              tCoinBalance: myBal,
+                              uid: myUid,
+                              initialToUid: toUid,
                             ),
                           ),
                         );
@@ -426,24 +454,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
               // ✅ REVIEW
               ListTile(
-                enabled: payload.canReview,
+                enabled: hasShop,
                 leading: const Icon(Icons.rate_review_rounded),
                 title: const Text("Review"),
-                onTap: payload.canReview
+                onTap: hasShop
                     ? () {
                         Navigator.pop(context);
-
-                        final shopId = (payload.shopId ?? '').trim();
-                        if (shopId.isEmpty) {
-                          AppSnackBar.error(context, "ShopId missing in QR");
-                          return;
-                        }
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                EnterReview(shopId: shopId), // ✅ correct
+                            builder: (_) => EnterReview(shopId: shopId),
                           ),
                         );
                       }
@@ -456,6 +476,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         );
       },
     );
+  }
+
+  Future<void> _ensureWalletReady() async {
+    final st = ref.read(walletNotifier);
+    if (st.walletHistoryResponse != null) return;
+
+    await ref.read(walletNotifier.notifier).walletHistory(type: "ALL");
   }
 
   @override
@@ -2090,7 +2117,7 @@ class QrScanPayload {
   final String? toUid;
   final String? shopId;
   final String? action;
-  final List<String> options; // ["DETAIL","REVIEW","SEND_TCOIN"]
+  final List<String> options;
 
   const QrScanPayload({
     this.toUid,
@@ -2099,53 +2126,128 @@ class QrScanPayload {
     this.options = const [],
   });
 
-  bool get canPay => options.contains('SEND_TCOIN') || (toUid ?? '').isNotEmpty;
-  bool get canReview => options.contains('REVIEW') || (shopId ?? '').isNotEmpty;
+  bool get hasUid => (toUid ?? '').trim().isNotEmpty;
+  bool get hasShop => (shopId ?? '').trim().isNotEmpty;
+
+  // optional flags (if your backend sends options)
+  bool get canPay => options.contains('SEND_TCOIN') || hasUid;
+  bool get canReview => options.contains('REVIEW') || hasShop;
 
   static QrScanPayload fromScanValue(String raw) {
     final v = raw.trim();
+    if (v.isEmpty) return const QrScanPayload();
 
-    // Case A: your deepLink = hoppr://qr?payload=BASE64URL_JSON
+    // 1) Try URI parsing
     final uri = Uri.tryParse(v);
-    final payloadParam = uri?.queryParameters['payload'];
 
+    // 1A) payload base64url JSON: hoppr://qr?payload=BASE64URL_JSON
+    final payloadParam = uri?.queryParameters['payload'];
     if (payloadParam != null && payloadParam.trim().isNotEmpty) {
-      try {
-        final jsonMap = _decodeBase64UrlJson(payloadParam.trim());
+      final jsonMap = _tryDecodePayloadToJson(payloadParam.trim());
+      if (jsonMap != null) return _fromJsonMap(jsonMap);
+      // if payload decode failed, continue to other strategies
+    }
+
+    // 1B) direct query params: hoppr://qr?toUid=...&shopId=...
+    if (uri != null && uri.queryParameters.isNotEmpty) {
+      final qp = uri.queryParameters;
+      final toUid = _pick(qp, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
+      final shopId = _pick(qp, ['shopId', 'shopID', 'shop_id', 'shop']);
+      if ((toUid ?? '').trim().isNotEmpty || (shopId ?? '').trim().isNotEmpty) {
         return QrScanPayload(
-          toUid: jsonMap['toUid']?.toString(),
-          shopId: jsonMap['shopId']?.toString(),
-          action: jsonMap['action']?.toString(),
-          options: _readOptions(jsonMap),
+          toUid: toUid?.trim(),
+          shopId: shopId?.trim(),
+          action: _pick(qp, ['action'])?.trim(),
+          options: const [],
         );
-      } catch (_) {
-        // fallthrough to plain uid
       }
     }
 
-    // Case B: if scanned value itself is a UID (ex: UIDA8189F085)
+    // 2) Try JSON directly (some QR stores raw JSON)
+    final jsonMapDirect = _tryJsonDecode(v);
+    if (jsonMapDirect != null) return _fromJsonMap(jsonMapDirect);
+
+    // 3) Plain UID (customer QR): UIDA8189F085
+    final onlyUid = _extractUid(v);
+    if (onlyUid != null) {
+      return QrScanPayload(toUid: onlyUid, options: const ['SEND_TCOIN']);
+    }
+
+    // 4) If nothing matched
+    return const QrScanPayload();
+  }
+
+  static QrScanPayload _fromJsonMap(Map<String, dynamic> m) {
+    final toUid = _pick(m, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
+    final shopId = _pick(m, ['shopId', 'shopID', 'shop_id', 'shop']);
+    final action = _pick(m, ['action', 'act']);
+
     return QrScanPayload(
-      toUid: v.isNotEmpty ? v : null,
-      options: const ['SEND_TCOIN'],
+      toUid: toUid?.toString().trim(),
+      shopId: shopId?.toString().trim(),
+      action: action?.toString().trim(),
+      options: _readOptions(m),
     );
   }
 
-  static Map<String, dynamic> _decodeBase64UrlJson(String b64url) {
-    var s = b64url.replaceAll('-', '+').replaceAll('_', '/');
-    while (s.length % 4 != 0) {
-      s += '=';
+  static Map<String, dynamic>? _tryDecodePayloadToJson(String b64url) {
+    try {
+      var s = b64url.replaceAll('-', '+').replaceAll('_', '/');
+      while (s.length % 4 != 0) {
+        s += '=';
+      }
+      final bytes = base64Decode(s);
+      final decoded = utf8.decode(bytes);
+      final map = jsonDecode(decoded);
+      return (map as Map).cast<String, dynamic>();
+    } catch (_) {
+      // also try normal base64 (some apps use standard base64)
+      try {
+        final bytes = base64Decode(b64url);
+        final decoded = utf8.decode(bytes);
+        final map = jsonDecode(decoded);
+        return (map as Map).cast<String, dynamic>();
+      } catch (_) {
+        return null;
+      }
     }
-    final bytes = base64Decode(s);
-    final decoded = utf8.decode(bytes);
-    final map = jsonDecode(decoded);
-    return (map as Map).cast<String, dynamic>();
+  }
+
+  static Map<String, dynamic>? _tryJsonDecode(String v) {
+    try {
+      final map = jsonDecode(v);
+      if (map is Map) return map.cast<String, dynamic>();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _extractUid(String v) {
+    // support: "UIDA8189F085" OR "UID: UIDA8189F085" OR "toUid=UIDA..."
+    final m = RegExp(r'(UID[A-Za-z0-9]+)', caseSensitive: false).firstMatch(v);
+    return m?.group(1)?.toUpperCase();
+  }
+
+  static String? _pick(Map m, List<String> keys) {
+    for (final k in keys) {
+      if (m.containsKey(k) && (m[k]?.toString().trim().isNotEmpty ?? false)) {
+        return m[k].toString();
+      }
+    }
+    return null;
   }
 
   static List<String> _readOptions(Map<String, dynamic> jsonMap) {
     final opts = jsonMap['options'];
     if (opts is List) {
       return opts
-          .map((e) => (e is Map ? e['key'] : null)?.toString())
+          .map((e) {
+            if (e is Map) {
+              return (e['key'] ?? e['code'] ?? e['name'])?.toString();
+            }
+            return e?.toString();
+          })
           .whereType<String>()
           .map((e) => e.trim().toUpperCase())
           .where((e) => e.isNotEmpty)

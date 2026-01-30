@@ -8,11 +8,13 @@ import '../Model/review_history_response.dart';
 import '../Model/send_tcoin_response.dart';
 import '../Model/uid_name_response.dart';
 import '../Model/wallet_history_response.dart';
+import '../Model/wallet_qr_response.dart';
 import '../Model/withdraw_request_response.dart';
 
 class WalletState {
   final bool isLoading;
   final bool isMsgSendingLoading;
+  final String? sendError;
   final WalletHistoryResponse? walletHistoryResponse;
   final UidNameResponse? uidNameResponse;
   final SendTcoinData? sendTcoinData;
@@ -20,12 +22,14 @@ class WalletState {
   final ReferralHistoryResponse? referralHistoryResponse;
   final ReviewHistoryResponse? reviewHistoryResponse;
   final ReviewCreateResponse? reviewCreateResponse;
+  final WalletQrResponse? walletQrResponse;
 
   final String? error;
 
   const WalletState({
     this.isLoading = false,
     this.isMsgSendingLoading = false,
+    this.sendError,
     this.error,
     this.walletHistoryResponse,
     this.uidNameResponse,
@@ -34,6 +38,7 @@ class WalletState {
     this.referralHistoryResponse,
     this.reviewHistoryResponse,
     this.reviewCreateResponse,
+    this.walletQrResponse,
   });
 
   factory WalletState.initial() => const WalletState();
@@ -41,6 +46,7 @@ class WalletState {
   WalletState copyWith({
     bool? isLoading,
     bool? isMsgSendingLoading,
+    String? sendError,
     String? error,
     WalletHistoryResponse? walletHistoryResponse,
     UidNameResponse? uidNameResponse,
@@ -49,10 +55,15 @@ class WalletState {
     ReferralHistoryResponse? referralHistoryResponse,
     ReviewHistoryResponse? reviewHistoryResponse,
     ReviewCreateResponse? reviewCreateResponse,
+    WalletQrResponse? walletQrResponse,
+    bool clearError = false,
+    bool clearSendError = false,
+    bool clearSendData = false,
   }) {
     return WalletState(
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      sendError: clearSendError ? null : (sendError ?? this.sendError),
       isMsgSendingLoading: isMsgSendingLoading ?? this.isMsgSendingLoading,
       walletHistoryResponse:
           walletHistoryResponse ?? this.walletHistoryResponse,
@@ -65,6 +76,7 @@ class WalletState {
       reviewHistoryResponse:
           reviewHistoryResponse ?? this.reviewHistoryResponse,
       reviewCreateResponse: reviewCreateResponse ?? this.reviewCreateResponse,
+      walletQrResponse: walletQrResponse ?? this.walletQrResponse,
     );
   }
 }
@@ -97,7 +109,7 @@ class WalletNotifier extends Notifier<WalletState> {
     );
   }
 
-  Future<void> fetchUidPersonName(String uid ,{bool load = true}) async {
+  Future<void> fetchUidPersonName(String uid, {bool load = true}) async {
     state = state.copyWith(isLoading: load, error: null);
 
     final result = await api.uIDPersonName(uid: uid);
@@ -116,24 +128,35 @@ class WalletNotifier extends Notifier<WalletState> {
     );
   }
 
-  Future<void> uIDSendApi({
+  Future<dynamic /*SendTcoinData?*/> uIDSendApi({
     required String toUid,
     required String tcoin,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    // ✅ only button loader + only send error
+    state = state.copyWith(
+      isMsgSendingLoading: true,
+      clearSendError: true,
+      clearSendData: true,
+    );
 
-    final result = await api.uIDSendApi( tCoin : tcoin, toUid: toUid);
+    final result = await api.uIDSendApi(tCoin: tcoin, toUid: toUid);
 
-    result.fold(
+    return result.fold(
       (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
+        state = state.copyWith(
+          isMsgSendingLoading: false,
+          sendError: failure.message, // ✅ store in sendError only
+        );
+        return null;
       },
       (resp) {
+        // resp.data = {"success":true,"fromBalance":1}
         state = state.copyWith(
-          isLoading: false,
-          error: null,
-          sendTcoinData: resp.data, // ✅ store only inner data
+          isMsgSendingLoading: false,
+          clearSendError: true,
+          sendTcoinData: resp.data,
         );
+        return resp.data;
       },
     );
   }
@@ -225,6 +248,25 @@ class WalletNotifier extends Notifier<WalletState> {
           isMsgSendingLoading: false,
           error: null,
           reviewCreateResponse: response,
+        );
+      },
+    );
+  }
+
+  Future<void> walletQrCode() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    final result = await api.walletQrCode();
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(isLoading: false, error: failure.message);
+      },
+      (resp) {
+        state = state.copyWith(
+          isLoading: false,
+          error: null,
+          walletQrResponse: resp,
         );
       },
     );
