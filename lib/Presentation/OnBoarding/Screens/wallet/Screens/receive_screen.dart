@@ -225,19 +225,19 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
                           ],
                         ),
 
-                        // ✅ optional: show API error
-                        if ((wState.error ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            wState.error!,
-                            style: GoogleFont.Mulish(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.red,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        // // ✅ optional: show API error
+                        // if ((wState.error ?? '').isNotEmpty) ...[
+                        //   const SizedBox(height: 12),
+                        //   Text(
+                        //     wState.error!,
+                        //     style: GoogleFont.Mulish(
+                        //       fontSize: 12,
+                        //       fontWeight: FontWeight.w600,
+                        //       color: Colors.red,
+                        //     ),
+                        //     textAlign: TextAlign.center,
+                        //   ),
+                        // ],
                       ],
                     ),
                   ),

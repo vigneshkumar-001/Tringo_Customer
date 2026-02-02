@@ -92,7 +92,7 @@
                     android:textSize="13sp"
                     android:maxLines="2" />
 
-                <!-- Optional action buttons (Call/Chat) -->
+                <!-- ✅ Action buttons (Call/Chat) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -100,6 +100,7 @@
                     android:orientation="horizontal">
 
                     <TextView
+                        android:id="@+id/callBtn"
                         android:layout_width="0dp"
                         android:layout_height="42dp"
                         android:layout_weight="1"
@@ -114,6 +115,7 @@
                         android:layout_height="1dp" />
 
                     <TextView
+                        android:id="@+id/chatBtn"
                         android:layout_width="0dp"
                         android:layout_height="42dp"
                         android:layout_weight="1"
@@ -214,3 +216,222 @@
 
     </LinearLayout>
 </FrameLayout>
+
+
+
+    <!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:id="@+id/overlayRootFull"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="match_parent"-->
+<!--    android:background="#66000000">-->
+
+<!--    &lt;!&ndash; Outside tap close layer &ndash;&gt;-->
+<!--    <View-->
+<!--        android:id="@+id/outsideCloseLayer"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent" />-->
+
+<!--    &lt;!&ndash; Main card &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--        android:id="@+id/rootCard"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_margin="16dp"-->
+<!--        android:layout_gravity="top"-->
+<!--        android:orientation="vertical"-->
+<!--        android:background="@drawable/bg_overlay_card"-->
+<!--        android:padding="14dp">-->
+
+<!--        &lt;!&ndash; Top row &ndash;&gt;-->
+<!--        <RelativeLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content">-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/smallTopText"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Tringo Identifies"-->
+<!--                android:textColor="#EAF7FF"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textStyle="bold" />-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/closeBtn"-->
+<!--                android:layout_width="34dp"-->
+<!--                android:layout_height="34dp"-->
+<!--                android:layout_alignParentEnd="true"-->
+<!--                android:padding="6dp"-->
+<!--                android:src="@android:drawable/ic_menu_close_clear_cancel"-->
+<!--                android:tint="#EAF7FF"-->
+<!--                android:background="@drawable/bg_circle_soft" />-->
+<!--        </RelativeLayout>-->
+
+<!--        &lt;!&ndash; =========================-->
+<!--             HEADER: BUSINESS (Shop)-->
+<!--        ========================== &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--            android:id="@+id/headerBusiness"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginTop="12dp"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:visibility="gone">-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/logoImageBusiness"-->
+<!--                android:layout_width="88dp"-->
+<!--                android:layout_height="88dp"-->
+<!--                android:scaleType="centerCrop"-->
+<!--                android:background="@drawable/bg_image_rounded"-->
+<!--                android:clipToOutline="true" />-->
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginStart="12dp"-->
+<!--                android:layout_weight="1"-->
+<!--                android:orientation="vertical">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/businessNameText"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Shop Name"-->
+<!--                    android:textColor="#FFFFFF"-->
+<!--                    android:textSize="22sp"-->
+<!--                    android:textStyle="bold" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/metaText"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="6dp"-->
+<!--                    android:text="Category • Address • Opens Upto"-->
+<!--                    android:textColor="#D9F1FF"-->
+<!--                    android:textSize="13sp"-->
+<!--                    android:maxLines="2" />-->
+
+<!--                &lt;!&ndash; Optional action buttons (Call/Chat) &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="10dp"-->
+<!--                    android:orientation="horizontal">-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="0dp"-->
+<!--                        android:layout_height="42dp"-->
+<!--                        android:layout_weight="1"-->
+<!--                        android:gravity="center"-->
+<!--                        android:text="Call"-->
+<!--                        android:textColor="#0C2A3A"-->
+<!--                        android:textStyle="bold"-->
+<!--                        android:background="@drawable/bg_btn_light" />-->
+
+<!--                    <View-->
+<!--                        android:layout_width="10dp"-->
+<!--                        android:layout_height="1dp" />-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="0dp"-->
+<!--                        android:layout_height="42dp"-->
+<!--                        android:layout_weight="1"-->
+<!--                        android:gravity="center"-->
+<!--                        android:text="Chat"-->
+<!--                        android:textColor="#EAF7FF"-->
+<!--                        android:textStyle="bold"-->
+<!--                        android:background="@drawable/bg_btn_dark" />-->
+<!--                </LinearLayout>-->
+<!--            </LinearLayout>-->
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; =========================-->
+<!--             HEADER: PERSON-->
+<!--        ========================== &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--            android:id="@+id/headerPerson"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginTop="12dp"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:visibility="gone">-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/logoImagePerson"-->
+<!--                android:layout_width="88dp"-->
+<!--                android:layout_height="88dp"-->
+<!--                android:scaleType="centerCrop"-->
+<!--                android:background="@drawable/bg_image_rounded"-->
+<!--                android:clipToOutline="true" />-->
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginStart="12dp"-->
+<!--                android:layout_weight="1"-->
+<!--                android:orientation="vertical">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/personNameText"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Person Name"-->
+<!--                    android:textColor="#FFFFFF"-->
+<!--                    android:textSize="22sp"-->
+<!--                    android:textStyle="bold" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/ratingChip"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="8dp"-->
+<!--                    android:paddingStart="10dp"-->
+<!--                    android:paddingEnd="10dp"-->
+<!--                    android:paddingTop="6dp"-->
+<!--                    android:paddingBottom="6dp"-->
+<!--                    android:text="4.5 ★  16"-->
+<!--                    android:textColor="#0C2A3A"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:background="@drawable/bg_chip_light"-->
+<!--                    android:visibility="gone" />-->
+<!--            </LinearLayout>-->
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; Divider &ndash;&gt;-->
+<!--        <View-->
+<!--            android:id="@+id/dividerLine"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="1dp"-->
+<!--            android:layout_marginTop="16dp"-->
+<!--            android:layout_marginBottom="14dp"-->
+<!--            android:background="#33FFFFFF"-->
+<!--            android:visibility="gone" />-->
+
+<!--        &lt;!&ndash; Ads Title &ndash;&gt;-->
+<!--        <TextView-->
+<!--            android:id="@+id/adsTitle"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Advertisements"-->
+<!--            android:textAlignment="center"-->
+<!--            android:textColor="#EAF7FF"-->
+<!--            android:textSize="18sp"-->
+<!--            android:textStyle="bold"-->
+<!--            android:visibility="gone" />-->
+
+<!--        &lt;!&ndash; Ads Recycler &ndash;&gt;-->
+<!--        <androidx.recyclerview.widget.RecyclerView-->
+<!--            android:id="@+id/adsRecycler"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="270dp"-->
+<!--            android:layout_marginTop="14dp"-->
+<!--            android:clipToPadding="false"-->
+<!--            android:paddingStart="8dp"-->
+<!--            android:paddingEnd="8dp"-->
+<!--            android:overScrollMode="never"-->
+<!--            android:visibility="gone" />-->
+
+<!--    </LinearLayout>-->
+<!--</FrameLayout>-->

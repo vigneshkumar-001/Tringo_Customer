@@ -232,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       });
 
       return (lat: pos.latitude, lng: pos.longitude);
-    } catch (e,st) {
+    } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
       setState(() => currentAddress = "Unable to fetch location");
@@ -519,6 +519,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final serviceCategories = home.data.categories;
     final trendingShops = home.data.trendingShops;
     final servicesList = home.data.services;
+    final SurpriseOffers = home.data.surpriseOffers;
 
     final bool hasAnyData =
         banners.isNotEmpty ||
@@ -1239,129 +1240,141 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                         ),
                         SizedBox(height: 30),
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 15,
-                                vertical: 5,
-                              ),
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    AppImages.giftImage,
-                                    height: 63,
-                                    width: 79,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Column(
-                                    children: [
-                                      Text(
-                                        'Surprise Offers',
-                                        style: GoogleFont.Mulish(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColor.blackRedText,
-                                        ),
-                                      ),
-                                      SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            'Unlock',
-                                            style: GoogleFont.Mulish(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w900,
-                                              color: AppColor.blackRedText2,
-                                            ),
-                                          ),
-                                          Text(
-                                            ' by walk nearer below shown shops',
-                                            style: GoogleFont.Mulish(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColor.blackRedText2,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                        if (SurpriseOffers.isEmpty)
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 36),
+                            child: Center(
+                              child: Text('Surprise Offers Not Available'),
                             ),
-                            SizedBox(height: 20),
-                            SizedBox(
-                              height: 160,
-                              child: ListView.builder(
-                                itemCount: surpriseOffers.length,
-                                scrollDirection: Axis.horizontal,
-                                itemBuilder: (context, index) {
-                                  final data = surpriseOffers[index];
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      color: AppColor.white,
+                          )
+                        else
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 5,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Image.asset(
+                                      AppImages.giftImage,
+                                      height: 63,
+                                      width: 79,
                                     ),
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      physics: const BouncingScrollPhysics(),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 15.0,
+                                    SizedBox(width: 10),
+                                    Column(
+                                      children: [
+                                        Text(
+                                          'Surprise Offers',
+                                          style: GoogleFont.Mulish(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColor.blackRedText,
+                                          ),
                                         ),
-                                        child: Row(
+                                        SizedBox(height: 10),
+                                        Row(
                                           children: [
-                                            CommonContainer.shopImageContainer(
-                                              heroTag:
-                                                  'shop1', // unique tag for this shop
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        SurpriseScreens(
-                                                          shopLat: 0.0,
-                                                           shopLng: 0.0,
-                                                           shopId: data.shop?.id.toString()?? '',
-                                                        ),
-                                                  ),
-                                                );
-                                              },
-
-                                              verify:
-                                                  data.shop?.isTrusted ?? false,
-                                              shopName:
-                                                  data.shop?.englishName
-                                                      .toString() ??
-                                                  '',
-                                              location:
-                                                  '${data.shop?.addressEn},${data.shop?.city},${data.shop?.state},${data.shop?.country} ',
-                                              km: '5Kms',
-                                              ratingStar:
-                                                  data.shop?.averageRating
-                                                      .toString() ??
-                                                  '',
-                                              ratingCount:
-                                                  data.shop?.reviewCount
-                                                      .toString() ??
-                                                  '',
-                                              time: ' 9Pm',
-                                              Images:
-                                                  data.bannerUrl.toString() ??
-                                                  '',
+                                            Text(
+                                              'Unlock',
+                                              style: GoogleFont.Mulish(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColor.blackRedText2,
+                                              ),
+                                            ),
+                                            Text(
+                                              ' by walk nearer below shown shops',
+                                              style: GoogleFont.Mulish(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColor.blackRedText2,
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  );
-                                },
+                                  ],
+                                ),
                               ),
-                            ),
+                              SizedBox(height: 20),
+                              SizedBox(
+                                height: 160,
+                                child: ListView.builder(
+                                  itemCount: surpriseOffers.length,
+                                  scrollDirection: Axis.horizontal,
+                                  itemBuilder: (context, index) {
+                                    final data = surpriseOffers[index];
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColor.white,
+                                      ),
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        physics: const BouncingScrollPhysics(),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 15.0,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              CommonContainer.shopImageContainer(
+                                                heroTag:
+                                                    'shop1', // unique tag for this shop
+                                                onTap: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          SurpriseScreens(
+                                                            shopLat: 0.0,
+                                                            shopLng: 0.0,
+                                                            shopId:
+                                                                data.shop?.id
+                                                                    .toString() ??
+                                                                '',
+                                                          ),
+                                                    ),
+                                                  );
+                                                },
 
-                            SizedBox(height: 57),
-                          ],
-                        ),
+                                                verify:
+                                                    data.shop?.isTrusted ??
+                                                    false,
+                                                shopName:
+                                                    data.shop?.englishName
+                                                        .toString() ??
+                                                    '',
+                                                location:
+                                                    '${data.shop?.addressEn},${data.shop?.city},${data.shop?.state},${data.shop?.country} ',
+                                                km: '5Kms',
+                                                ratingStar:
+                                                    data.shop?.averageRating
+                                                        .toString() ??
+                                                    '',
+                                                ratingCount:
+                                                    data.shop?.reviewCount
+                                                        .toString() ??
+                                                    '',
+                                                time: ' 9Pm',
+                                                Images:
+                                                    data.bannerUrl.toString() ??
+                                                    '',
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              SizedBox(height: 57),
+                            ],
+                          ),
 
                         Container(
                           decoration: BoxDecoration(
