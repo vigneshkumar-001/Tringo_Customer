@@ -280,7 +280,9 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
 
                 CommonContainer.button(
                   buttonColor: AppColor.darkBlue,
-                  imagePath: state.isLoading ? null : AppImages.rightSideArrow,
+                  imagePath: state.isCreateTicketLoading
+                      ? null
+                      : AppImages.rightSideArrow,
 
                   // onTap: () async {
                   //   final ticket = createSupportResponse?.data.id;
@@ -336,12 +338,13 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                     if (!context.mounted) return;
 
                     if (ticketId != null) {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (_) => SupportChatScreen(id: ticketId),
                         ),
                       );
+                       notifier.supportList(context: context);
                     }
                   },
 
@@ -366,7 +369,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                   //     AppSnackBar.error(context, err); // ✅ current error
                   //   }
                   // },
-                  text: state.isLoading
+                  text: state.isCreateTicketLoading
                       ? AppLoader.circularLoader()
                       : Text('Create Ticket'),
                 ),
