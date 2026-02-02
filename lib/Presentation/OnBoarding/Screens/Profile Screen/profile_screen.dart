@@ -289,6 +289,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final displayName = ((widget.name ?? '').trim().toLowerCase() == 'null')
+        ? ''
+        : (widget.name ?? '').trim();
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -369,7 +373,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.name.toString() ?? '',
+                              displayName,
                               style: GoogleFont.Mulish(
                                 fontSize: 23,
                                 fontWeight: FontWeight.w700,

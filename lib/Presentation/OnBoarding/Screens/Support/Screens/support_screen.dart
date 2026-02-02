@@ -208,7 +208,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                         padding: const EdgeInsets.all(8.0),
                         child: CommonContainer.supportBox(
                           imageTextColor: imageTextColor,
-                          onTap: () {
+                          onTap: () async {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -216,6 +216,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                                     SupportChatScreen(id: ticket.id),
                               ),
                             );
+                            await ref
+                                .read(supportNotifier.notifier)
+                                .supportList(context: context);
                           },
                           containerColor: containerColor,
                           image: imageAsset,
