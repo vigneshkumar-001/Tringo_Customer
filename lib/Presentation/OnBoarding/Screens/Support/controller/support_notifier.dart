@@ -17,6 +17,7 @@ import '../Model/send_message_response.dart';
 
 class SupportState {
   final bool isLoading;
+  final bool isCreateTicketLoading;
   final bool isMsgSendingLoading;
 
   final String? error;
@@ -28,6 +29,7 @@ class SupportState {
 
   const SupportState({
     this.isLoading = true,
+    this.isCreateTicketLoading = false,
     this.isMsgSendingLoading = true,
     this.error,
     this.supportListResponse,
@@ -41,6 +43,7 @@ class SupportState {
   SupportState copyWith({
     bool? isLoading,
     bool? isMsgSendingLoading,
+    bool? isCreateTicketLoading,
 
     String? error,
 
@@ -52,6 +55,8 @@ class SupportState {
     return SupportState(
       isLoading: isLoading ?? this.isLoading,
       isMsgSendingLoading: isMsgSendingLoading ?? this.isMsgSendingLoading,
+      isCreateTicketLoading:
+          isCreateTicketLoading ?? this.isCreateTicketLoading,
 
       error: error,
 
@@ -120,20 +125,23 @@ class SupportNotifier extends Notifier<SupportState> {
     File? ownerImageFile,
     required BuildContext context,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isCreateTicketLoading: true, error: null);
 
     String customerImageUrl = '';
 
-    final hasValidImage = ownerImageFile != null &&
+    final hasValidImage =
+        ownerImageFile != null &&
         ownerImageFile.path.isNotEmpty &&
         await ownerImageFile.exists();
 
     if (hasValidImage) {
-      final uploadResult = await api.userProfileUpload(imageFile: ownerImageFile);
+      final uploadResult = await api.userProfileUpload(
+        imageFile: ownerImageFile,
+      );
 
       customerImageUrl = uploadResult.fold(
-            (failure) => '',
-            (success) => success.message.toString(),
+        (failure) => '',
+        (success) => success.message.toString(),
       );
     }
 
@@ -146,14 +154,17 @@ class SupportNotifier extends Notifier<SupportState> {
 
     // ✅ IMPORTANT: capture fold value and return it
     final String? ticketId = result.fold(
-          (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
+      (failure) {
+        state = state.copyWith(
+          isCreateTicketLoading: false,
+          error: failure.message,
+        );
         AppSnackBar.error(context, failure.message);
         return null; // return ticketId as null on failure
       },
-          (response) {
+      (response) {
         state = state.copyWith(
-          isLoading: false,
+          isCreateTicketLoading: false,
           error: null,
           createSupportResponse: response,
         );
@@ -163,7 +174,6 @@ class SupportNotifier extends Notifier<SupportState> {
 
     return ticketId;
   }
-
 
   // Future<String?> createSupportTicket({
   //   required String subject,
