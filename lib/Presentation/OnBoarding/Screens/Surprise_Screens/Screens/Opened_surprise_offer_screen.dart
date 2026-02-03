@@ -1,9 +1,12 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
 
 import '../Model/surprise_offer_response.dart';
 
@@ -23,7 +26,16 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: Row(
                     children: [
-                      CommonContainer.leftSideArrow(),
+                      CommonContainer.leftSideArrow(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(),
+                            ),
+                          );
+                        },
+                      ),
                       Spacer(),
                       Text(
                         'Unlocked Surprise Offer',
@@ -80,14 +92,14 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                                     Expanded(
                                       child: Padding(
                                         padding: const EdgeInsets.only(
-                                          right: 50.0,
+                                          right: 30.0,
                                         ),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              response.data.shop.name,
+                                              response.data.shop!.name,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFont.Mulish(
@@ -108,7 +120,7 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                                                 SizedBox(width: 3),
                                                 Flexible(
                                                   child: Text(
-                                                    response.data.shop.city,
+                                                    response.data.shop!.city,
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -124,7 +136,7 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                                                   response
                                                           .data
                                                           .shop
-                                                          .distanceLabel
+                                                          ?.distanceLabel
                                                           .toString() ??
                                                       '',
                                                   style: GoogleFont.Mulish(
@@ -141,14 +153,14 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                                               children: [
                                                 CommonContainer.greenStarRating(
                                                   ratingStar:
-                                                      response.data.shop.rating
+                                                      response.data.shop?.rating
                                                           .toString() ??
                                                       '',
                                                   ratingCount:
                                                       response
                                                           .data
                                                           .shop
-                                                          .reviewCount
+                                                          ?.reviewCount
                                                           .toString() ??
                                                       '',
                                                 ),
@@ -161,7 +173,9 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                                                   ),
                                                 ),
                                                 Text(
-                                                  '9Pm',
+                                                  response.data.shop?.closeTime
+                                                          .toString() ??
+                                                      '',
                                                   style: GoogleFont.Mulish(
                                                     fontSize: 9,
                                                     color: AppColor.lightGray2,
@@ -264,37 +278,83 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 15),
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Center(
-                    child: DottedBorder(
-                      color: AppColor.darkGrey.withOpacity(0.7),
-                      strokeWidth: 2,
+                    child: GestureDetector(
+                      onLongPress: () async {
+                        final code = (response.data.code ?? '')
+                            .toString()
+                            .trim();
+                        if (code.isEmpty) return;
 
-                      dashPattern: const [4, 2],
-                      borderType: BorderType.RRect,
-                      radius: const Radius.circular(15),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppColor.darkGrey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
+                        await Clipboard.setData(ClipboardData(text: code));
 
-                        alignment: Alignment.center,
-                        child: Text(
-                          response.data.code.toString() ?? '',
-                          style: GoogleFont.Mulish(
-                            fontSize: 20,
-                            color: AppColor.darkBlue,
-                            fontWeight: FontWeight.w600,
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          AppSnackBar.success(context, 'Offer code copied');
+                        }
+                      },
+                      child: DottedBorder(
+                        color: AppColor.darkGrey.withOpacity(0.7),
+                        strokeWidth: 2,
+                        dashPattern: const [4, 2],
+                        borderType: BorderType.RRect,
+                        radius: const Radius.circular(15),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColor.darkGrey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            (response.data.code ?? '').toString(),
+                            style: GoogleFont.Mulish(
+                              fontSize: 20,
+                              color: AppColor.darkBlue,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
+
+                // Padding(
+                //   padding: const EdgeInsets.symmetric(horizontal: 10),
+                //   child: Center(
+                //     child: DottedBorder(
+                //       color: AppColor.darkGrey.withOpacity(0.7),
+                //       strokeWidth: 2,
+                //
+                //       dashPattern: const [4, 2],
+                //       borderType: BorderType.RRect,
+                //       radius: const Radius.circular(15),
+                //       child: Container(
+                //         padding: EdgeInsets.symmetric(vertical: 10),
+                //         width: double.infinity,
+                //         decoration: BoxDecoration(
+                //           color: AppColor.darkGrey.withOpacity(0.1),
+                //           borderRadius: BorderRadius.circular(15),
+                //         ),
+                //
+                //         alignment: Alignment.center,
+                //         child: Text(
+                //           response.data.code.toString() ?? '',
+                //           style: GoogleFont.Mulish(
+                //             fontSize: 20,
+                //             color: AppColor.darkBlue,
+                //             fontWeight: FontWeight.w600,
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(

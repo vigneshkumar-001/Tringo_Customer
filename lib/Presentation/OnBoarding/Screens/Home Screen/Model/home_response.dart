@@ -10,7 +10,9 @@ class HomeResponse {
   factory HomeResponse.fromJson(Map<String, dynamic> json) {
     return HomeResponse(
       status: json['status'] == true,
-      data: HomeData.fromJson((json['data'] as Map<String, dynamic>?) ?? const {}),
+      data: HomeData.fromJson(
+        (json['data'] as Map<String, dynamic>?) ?? const {},
+      ),
     );
   }
 
@@ -59,36 +61,38 @@ class HomeData {
       city: json['city'] as String?,
       coordinates: GeoPoint.fromJson(_asMap(json['coordinates'])),
 
-      shopCategories: (_asList(json['shopCategories']))
-          .map((e) => ShopCategory.fromJson(_asMap(e)))
-          .toList(),
+      shopCategories: (_asList(
+        json['shopCategories'],
+      )).map((e) => ShopCategory.fromJson(_asMap(e))).toList(),
 
-      categories: (_asList(json['categories']))
-          .map((e) => CategoryItem.fromJson(_asMap(e)))
-          .toList(),
+      categories: (_asList(
+        json['categories'],
+      )).map((e) => CategoryItem.fromJson(_asMap(e))).toList(),
 
-      banners: (_asList(json['banners']))
-          .map((e) => HomeBanner.fromJson(_asMap(e)))
-          .toList(),
+      banners: (_asList(
+        json['banners'],
+      )).map((e) => HomeBanner.fromJson(_asMap(e))).toList(),
 
-      featuredOffers: (_asList(json['featuredOffers']))
-          .map((e) => Offer.fromJson(_asMap(e)))
-          .toList(),
+      featuredOffers: (_asList(
+        json['featuredOffers'],
+      )).map((e) => Offer.fromJson(_asMap(e))).toList(),
 
-      surpriseOffers: (_asList(json['surpriseOffers']))
-          .map((e) => Offer.fromJson(_asMap(e)))
-          .toList(),
+      surpriseOffers: (_asList(
+        json['surpriseOffers'],
+      )).map((e) => Offer.fromJson(_asMap(e))).toList(),
 
-      services: (_asList(json['services']))
-          .map((e) => ListingItem.fromJson(_asMap(e)))
-          .toList(),
+      services: (_asList(
+        json['services'],
+      )).map((e) => ListingItem.fromJson(_asMap(e))).toList(),
 
-      trendingShops: (_asList(json['trendingShops']))
-          .map((e) => ListingItem.fromJson(_asMap(e)))
-          .toList(),
+      trendingShops: (_asList(
+        json['trendingShops'],
+      )).map((e) => ListingItem.fromJson(_asMap(e))).toList(),
 
       foodOffers: _asList(json['foodOffers']),
-      tcoin: json['tcoin'] is Map ? TCoin.fromJson(_asMap(json['tcoin'])) : null,
+      tcoin: json['tcoin'] is Map
+          ? TCoin.fromJson(_asMap(json['tcoin']))
+          : null,
     );
   }
 
@@ -186,7 +190,10 @@ class GeoPoint {
     );
   }
 
-  Map<String, dynamic> toJson() => {'latitude': latitude, 'longitude': longitude};
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -197,7 +204,11 @@ class ShopCategory {
   final String name;
   final int count;
 
-  const ShopCategory({required this.slug, required this.name, required this.count});
+  const ShopCategory({
+    required this.slug,
+    required this.name,
+    required this.count,
+  });
 
   factory ShopCategory.fromJson(Map<String, dynamic> json) {
     return ShopCategory(
@@ -215,7 +226,11 @@ class CategoryItem {
   final String name;
   final int count;
 
-  const CategoryItem({required this.slug, required this.name, required this.count});
+  const CategoryItem({
+    required this.slug,
+    required this.name,
+    required this.count,
+  });
 
   factory CategoryItem.fromJson(Map<String, dynamic> json) {
     return CategoryItem(
@@ -269,8 +284,12 @@ class HomeBanner {
       city: json['city'] as String?,
       isActive: json['isActive'] == true,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
     );
   }
 
@@ -289,9 +308,6 @@ class HomeBanner {
   };
 }
 
-// -----------------------------------------------------------------------------
-// OFFERS (featuredOffers + surpriseOffers)
-// -----------------------------------------------------------------------------
 class Offer {
   final String id;
   final DateTime? createdAt;
@@ -319,6 +335,11 @@ class Offer {
   final bool autoApply;
   final dynamic targetSegment;
 
+  // ✅ NEW (only present for surpriseOffers sometimes)
+  final double? distanceKm;
+  final String? distanceLabel;
+  final String? closeTime;
+
   const Offer({
     required this.id,
     required this.createdAt,
@@ -338,28 +359,55 @@ class Offer {
     required this.status,
     required this.autoApply,
     required this.targetSegment,
+    this.distanceKm,
+    this.distanceLabel,
+    this.closeTime,
   });
 
   factory Offer.fromJson(Map<String, dynamic> json) {
     return Offer(
       id: (json['id'] ?? '').toString(),
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
+
       branchId: json['branchId']?.toString(),
       bannerUrl: _sanitizeUrl(json['bannerUrl']?.toString()),
-      shop: json['shop'] is Map ? OfferShop.fromJson(_asMap(json['shop'])) : null,
+
+      shop: json['shop'] is Map
+          ? OfferShop.fromJson(_asMap(json['shop']))
+          : null,
+
       type: (json['type'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
+
       discountPercentage: json['discountPercentage'] as num?,
-      availableFrom: json['availableFrom'] != null ? DateTime.tryParse(json['availableFrom'].toString()) : null,
-      availableTo: json['availableTo'] != null ? DateTime.tryParse(json['availableTo'].toString()) : null,
-      announcementAt: json['announcementAt'] != null ? DateTime.tryParse(json['announcementAt'].toString()) : null,
+
+      availableFrom: json['availableFrom'] != null
+          ? DateTime.tryParse(json['availableFrom'].toString())
+          : null,
+      availableTo: json['availableTo'] != null
+          ? DateTime.tryParse(json['availableTo'].toString())
+          : null,
+      announcementAt: json['announcementAt'] != null
+          ? DateTime.tryParse(json['announcementAt'].toString())
+          : null,
+
       campaignId: json['campaignId']?.toString(),
       maxCoupons: (json['maxCoupons'] as num?)?.toInt(),
+
       status: (json['status'] ?? '').toString(),
       autoApply: _parseBool(json['autoApply']) ?? false,
       targetSegment: json['targetSegment'],
+
+      // ✅ NEW fields
+      distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+      distanceLabel: json['distanceLabel']?.toString(),
+      closeTime: json['closeTime']?.toString(),
     );
   }
 
@@ -382,6 +430,11 @@ class Offer {
     'status': status,
     'autoApply': autoApply,
     'targetSegment': targetSegment,
+
+    // ✅ NEW fields
+    'distanceKm': distanceKm,
+    'distanceLabel': distanceLabel,
+    'closeTime': closeTime,
   };
 }
 
@@ -422,6 +475,11 @@ class OfferShop {
   final List<ShopWeeklyHour> weeklyHours;
 
   final String? averageRating;
+
+  final double? distanceKm;
+  final String? distanceLabel;
+  final String? closeTime;
+
   final int reviewCount;
   final String status;
 
@@ -454,6 +512,9 @@ class OfferShop {
     required this.averageRating,
     required this.reviewCount,
     required this.status,
+    this.distanceKm,
+    this.distanceLabel,
+    this.closeTime,
   });
 
   factory OfferShop.fromJson(Map<String, dynamic> json) {
@@ -462,8 +523,12 @@ class OfferShop {
 
     return OfferShop(
       id: (json['id'] ?? '').toString(),
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
       category: (json['category'] ?? '').toString(),
       subCategory: (json['subCategory'] ?? '').toString(),
       shopKind: (json['shopKind'] ?? '').toString(),
@@ -485,12 +550,15 @@ class OfferShop {
       state: (json['state'] ?? '').toString(),
       country: (json['country'] ?? '').toString(),
       postalCode: json['postalCode']?.toString(),
-      weeklyHours: (_asList(json['weeklyHours']))
-          .map((e) => ShopWeeklyHour.fromJson(_asMap(e)))
-          .toList(),
+      weeklyHours: (_asList(
+        json['weeklyHours'],
+      )).map((e) => ShopWeeklyHour.fromJson(_asMap(e))).toList(),
       averageRating: json['averageRating']?.toString(),
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       status: (json['status'] ?? '').toString(),
+      distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+      distanceLabel: json['distanceLabel'] ?? ''.toString(),
+      closeTime: json['closeTime'] ?? ''.toString(),
     );
   }
 
@@ -523,6 +591,9 @@ class OfferShop {
     'averageRating': averageRating,
     'reviewCount': reviewCount,
     'status': status,
+    'distanceKm': distanceKm,
+    'distanceLabel': distanceLabel,
+    'closeTime': closeTime,
   };
 }
 
@@ -634,9 +705,9 @@ class ListingItem {
       closesAt: json['closesAt']?.toString(),
       gpsLatitude: latStr != null ? double.tryParse(latStr) ?? 0.0 : 0.0,
       gpsLongitude: lngStr != null ? double.tryParse(lngStr) ?? 0.0 : 0.0,
-      weeklyHours: (_asList(json['shopWeeklyHours']))
-          .map((e) => ShopWeeklyHour.fromJson(_asMap(e)))
-          .toList(),
+      weeklyHours: (_asList(
+        json['shopWeeklyHours'],
+      )).map((e) => ShopWeeklyHour.fromJson(_asMap(e))).toList(),
     );
   }
 
@@ -690,7 +761,11 @@ class TCoin {
     );
   }
 
-  Map<String, dynamic> toJson() => {"balance": balance, "uid": uid, "rate": rate};
+  Map<String, dynamic> toJson() => {
+    "balance": balance,
+    "uid": uid,
+    "rate": rate,
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -745,7 +820,6 @@ String _sanitizeUrl(String? url) {
   return u;
 }
 
-
 bool? _parseBool(dynamic value) {
   if (value == null) return null;
   if (value is bool) return value;
@@ -764,518 +838,4 @@ bool? _parseBool(dynamic value) {
   return null;
 }
 
-// class HomeResponse {
-//   final bool status;
-//   final HomeData data;
-//
-//   const HomeResponse({required this.status, required this.data});
-//
-//   factory HomeResponse.fromJson(Map<String, dynamic> json) {
-//     return HomeResponse(
-//       status: json['status'] ?? false,
-//       data: HomeData.fromJson(json['data'] ?? const {}),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {'status': status, 'data': data.toJson()};
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // HOME DATA
-// // -----------------------------------------------------------------------------
-// class HomeData {
-//   final AppUser user;
-//   final String? city;
-//   final GeoPoint coordinates;
-//   final List<ShopCategory> shopCategories;
-//   final List<CategoryItem> categories;
-//   final List<HomeBanner> banners;
-//   final List<dynamic> featuredOffers;
-//   final List<dynamic> surpriseOffers;
-//   final List<ListingItem> services;
-//   final List<ListingItem> trendingShops;
-//   final List<dynamic> foodOffers;
-//   final TCoin? tcoin;
-//
-//
-//   const HomeData({
-//     required this.user,
-//     required this.city,
-//     required this.coordinates,
-//     required this.shopCategories,
-//     required this.categories,
-//     required this.banners,
-//     required this.featuredOffers,
-//     required this.surpriseOffers,
-//     required this.services,
-//     required this.trendingShops,
-//     required this.foodOffers,
-//     required this.tcoin,
-//
-//   });
-//
-//   factory HomeData.fromJson(Map<String, dynamic> json) {
-//     return HomeData(
-//       user: AppUser.fromJson(json['user'] ?? const {}),
-//       city: json['city'],
-//       coordinates: GeoPoint.fromJson(json['coordinates'] ?? const {}),
-//       shopCategories: (json['shopCategories'] as List<dynamic>? ?? [])
-//           .map((e) => ShopCategory.fromJson(e as Map<String, dynamic>))
-//           .toList(),
-//       categories: (json['categories'] as List<dynamic>? ?? [])
-//           .map((e) => CategoryItem.fromJson(e as Map<String, dynamic>))
-//           .toList(),
-//       banners: (json['banners'] as List<dynamic>? ?? [])
-//           .map((e) => HomeBanner.fromJson(e as Map<String, dynamic>))
-//           .toList(),
-//       featuredOffers: (json['featuredOffers'] as List<dynamic>? ?? []),
-//       surpriseOffers: (json['surpriseOffers'] as List<dynamic>? ?? []),
-//       services: (json['services'] as List<dynamic>? ?? [])
-//           .map((e) => ListingItem.fromJson(e as Map<String, dynamic>))
-//           .toList(),
-//       trendingShops: (json['trendingShops'] as List<dynamic>? ?? [])
-//           .map((e) => ListingItem.fromJson(e as Map<String, dynamic>))
-//           .toList(),
-//       foodOffers: (json['foodOffers'] as List<dynamic>? ?? []),
-//       tcoin: json['tcoin'] != null
-//           ? TCoin.fromJson(json['tcoin'] as Map<String, dynamic>)
-//           : null,
-//
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'user': user.toJson(),
-//       'city': city,
-//       'coordinates': coordinates.toJson(),
-//       'shopCategories': shopCategories.map((e) => e.toJson()).toList(),
-//       'categories': categories.map((e) => e.toJson()).toList(),
-//       'banners': banners.map((e) => e.toJson()).toList(),
-//       'featuredOffers': featuredOffers,
-//       'surpriseOffers': surpriseOffers,
-//       'services': services.map((e) => e.toJson()).toList(),
-//       'trendingShops': trendingShops.map((e) => e.toJson()).toList(),
-//       'foodOffers': foodOffers,
-//       'tcoin': tcoin?.toJson(),
-//
-//     };
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // USER + GEO
-// // -----------------------------------------------------------------------------
-// class AppUser {
-//   final String id;
-//   final String name;
-//   final String email;
-//   final String dob;
-//   final String gender;
-//   final String phoneNumber;
-//   final String? avatarUrl;
-//   final int coins;
-//   final String referralCode;
-//   final String tier;
-//   final bool profileComplete;
-//   final GeoPoint location;
-//
-//   const AppUser({
-//     required this.id,
-//     required this.name,
-//     required this.gender,
-//     required this.email,
-//     required this.dob,
-//     required this.phoneNumber,
-//     required this.avatarUrl,
-//     required this.coins,
-//     required this.referralCode,
-//     required this.tier,
-//     required this.location,
-//     required this.profileComplete,
-//   });
-//
-//   factory AppUser.fromJson(Map<String, dynamic> json) {
-//     return AppUser(
-//       id: json['id'] ?? '',
-//       name: json['name'] ?? '',
-//       gender: json['gender'] ?? '',
-//       dob: json['dob'] ?? '',
-//       email: json['email'] ?? '',
-//       phoneNumber: json['phoneNumber'] ?? '',
-//       avatarUrl: json['avatarUrl'],
-//       coins: json['coins'] ?? 0,
-//       referralCode: json['referralCode'] ?? '',
-//       tier: json['tier'] ?? '',
-//       profileComplete: json['profileComplete'] ?? '',
-//       location: GeoPoint.fromJson(json['location'] ?? const {}),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'name': name,
-//       'gender': gender,
-//       'dob': dob,
-//       'email': email,
-//       'phoneNumber': phoneNumber,
-//       'avatarUrl': avatarUrl,
-//       'coins': coins,
-//       'referralCode': referralCode,
-//       'profileComplete': profileComplete,
-//       'tier': tier,
-//       'location': location.toJson(),
-//     };
-//   }
-// }
-//
-// class GeoPoint {
-//   final double latitude;
-//   final double longitude;
-//
-//   const GeoPoint({required this.latitude, required this.longitude});
-//
-//   factory GeoPoint.fromJson(Map<String, dynamic> json) {
-//     return GeoPoint(
-//       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
-//       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {'latitude': latitude, 'longitude': longitude};
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // SHOP CATEGORIES + CATEGORIES
-// // -----------------------------------------------------------------------------
-// class ShopCategory {
-//   final String slug;
-//   final String name;
-//   final int count;
-//
-//   const ShopCategory({
-//     required this.slug,
-//     required this.name,
-//     required this.count,
-//   });
-//
-//   factory ShopCategory.fromJson(Map<String, dynamic> json) {
-//     return ShopCategory(
-//       slug: json['slug'] ?? '',
-//       name: json['name'] ?? '',
-//       count: json['count'] ?? 0,
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {'slug': slug, 'name': name, 'count': count};
-//   }
-// }
-//
-// /// `categories` in the response have SAME shape as `shopCategories`
-// class CategoryItem {
-//   final String slug;
-//   final String name;
-//   final int count;
-//
-//   const CategoryItem({
-//     required this.slug,
-//     required this.name,
-//     required this.count,
-//   });
-//
-//   factory CategoryItem.fromJson(Map<String, dynamic> json) {
-//     return CategoryItem(
-//       slug: json['slug'] ?? '',
-//       name: json['name'] ?? '',
-//       count: json['count'] ?? 0,
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {'slug': slug, 'name': name, 'count': count};
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // BANNERS
-// // -----------------------------------------------------------------------------
-// class HomeBanner {
-//   final String id;
-//   final String title;
-//   final String? subtitle;
-//   final String imageUrl;
-//   final String? ctaLabel;
-//   final String? ctaLink;
-//   final String? city;
-//   final bool isActive;
-//   final int displayOrder;
-//   final DateTime? createdAt;
-//   final DateTime? updatedAt;
-//
-//   const HomeBanner({
-//     required this.id,
-//     required this.title,
-//     this.subtitle,
-//     required this.imageUrl,
-//     this.ctaLabel,
-//     this.ctaLink,
-//     this.city,
-//     required this.isActive,
-//     required this.displayOrder,
-//     this.createdAt,
-//     this.updatedAt,
-//   });
-//
-//   factory HomeBanner.fromJson(Map<String, dynamic> json) {
-//     return HomeBanner(
-//       id: json['id'] ?? '',
-//       title: json['title'] ?? '',
-//       subtitle: json['subtitle'],
-//       imageUrl: json['imageUrl'] ?? '',
-//       ctaLabel: json['ctaLabel'],
-//       ctaLink: json['ctaLink'],
-//       city: json['city'],
-//       isActive: json['isActive'] ?? false,
-//       displayOrder: json['displayOrder'] ?? 0,
-//       createdAt: json['createdAt'] != null
-//           ? DateTime.tryParse(json['createdAt'])
-//           : null,
-//       updatedAt: json['updatedAt'] != null
-//           ? DateTime.tryParse(json['updatedAt'])
-//           : null,
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'title': title,
-//       'subtitle': subtitle,
-//       'imageUrl': imageUrl,
-//       'ctaLabel': ctaLabel,
-//       'ctaLink': ctaLink,
-//       'city': city,
-//       'isActive': isActive,
-//       'displayOrder': displayOrder,
-//       'createdAt': createdAt?.toIso8601String(),
-//       'updatedAt': updatedAt?.toIso8601String(),
-//     };
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // LISTINGS (services + trendingShops)
-// // -----------------------------------------------------------------------------
-// class ListingItem {
-//   final String id;
-//   final String englishName;
-//   final String tamilName;
-//   final String category;
-//   final String subCategory;
-//   final String addressEn;
-//   final String addressTa;
-//   final String city;
-//   final String state;
-//   final String country;
-//   final num rating;
-//   final int ratingCount;
-//   final bool isTrusted;
-//   final bool doorDelivery;
-//   final String shopKind;
-//   final String primaryPhone;
-//   final double distanceKm;
-//   final String distanceLabel;
-//   final String? openLabel;
-//   final bool isOpen;
-//   final String? primaryImageUrl;
-//   final String ownershipType;
-//   final String? closeTime;
-//
-//   /// new: from JSON strings "9.9144640"
-//   final double gpsLatitude;
-//   final double gpsLongitude;
-//
-//   /// parsed from `shopWeeklyHours` in JSON
-//   final List<ShopWeeklyHour> weeklyHours;
-//
-//   const ListingItem({
-//     required this.id,
-//     required this.englishName,
-//     required this.tamilName,
-//     required this.category,
-//     required this.subCategory,
-//     required this.addressEn,
-//     required this.addressTa,
-//     required this.city,
-//     required this.state,
-//     required this.country,
-//     required this.rating,
-//     required this.ratingCount,
-//     required this.isTrusted,
-//     required this.doorDelivery,
-//     required this.shopKind,
-//     required this.primaryPhone,
-//     required this.distanceKm,
-//     required this.distanceLabel,
-//     required this.openLabel,
-//     required this.isOpen,
-//     required this.primaryImageUrl,
-//     required this.ownershipType,
-//     this.closeTime,
-//     required this.gpsLatitude,
-//     required this.gpsLongitude,
-//     this.weeklyHours = const [],
-//   });
-//
-//   factory ListingItem.fromJson(Map<String, dynamic> json) {
-//     final latStr = json['gpsLatitude']?.toString();
-//     final lngStr = json['gpsLongitude']?.toString();
-//
-//     return ListingItem(
-//       id: json['id'] ?? '',
-//       englishName: json['englishName'] ?? '',
-//       tamilName: json['tamilName'] ?? '',
-//       category: json['category'] ?? '',
-//       subCategory: json['subCategory'] ?? '',
-//       addressEn: json['addressEn'] ?? '',
-//       addressTa: json['addressTa'] ?? '',
-//       city: json['city'] ?? '',
-//       state: json['state'] ?? '',
-//       country: json['country'] ?? '',
-//       rating: json['rating'] ?? 0,
-//       ratingCount: json['ratingCount'] ?? 0,
-//       isTrusted: json['isTrusted'] ?? false,
-//       doorDelivery: json['doorDelivery'] ?? false,
-//       shopKind: json['shopKind'] ?? '',
-//       primaryPhone: json['primaryPhone'] ?? '',
-//       distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0.0,
-//       distanceLabel: json['distanceLabel'] ?? '',
-//       openLabel: json['openLabel'],
-//       isOpen: json['isOpen'] ?? false,
-//       primaryImageUrl: json['primaryImageUrl'],
-//       ownershipType: json['ownershipType'] as String? ?? '',
-//       closeTime: json['closeTime'] as String? ?? '',
-//       gpsLatitude: latStr != null ? double.tryParse(latStr) ?? 0.0 : 0.0,
-//       gpsLongitude: lngStr != null ? double.tryParse(lngStr) ?? 0.0 : 0.0,
-//       weeklyHours:
-//           (json['shopWeeklyHours'] as List<dynamic>?)
-//               ?.map((e) => ShopWeeklyHour.fromJson(e as Map<String, dynamic>))
-//               .toList() ??
-//           const [],
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'englishName': englishName,
-//       'tamilName': tamilName,
-//       'category': category,
-//       'subCategory': subCategory,
-//       'addressEn': addressEn,
-//       'addressTa': addressTa,
-//       'city': city,
-//       'state': state,
-//       'country': country,
-//       'rating': rating,
-//       'ratingCount': ratingCount,
-//       'isTrusted': isTrusted,
-//       'doorDelivery': doorDelivery,
-//       'shopKind': shopKind,
-//       'primaryPhone': primaryPhone,
-//       'distanceKm': distanceKm,
-//       'distanceLabel': distanceLabel,
-//       'openLabel': openLabel,
-//       'isOpen': isOpen,
-//       'primaryImageUrl': primaryImageUrl,
-//       'ownershipType': ownershipType,
-//       'closeTime': closeTime,
-//       'gpsLatitude': gpsLatitude,
-//       'gpsLongitude': gpsLongitude,
-//       'shopWeeklyHours': weeklyHours.map((e) => e.toJson()).toList(),
-//     };
-//   }
-//
-//   String get ownershipTypeLabel {
-//     if (ownershipType == 'COMPANY') return 'Company';
-//     if (ownershipType == 'INDIVIDUAL') return 'Individual';
-//     return ownershipType;
-//   }
-// }
-//
-// class TCoin {
-//   final int balance;
-//   final String uid;
-//   final num rate;
-//
-//   const TCoin({required this.balance, required this.uid, required this.rate});
-//
-//   factory TCoin.fromJson(Map<String, dynamic> json) {
-//     return TCoin(
-//       balance: (json['balance'] as num?)?.toInt() ?? 0,
-//       uid: json['uid'] ?? '',
-//       rate: json['rate'] ?? 0,
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {"balance": balance, "uid": uid, "rate": rate};
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // WEEKLY HOURS
-// // -----------------------------------------------------------------------------
-// class ShopWeeklyHour {
-//   final String? day;
-//   final String? opensAt;
-//   final String? closesAt;
-//   final bool? closed;
-//
-//   const ShopWeeklyHour({this.day, this.opensAt, this.closesAt, this.closed});
-//
-//   factory ShopWeeklyHour.fromJson(Map<String, dynamic> json) {
-//     return ShopWeeklyHour(
-//       day: json['day'],
-//       opensAt: json['opensAt'],
-//       closesAt: json['closesAt'],
-//       closed: _parseBool(json['closed']),
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'day': day,
-//       'opensAt': opensAt,
-//       'closesAt': closesAt,
-//       'closed': closed,
-//     };
-//   }
-// }
-//
-// // -----------------------------------------------------------------------------
-// // HELPERS
-// // -----------------------------------------------------------------------------
-// bool? _parseBool(dynamic value) {
-//   if (value == null) return null;
-//   if (value is bool) return value;
-//
-//   if (value is num) {
-//     if (value == 1) return true;
-//     if (value == 0) return false;
-//   }
-//
-//   if (value is String) {
-//     final lower = value.toLowerCase().trim();
-//     if (lower == 'true' || lower == 'yes' || lower == '1') return true;
-//     if (lower == 'false' || lower == 'no' || lower == '0') return false;
-//   }
-//
-//   return null;
-// }
+

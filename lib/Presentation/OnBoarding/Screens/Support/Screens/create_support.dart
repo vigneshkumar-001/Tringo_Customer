@@ -75,7 +75,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
   }
 
   Future<void> _showPickOptions() async {
-    showModalBottomSheet(
+    showModalBottomSheet(backgroundColor: AppColor.white,
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -92,7 +92,7 @@ class _CreateSupportState extends ConsumerState<CreateSupport>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppColor.white,
+                    color: AppColor.darkGrey,
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),

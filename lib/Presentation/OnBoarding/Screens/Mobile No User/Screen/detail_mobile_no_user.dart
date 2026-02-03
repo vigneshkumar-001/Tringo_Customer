@@ -396,7 +396,7 @@ class _DetailMobileNoUserState extends State<DetailMobileNoUser> {
                         // ),
                         Center(
                           child: SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.3,
+                            width: MediaQuery.of(context).size.width * 0.4,
                             child: CommonContainer.gradientContainer(
                               text: subtitle,
                               textColor: AppColor.skyBlue,
@@ -494,6 +494,7 @@ class _DetailMobileNoUserState extends State<DetailMobileNoUser> {
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(15),
                                   onTap: () {
+                                    print(shopId);
                                     if (shopId == null || shopId!.isEmpty)
                                       return;
                                     Navigator.push(

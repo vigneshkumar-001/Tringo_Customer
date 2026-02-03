@@ -18,6 +18,7 @@ import '../Login Screen/Screens/login_mobile_number.dart';
 import '../Login Screen/Screens/referral_screens.dart';
 import '../Privacy Policy/screens/privacy_policy.dart';
 import '../Support/Screens/support_screen.dart';
+import '../wallet/Screens/referral_screen.dart';
 import '../wallet/Screens/wallet_screens.dart';
 import 'Controller/profile_notifier.dart';
 
@@ -307,50 +308,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Navigator.pop(context);
                       },
                     ),
-                    Spacer(),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WalletScreens(),
-                          ),
-                        );
-                      },
-                      child: DottedBorder(
-                        color: AppColor.mistGray,
-                        dashPattern: [4.0, 2.0],
-                        borderType: dotted.BorderType.RRect,
-                        padding: EdgeInsets.all(10),
-                        radius: Radius.circular(18),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              AppImages.coinImage,
-                              height: 16,
-                              width: 17.33,
-                              color: AppColor.darkBlue,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              widget.balance.toString() ?? '',
-                              style: GoogleFont.Mulish(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12,
-                                color: AppColor.darkBlue,
-                              ),
-                            ),
-                            Text(
-                              ' Tcoins',
-                              style: GoogleFont.Mulish(
-                                fontSize: 12,
-                                color: AppColor.darkBlue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // Spacer(),
+                    // InkWell(
+                    //   onTap: () {
+                    //     Navigator.push(
+                    //       context,
+                    //       MaterialPageRoute(
+                    //         builder: (context) => WalletScreens(),
+                    //       ),
+                    //     );
+                    //   },
+                    //   child: DottedBorder(
+                    //     color: AppColor.mistGray,
+                    //     dashPattern: [4.0, 2.0],
+                    //     borderType: dotted.BorderType.RRect,
+                    //     padding: EdgeInsets.all(10),
+                    //     radius: Radius.circular(18),
+                    //     child: Row(
+                    //       children: [
+                    //         Image.asset(
+                    //           AppImages.coinImage,
+                    //           height: 16,
+                    //           width: 17.33,
+                    //           color: AppColor.darkBlue,
+                    //         ),
+                    //         SizedBox(width: 6),
+                    //         Text(
+                    //           widget.balance.toString() ?? '',
+                    //           style: GoogleFont.Mulish(
+                    //             fontWeight: FontWeight.w900,
+                    //             fontSize: 12,
+                    //             color: AppColor.darkBlue,
+                    //           ),
+                    //         ),
+                    //         Text(
+                    //           ' Tcoins',
+                    //           style: GoogleFont.Mulish(
+                    //             fontSize: 12,
+                    //             color: AppColor.darkBlue,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
                 SizedBox(height: 20),
@@ -470,20 +471,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SizedBox(height: 27),
                 CommonContainer.profileList(
-                  onTap: () {},
-                  label: 'Food Orders',
-                  iconPath: AppImages.foodOrders,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
-                SizedBox(height: 15),
-                CommonContainer.profileList(
-                  // onTap: () {
-                  //   Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(builder: (context) => SurpriseScreens()),
-                  //   );
-                  // },
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WalletScreens(),
+                      ),
+                    );
+                  },
                   label: 'Earnings',
                   iconPath: AppImages.earnings,
                   iconHeight: 25,
@@ -495,7 +490,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ReferralScreens(),
+                        builder: (context) => ReferralScreen(),
                       ),
                     );
                   },
@@ -504,14 +499,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   iconHeight: 25,
                   iconWidth: 19,
                 ),
-                SizedBox(height: 15),
-                CommonContainer.profileList(
-                  onTap: () {},
-                  label: 'Saved Locations',
-                  iconPath: AppImages.savedLocations,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
+
                 SizedBox(height: 15),
                 CommonContainer.profileList(
                   onTap: () {

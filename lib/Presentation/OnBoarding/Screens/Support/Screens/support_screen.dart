@@ -8,6 +8,7 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_loader.dart';
 import '../../../../../Core/Utility/date_time_converter.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../../Home Screen/Controller/home_notifier.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../Model/support_list_response.dart';
@@ -44,6 +45,8 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   Widget build(BuildContext context) {
     final state = ref.watch(supportNotifier);
     final supportListResponse = state.supportListResponse;
+    final homeState = ref.watch(homeNotifierProvider);
+    final home = homeState.homeResponse;
 
     // 1️⃣ Loading state
     if (state.isLoading && supportListResponse == null) {
@@ -136,14 +139,43 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                       Align(
                         alignment: Alignment.centerLeft,
                         child: CommonContainer.leftSideArrow(
-                          onTap: () =>
-                              //     Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) => ProfileScreen(),
-                              //   ),
-                              // ),
-                              Navigator.pop(context),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProfileScreen(
+                                balance: homeState
+                                    .homeResponse
+                                    ?.data
+                                    .tcoin
+                                    ?.balance
+                                    .toString(),
+                                gender: homeState.homeResponse?.data.user.gender
+                                    .toString(),
+                                dob: homeState.homeResponse?.data.user.dob
+                                    .toString(),
+                                email: homeState.homeResponse?.data.user.email
+                                    .toString(),
+
+                                url:
+                                    homeState.homeResponse?.data.user.avatarUrl
+                                        .toString() ??
+                                    '',
+                                name:
+                                    homeState.homeResponse?.data.user.name
+                                        .toString() ??
+                                    '',
+                                phnNumber:
+                                    homeState
+                                        .homeResponse
+                                        ?.data
+                                        .user
+                                        .phoneNumber
+                                        .toString() ??
+                                    '',
+                              ),
+                            ),
+                          ),
+                          // Navigator.pop(context),
                         ),
                       ),
                       Text(

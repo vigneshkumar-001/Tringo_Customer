@@ -187,4 +187,3 @@ class SearchMeta {
     'subtitle': subtitle,
   };
 }
-

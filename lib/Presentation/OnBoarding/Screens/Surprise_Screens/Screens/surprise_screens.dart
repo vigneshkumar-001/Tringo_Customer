@@ -88,9 +88,9 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       next,
     ) {
       final prevUnlock =
-          prev?.surpriseStatusResponse?.data?.geo.canUnlock ?? false;
+          prev?.surpriseStatusResponse?.data?.geo?.canUnlock ?? false;
       final nextUnlock =
-          next.surpriseStatusResponse?.data?.geo.canUnlock ?? false;
+          next.surpriseStatusResponse?.data.geo?.canUnlock ?? false;
 
       // start only when: loading finished AND false->true
       if (!next.isLoading && nextUnlock && !prevUnlock && !_videoStarted) {
@@ -384,9 +384,12 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
     final state = ref.watch(surpriseNotifierProvider);
     final data = state.surpriseStatusResponse?.data;
 
-    final metersText = data?.geo.remainingMeters != null
-        ? "${data!.geo.remainingMeters} Mtrs"
-        : "${remainingMeters.toInt()} Mtrs";
+    final apiMeters = data?.geo?.remainingMeters;
+    final metersText = "${(apiMeters ?? remainingMeters.toInt())} Mtrs";
+
+    // final metersText = data?.geo?.remainingMeters != null
+    //     ? "${data!.geo?.remainingMeters} Mtrs"
+    //     : "${remainingMeters.toInt()} Mtrs";
 
     final bounceScale = Tween<double>(
       begin: 1.0,
@@ -508,7 +511,8 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                         const SizedBox(height: 8),
                                         Text(
                                           data?.ui.secondaryText.toString() ??
-                                              "Towards the shop to Unlock",
+                                              ''
+                                                  "Towards the shop to Unlock",
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(
                                             fontSize: 16,
@@ -562,7 +566,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                         // SHOP INFO
                                         Padding(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 18.0,
+                                            horizontal: 15.0,
                                           ),
                                           child: Row(
                                             children: [
@@ -572,9 +576,8 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      data?.shop.name
-                                                              .toString() ??
-                                                          '',
+                                                      data?.shop?.name ?? '',
+
                                                       maxLines: 1,
                                                       overflow:
                                                           TextOverflow.ellipsis,
@@ -592,18 +595,16 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                                           ratingCount:
                                                               data
                                                                   ?.shop
-                                                                  .reviewCount
+                                                                  ?.reviewCount
                                                                   .toString() ??
-                                                              '',
+                                                              '0',
                                                           ratingStar:
-                                                              data?.shop.rating
+                                                              data?.shop?.rating
                                                                   .toString() ??
-                                                              '',
+                                                              '0',
                                                         ),
-                                                        const SizedBox(
-                                                          width: 4,
-                                                        ),
-                                                        const Text(
+                                                        SizedBox(width: 4),
+                                                        Text(
                                                           "Opens Upto",
                                                           style: TextStyle(
                                                             fontSize: 11,
@@ -613,11 +614,11 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                                                 Colors.white70,
                                                           ),
                                                         ),
-                                                        const SizedBox(
-                                                          width: 3,
-                                                        ),
-                                                        const Text(
-                                                          "9pm",
+                                                        SizedBox(width: 3),
+                                                        Text(
+                                                          data?.shop?.closeTime
+                                                                  .toString() ??
+                                                              '',
                                                           style: TextStyle(
                                                             fontSize: 11,
                                                             fontWeight:
@@ -637,7 +638,9 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                                     BorderRadius.circular(12),
                                                 child: CachedNetworkImage(
                                                   imageUrl:
-                                                      data?.shop.imageUrl ?? '',
+                                                      data?.shop?.imageUrl ??
+                                                      '',
+
                                                   height: 62,
                                                   width: 66,
                                                   fit: BoxFit.cover,
