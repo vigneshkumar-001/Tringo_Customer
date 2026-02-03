@@ -196,14 +196,22 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
                 child: CommonContainer.callNowButton(
-                  callOnTap: () {
+                  callOnTap: () async {
                     MapUrls.openDialer(
                       context,
                       serviceDetailData.data.shop.primaryPhone,
                     );
+
+                    await ref
+                        .read(homeNotifierProvider.notifier)
+                        .markCallOrLocation(
+                          type: 'CALL',
+                          shopId:
+                              serviceDetailData.data.shop.id.toString() ?? '',
+                        );
                   },
                   mapBox: true,
-                  mapOnTap: () {
+                  mapOnTap: () async {
                     MapUrls.openMap(
                       context: context,
                       latitude:
@@ -215,6 +223,13 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               .toString() ??
                           '',
                     );
+                    await ref
+                        .read(homeNotifierProvider.notifier)
+                        .markCallOrLocation(
+                          type: 'MAP',
+                          shopId:
+                              serviceDetailData.data.shop.id.toString() ?? '',
+                        );
                   },
                   mapText: 'Map',
 
@@ -224,6 +239,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                   ),
                   order: false,
                   callText: 'Call Now',
+
                   callImage: AppImages.callImage,
                   callIconSize: 21,
                   callTextSize: 16,
@@ -434,9 +450,9 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               ratingStar: data.rating?.toString() ?? '',
                               ratingCount: data.ratingCount?.toString() ?? '',
                               offAmound:
-                               '₹${data.offerPrice?.toString() ?? ''}',
+                                  '₹${data.offerPrice?.toString() ?? ''}',
                               oldAmound: '',
-                                  // '₹${data.offerPrice?.toString() ?? ''}',
+                              // '₹${data.offerPrice?.toString() ?? ''}',
                               km:
                                   data.distanceLabel ??
                                   (shopsData?.distanceLabel ?? ''),

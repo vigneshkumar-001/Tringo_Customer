@@ -1610,6 +1610,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                         context,
                                                         services.primaryPhone,
                                                       );
+                                                      AppLogger.log.w(services.id);
+
+                                                      await ref
+                                                          .read(
+                                                            homeNotifierProvider
+                                                                .notifier,
+                                                          )
+                                                          .markCallOrLocation(
+                                                        type: 'CALL',
+                                                            shopId:
+                                                                services.id
+                                                                    .toString() ??
+                                                                '',
+                                                          );
                                                     },
                                                     horizontalDivider: true,
                                                     fireOnTap: () {},
@@ -2025,6 +2039,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     await MapUrls.openDialer(
                                                       context,
                                                       shops.primaryPhone,
+                                                    );
+                                                    await ref
+                                                        .read(
+                                                      homeNotifierProvider
+                                                          .notifier,
+                                                    )
+                                                        .markCallOrLocation(
+                                                      type: 'CALL',
+                                                      shopId:
+                                                      shops.id
+                                                          .toString() ??
+                                                          '',
                                                     );
                                                   },
 
