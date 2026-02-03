@@ -1128,90 +1128,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                 ),
 
                                                 // Title + subtitle + CTA
-                                                Positioned(
-                                                  left: 12,
-                                                  right: 12,
-                                                  bottom: 10,
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        banner.title,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style:
-                                                            GoogleFont.Mulish(
-                                                              fontSize: 14,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w800,
-                                                              color:
-                                                                  Colors.white,
-                                                            ),
-                                                      ),
-                                                      if ((banner.subtitle ??
-                                                              '')
-                                                          .isNotEmpty)
-                                                        Text(
-                                                          banner.subtitle!,
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style:
-                                                              GoogleFont.Mulish(
-                                                                fontSize: 12,
-                                                                color: Colors
-                                                                    .white
-                                                                    .withOpacity(
-                                                                      0.9,
-                                                                    ),
-                                                              ),
-                                                        ),
-                                                      if ((banner.ctaLabel ??
-                                                              '')
-                                                          .isNotEmpty)
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                top: 6,
-                                                              ),
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal:
-                                                                      10,
-                                                                  vertical: 4,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .white
-                                                                  .withOpacity(
-                                                                    0.9,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    20,
-                                                                  ),
-                                                            ),
-                                                            child: Text(
-                                                              banner.ctaLabel!,
-                                                              style: GoogleFont.Mulish(
-                                                                fontSize: 11,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color: AppColor
-                                                                    .darkBlue,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
+                                                // Positioned(
+                                                //   left: 12,
+                                                //   right: 12,
+                                                //   bottom: 10,
+                                                //   child: Column(
+                                                //     crossAxisAlignment:
+                                                //         CrossAxisAlignment
+                                                //             .start,
+                                                //     children: [
+                                                //       Text(
+                                                //         banner.title,
+                                                //         maxLines: 1,
+                                                //         overflow: TextOverflow
+                                                //             .ellipsis,
+                                                //         style:
+                                                //             GoogleFont.Mulish(
+                                                //               fontSize: 14,
+                                                //               fontWeight:
+                                                //                   FontWeight
+                                                //                       .w800,
+                                                //               color:
+                                                //                   Colors.white,
+                                                //             ),
+                                                //       ),
+                                                //       if ((banner.subtitle ??
+                                                //               '')
+                                                //           .isNotEmpty)
+                                                //         Text(
+                                                //           banner.subtitle!,
+                                                //           maxLines: 1,
+                                                //           overflow: TextOverflow
+                                                //               .ellipsis,
+                                                //           style:
+                                                //               GoogleFont.Mulish(
+                                                //                 fontSize: 12,
+                                                //                 color: Colors
+                                                //                     .white
+                                                //                     .withOpacity(
+                                                //                       0.9,
+                                                //                     ),
+                                                //               ),
+                                                //         ),
+                                                //       if ((banner.ctaLabel ??
+                                                //               '')
+                                                //           .isNotEmpty)
+                                                //         Padding(
+                                                //           padding:
+                                                //               const EdgeInsets.only(
+                                                //                 top: 6,
+                                                //               ),
+                                                //           child: Container(
+                                                //             padding:
+                                                //                 const EdgeInsets.symmetric(
+                                                //                   horizontal:
+                                                //                       10,
+                                                //                   vertical: 4,
+                                                //                 ),
+                                                //             decoration: BoxDecoration(
+                                                //               color: Colors
+                                                //                   .white
+                                                //                   .withOpacity(
+                                                //                     0.9,
+                                                //                   ),
+                                                //               borderRadius:
+                                                //                   BorderRadius.circular(
+                                                //                     20,
+                                                //                   ),
+                                                //             ),
+                                                //             child: Text(
+                                                //               banner.ctaLabel!,
+                                                //               style: GoogleFont.Mulish(
+                                                //                 fontSize: 11,
+                                                //                 fontWeight:
+                                                //                     FontWeight
+                                                //                         .w700,
+                                                //                 color: AppColor
+                                                //                     .darkBlue,
+                                                //               ),
+                                                //             ),
+                                                //           ),
+                                                //         ),
+                                                //     ],
+                                                //   ),
+                                                // ),
 
                                                 // Tap full banner
                                                 Positioned.fill(

@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/enter_review.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/qr_scan_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/receive_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/referral_screen.dart';
@@ -594,15 +597,16 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                           ),
                           const SizedBox(width: 20),
                           CommonContainer.walletSendBox(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      QrScanScreen(title: 'Scan QR Code'),
-                                ),
-                              );
-                            },
+                            onTap: () => _openQrAndAskAction(context),
+                            // onTap: () {
+                            //   Navigator.push(
+                            //     context,
+                            //     MaterialPageRoute(
+                            //       builder: (_) =>
+                            //           QrScanScreen(title: 'Scan QR Code'),
+                            //     ),
+                            //   );
+                            // },
                             text: 'Scan QR',
                             image: AppImages.smallScanQR,
                           ),
@@ -918,5 +922,281 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
         ),
       ),
     );
+  }
+  Future<void> _ensureWalletReady() async {
+    final st = ref.read(walletNotifier);
+    if (st.walletHistoryResponse != null) return;
+
+    await ref.read(walletNotifier.notifier).walletHistory(type: "ALL");
+  }
+  Future<void> _openQrAndAskAction(BuildContext context) async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const QrScanScreen(title: 'Scan QR Code'),
+      ),
+    );
+
+    if (result == null || result.trim().isEmpty) return;
+
+    final payload = QrScanPayload.fromScanValue(result);
+
+    final toUid = (payload.toUid ?? '').trim();
+    final shopId = (payload.shopId ?? '').trim();
+
+    final hasUid = toUid.isNotEmpty;
+    final hasShop = shopId.isNotEmpty;
+
+    if (!hasUid && !hasShop) {
+      AppSnackBar.error(context, "Invalid QR");
+      return;
+    }
+
+    // ✅ Ensure wallet loaded (so SendScreen gets uid/balance safely)
+    await _ensureWalletReady();
+
+    final walletState = ref.read(walletNotifier);
+    final wallet = walletState.walletHistoryResponse?.data.wallet;
+
+    // fallback if wallet null
+    final myUid = (wallet?.uid ?? '').toString();
+    final myBal = (wallet?.tcoinBalance ?? 0).toString();
+
+    if (!context.mounted) return;
+
+    // ✅ CASE 1: UID ONLY => AUTO NAVIGATE TO SEND SCREEN
+    if (hasUid && !hasShop) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              SendScreen(tCoinBalance: myBal, uid: myUid, initialToUid: toUid),
+        ),
+      );
+      return;
+    }
+
+    // ✅ CASE 2: UID + SHOPID => OPEN PAY/REVIEW SHEET
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 4,
+                width: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                "Choose Action",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 14),
+
+              // ✅ PAY
+              ListTile(
+                enabled: hasUid,
+                leading: const Icon(Icons.account_balance_wallet_rounded),
+                title: const Text("Pay"),
+                onTap: hasUid
+                    ? () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SendScreen(
+                        tCoinBalance: myBal,
+                        uid: myUid,
+                        initialToUid: toUid,
+                      ),
+                    ),
+                  );
+                }
+                    : null,
+              ),
+
+              // ✅ REVIEW
+              ListTile(
+                enabled: hasShop,
+                leading: const Icon(Icons.rate_review_rounded),
+                title: const Text("Review"),
+                onTap: hasShop
+                    ? () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EnterReview(shopId: shopId),
+                    ),
+                  );
+                }
+                    : null,
+              ),
+
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class QrScanPayload {
+  final String? toUid;
+  final String? shopId;
+  final String? action;
+  final List<String> options;
+
+  const QrScanPayload({
+    this.toUid,
+    this.shopId,
+    this.action,
+    this.options = const [],
+  });
+
+  bool get hasUid => (toUid ?? '').trim().isNotEmpty;
+  bool get hasShop => (shopId ?? '').trim().isNotEmpty;
+
+  // optional flags (if your backend sends options)
+  bool get canPay => options.contains('SEND_TCOIN') || hasUid;
+  bool get canReview => options.contains('REVIEW') || hasShop;
+
+  static QrScanPayload fromScanValue(String raw) {
+    final v = raw.trim();
+    if (v.isEmpty) return const QrScanPayload();
+
+    // 1) Try URI parsing
+    final uri = Uri.tryParse(v);
+
+    // 1A) payload base64url JSON: hoppr://qr?payload=BASE64URL_JSON
+    final payloadParam = uri?.queryParameters['payload'];
+    if (payloadParam != null && payloadParam.trim().isNotEmpty) {
+      final jsonMap = _tryDecodePayloadToJson(payloadParam.trim());
+      if (jsonMap != null) return _fromJsonMap(jsonMap);
+      // if payload decode failed, continue to other strategies
+    }
+
+    // 1B) direct query params: hoppr://qr?toUid=...&shopId=...
+    if (uri != null && uri.queryParameters.isNotEmpty) {
+      final qp = uri.queryParameters;
+      final toUid = _pick(qp, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
+      final shopId = _pick(qp, ['shopId', 'shopID', 'shop_id', 'shop']);
+      if ((toUid ?? '').trim().isNotEmpty || (shopId ?? '').trim().isNotEmpty) {
+        return QrScanPayload(
+          toUid: toUid?.trim(),
+          shopId: shopId?.trim(),
+          action: _pick(qp, ['action'])?.trim(),
+          options: const [],
+        );
+      }
+    }
+
+    // 2) Try JSON directly (some QR stores raw JSON)
+    final jsonMapDirect = _tryJsonDecode(v);
+    if (jsonMapDirect != null) return _fromJsonMap(jsonMapDirect);
+
+    // 3) Plain UID (customer QR): UIDA8189F085
+    final onlyUid = _extractUid(v);
+    if (onlyUid != null) {
+      return QrScanPayload(toUid: onlyUid, options: const ['SEND_TCOIN']);
+    }
+
+    // 4) If nothing matched
+    return const QrScanPayload();
+  }
+
+  static QrScanPayload _fromJsonMap(Map<String, dynamic> m) {
+    final toUid = _pick(m, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
+    final shopId = _pick(m, ['shopId', 'shopID', 'shop_id', 'shop']);
+    final action = _pick(m, ['action', 'act']);
+
+    return QrScanPayload(
+      toUid: toUid?.toString().trim(),
+      shopId: shopId?.toString().trim(),
+      action: action?.toString().trim(),
+      options: _readOptions(m),
+    );
+  }
+
+  static Map<String, dynamic>? _tryDecodePayloadToJson(String b64url) {
+    try {
+      var s = b64url.replaceAll('-', '+').replaceAll('_', '/');
+      while (s.length % 4 != 0) {
+        s += '=';
+      }
+      final bytes = base64Decode(s);
+      final decoded = utf8.decode(bytes);
+      final map = jsonDecode(decoded);
+      return (map as Map).cast<String, dynamic>();
+    } catch (_) {
+      // also try normal base64 (some apps use standard base64)
+      try {
+        final bytes = base64Decode(b64url);
+        final decoded = utf8.decode(bytes);
+        final map = jsonDecode(decoded);
+        return (map as Map).cast<String, dynamic>();
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  static Map<String, dynamic>? _tryJsonDecode(String v) {
+    try {
+      final map = jsonDecode(v);
+      if (map is Map) return map.cast<String, dynamic>();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _extractUid(String v) {
+    // support: "UIDA8189F085" OR "UID: UIDA8189F085" OR "toUid=UIDA..."
+    final m = RegExp(r'(UID[A-Za-z0-9]+)', caseSensitive: false).firstMatch(v);
+    return m?.group(1)?.toUpperCase();
+  }
+
+  static String? _pick(Map m, List<String> keys) {
+    for (final k in keys) {
+      if (m.containsKey(k) && (m[k]?.toString().trim().isNotEmpty ?? false)) {
+        return m[k].toString();
+      }
+    }
+    return null;
+  }
+
+  static List<String> _readOptions(Map<String, dynamic> jsonMap) {
+    final opts = jsonMap['options'];
+    if (opts is List) {
+      return opts
+          .map((e) {
+        if (e is Map) {
+          return (e['key'] ?? e['code'] ?? e['name'])?.toString();
+        }
+        return e?.toString();
+      })
+          .whereType<String>()
+          .map((e) => e.trim().toUpperCase())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return const [];
   }
 }
