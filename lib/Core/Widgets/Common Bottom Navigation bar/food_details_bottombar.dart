@@ -104,6 +104,7 @@ class _FoodDetailsBottombarState extends State<FoodDetailsBottombar> {
       ),
     );
   }
+
   // map taps from the bar
   void _onBarTap(int i) {
     // if (index == _selectedIndex) return;

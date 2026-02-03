@@ -21,7 +21,7 @@ class ProfileData {
   final int coins;
   final String tier;
   final String referralCode;
-  final String? gender;
+  final String gender;
   final DateTime? dateOfBirth;
   final User user;
 
@@ -33,26 +33,37 @@ class ProfileData {
     required this.tier,
     required this.referralCode,
     required this.user,
-    this.gender,
+    required this.gender,
     this.dateOfBirth,
   });
 
+  static String _clean(dynamic v) {
+    final s = (v ?? '').toString().trim();
+    if (s.toLowerCase() == 'null') return '';
+    return s;
+  }
+
+  static DateTime? _tryDate(dynamic v) {
+    final s = _clean(v);
+    if (s.isEmpty) return null;
+    return DateTime.tryParse(s);
+  }
+
   factory ProfileData.fromJson(Map<String, dynamic> json) {
     return ProfileData(
-      id: json['id'],
-      displayName: json['displayName'] ?? '',
-      avatarUrl: json['avatarUrl'] ?? '',
-      coins: json['coins'] ?? 0,
-      tier: json['tier'] ?? '',
-      referralCode: json['referralCode'] ?? '',
-      gender: json['gender'],
-      dateOfBirth: json['dateOfBirth'] != null
-          ? DateTime.parse(json['dateOfBirth'])
-          : null,
-      user: User.fromJson(json['user']),
+      id: _clean(json['id']),
+      displayName: _clean(json['displayName']),
+      avatarUrl: _clean(json['avatarUrl']),
+      coins: (json['coins'] is num) ? (json['coins'] as num).toInt() : int.tryParse('${json['coins']}') ?? 0,
+      tier: _clean(json['tier']),
+      referralCode: _clean(json['referralCode']),
+      gender: _clean(json['gender']),
+      dateOfBirth: _tryDate(json['dateOfBirth']),
+      user: User.fromJson((json['user'] as Map<String, dynamic>?) ?? {}),
     );
   }
 }
+
 class User {
   final String id;
   final String fullName;

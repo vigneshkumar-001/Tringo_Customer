@@ -268,25 +268,6 @@ class CommonContainer {
                   ),
           ),
 
-          // ClipRRect(
-          //   borderRadius: BorderRadius.circular(15),
-          //   child: heroTag != null
-          //       ? Hero(
-          //           tag: heroTag,
-          //           child: Image.asset(
-          //             Images,
-          //             height: 183,
-          //             width: 257,
-          //             fit: BoxFit.cover,
-          //           ),
-          //         )
-          //       : Image.asset(
-          //           Images,
-          //           height: 183,
-          //           width: 257,
-          //           fit: BoxFit.cover,
-          //         ),
-          // ),
           Positioned(
             top: 0,
             left: 0,
@@ -384,7 +365,7 @@ class CommonContainer {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 5),
                         Text(
                           km,
                           style: GoogleFont.Mulish(
@@ -398,71 +379,26 @@ class CommonContainer {
                     const SizedBox(height: 9),
                     Row(
                       children: [
-                        /* Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColor.green,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Row(
-                            mainAxisSize:
-                                MainAxisSize.min, // 👈 stops expanding too much
-                            children: [
-                              Text(
-                                ratingStar,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFont.Mulish(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 10,
-                                  color: AppColor.white,
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Image.asset(AppImages.starImage, height: 7),
-                              const SizedBox(width: 5),
-                              Container(
-                                width: 1.5,
-                                height: 11,
-                                decoration: BoxDecoration(
-                                  color: AppColor.white.withOpacity(0.4),
-                                  borderRadius: BorderRadius.circular(1),
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                ratingCount,
-                                style: GoogleFont.Mulish(
-                                  fontSize: 8,
-                                  color: AppColor.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),*/
                         CommonContainer.greenStarRating(
                           ratingCount: ratingCount,
                           ratingStar: ratingStar,
                         ),
-                        // const SizedBox(width: 10),
-                        // Text(
-                        //   'Max',
-                        //   style: GoogleFont.Mulish(
-                        //     fontSize: 9,
-                        //     color: AppColor.lightGray2,
-                        //   ),
-                        // ),
-                        // Text(
-                        //   time,
-                        //   style: GoogleFont.Mulish(
-                        //     fontSize: 9,
-                        //     color: AppColor.lightGray2,
-                        //     fontWeight: FontWeight.w800,
-                        //   ),
-                        // ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Max ',
+                          style: GoogleFont.Mulish(
+                            fontSize: 9,
+                            color: AppColor.lightGray2,
+                          ),
+                        ),
+                        Text(
+                          time,
+                          style: GoogleFont.Mulish(
+                            fontSize: 9,
+                            color: AppColor.lightGray2,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ],
                     ),
                   ],

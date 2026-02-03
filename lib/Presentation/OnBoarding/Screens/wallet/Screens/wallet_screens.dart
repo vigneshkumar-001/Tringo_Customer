@@ -923,12 +923,14 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
       ),
     );
   }
+
   Future<void> _ensureWalletReady() async {
     final st = ref.read(walletNotifier);
     if (st.walletHistoryResponse != null) return;
 
     await ref.read(walletNotifier.notifier).walletHistory(type: "ALL");
   }
+
   Future<void> _openQrAndAskAction(BuildContext context) async {
     final result = await Navigator.push<String>(
       context,
@@ -1015,18 +1017,18 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                 title: const Text("Pay"),
                 onTap: hasUid
                     ? () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SendScreen(
-                        tCoinBalance: myBal,
-                        uid: myUid,
-                        initialToUid: toUid,
-                      ),
-                    ),
-                  );
-                }
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SendScreen(
+                              tCoinBalance: myBal,
+                              uid: myUid,
+                              initialToUid: toUid,
+                            ),
+                          ),
+                        );
+                      }
                     : null,
               ),
 
@@ -1037,14 +1039,14 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                 title: const Text("Review"),
                 onTap: hasShop
                     ? () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EnterReview(shopId: shopId),
-                    ),
-                  );
-                }
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EnterReview(shopId: shopId),
+                          ),
+                        );
+                      }
                     : null,
               ),
 
@@ -1187,11 +1189,11 @@ class QrScanPayload {
     if (opts is List) {
       return opts
           .map((e) {
-        if (e is Map) {
-          return (e['key'] ?? e['code'] ?? e['name'])?.toString();
-        }
-        return e?.toString();
-      })
+            if (e is Map) {
+              return (e['key'] ?? e['code'] ?? e['name'])?.toString();
+            }
+            return e?.toString();
+          })
           .whereType<String>()
           .map((e) => e.trim().toUpperCase())
           .where((e) => e.isNotEmpty)

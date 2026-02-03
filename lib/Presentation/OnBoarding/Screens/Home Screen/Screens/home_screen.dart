@@ -1316,7 +1316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         physics: const BouncingScrollPhysics(),
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 15.0,
+                                            horizontal: 10.0,
                                           ),
                                           child: Row(
                                             children: [
@@ -1349,7 +1349,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     '',
                                                 location:
                                                     '${data.shop?.addressEn},${data.shop?.city},${data.shop?.state},${data.shop?.country} ',
-                                                km: '5Kms',
+                                                km:
+                                                    data.distanceLabel
+                                                        ?.toString() ??
+                                                    '',
                                                 ratingStar:
                                                     data.shop?.averageRating
                                                         .toString() ??
@@ -1358,7 +1361,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     data.shop?.reviewCount
                                                         .toString() ??
                                                     '',
-                                                time: ' 9Pm',
+                                                time:
+                                                    data.closeTime
+                                                        ?.toString() ??
+                                                    '',
                                                 Images:
                                                     data.bannerUrl.toString() ??
                                                     '',
