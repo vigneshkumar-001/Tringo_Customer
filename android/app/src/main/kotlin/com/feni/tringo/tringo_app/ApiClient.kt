@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-//    private const val BASE_URL = "https://bknd.tringobiz.com/"
-    private const val BASE_URL = "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/"
+    private const val BASE_URL = "https://bknd.tringobiz.com/"
+//    private const val BASE_URL = "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/"
     private const val TAG = "TRINGO_HTTP"
 
     /**

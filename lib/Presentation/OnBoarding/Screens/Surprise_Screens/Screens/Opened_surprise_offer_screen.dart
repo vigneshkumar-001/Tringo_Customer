@@ -382,9 +382,7 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                         const SizedBox(height: 5),
 
                         Text(
-                          offerShort.isNotEmpty
-                              ? offerShort
-                              : (offerDesc.isNotEmpty ? offerDesc : '-'),
+                          offerDesc.isNotEmpty ? offerDesc : '-',
                           style: GoogleFont.Mulish(
                             fontSize: 12,
                             color: AppColor.lightGray3,
