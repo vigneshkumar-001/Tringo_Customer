@@ -55,6 +55,12 @@ class ApiUrl {
   static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lng";
   }
+   static String markCallOrMapEnquiry({
+     required String shopId,
+
+   }) {
+     return "${base}api/v1/public/shops/$shopId/track";
+   }
 
   static String surpriseStatusCheck({
     required double lng,

@@ -7,7 +7,7 @@ import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
-
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/mark_enquiry.dart';
 
 import '../../Login Screen/Controller/login_notifier.dart';
 
@@ -16,12 +16,14 @@ class homeState {
   final bool isEnquiryLoading;
   final String? error;
   final String? activeEnquiryId;
+  final MarkEnquiry? markEnquiry;
   final HomeResponse? homeResponse;
   final EnquiryResponse? enquiryResponse;
 
   const homeState({
     this.isLoading = true,
     this.isEnquiryLoading = false,
+    this.markEnquiry,
     this.error,
     this.homeResponse,
     this.enquiryResponse,
@@ -33,6 +35,7 @@ class homeState {
   homeState copyWith({
     bool? isLoading,
     String? activeEnquiryId,
+    MarkEnquiry? markEnquiry,
     bool? isEnquiryLoading,
     String? error,
     HomeResponse? homeResponse,
@@ -41,6 +44,7 @@ class homeState {
     return homeState(
       isLoading: isLoading ?? this.isLoading,
       isEnquiryLoading: isEnquiryLoading ?? this.isEnquiryLoading,
+      markEnquiry: markEnquiry ?? this.markEnquiry,
       // when we call copyWith we usually want to override error explicitly
       error: error,
       // keep existing homeResponse unless explicitly replaced
@@ -137,6 +141,31 @@ class HomeNotifier extends Notifier<homeState> {
         );
         AppSnackBar.success(context, response.data.message);
       },
+    );
+  }
+
+  Future<void> markCallOrLocation({
+    required String type,
+    required String shopId,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    final result = await api.markCallOrMapEnquiry(
+       type : type,
+      shopId: shopId,
+    );
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isLoading: false,
+        error: failure.message,
+        markEnquiry: null,
+      ),
+      (response) => state = state.copyWith(
+        isLoading: false,
+        error: null,
+        markEnquiry: response,
+      ),
     );
   }
 }

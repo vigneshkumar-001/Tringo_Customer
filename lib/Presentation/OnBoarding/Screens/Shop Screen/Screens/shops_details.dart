@@ -445,11 +445,19 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         context,
                                         shopsData.data?.primaryPhone,
                                       );
+                                      await ref
+                                          .read(homeNotifierProvider.notifier)
+                                          .markCallOrLocation(
+                                            type: 'CALL',
+                                            shopId:
+                                                shopsData.data?.id.toString() ??
+                                                '',
+                                          );
                                     },
                                     callImage: AppImages.callImage,
                                     callText: 'Call Now',
 
-                                    mapOnTap: () {
+                                    mapOnTap: () async {
                                       MapUrls.openMap(
                                         context: context,
                                         latitude:
@@ -461,6 +469,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                 .toString() ??
                                             '',
                                       );
+                                      await ref
+                                          .read(homeNotifierProvider.notifier)
+                                          .markCallOrLocation(
+                                            type: 'MAP',
+                                            shopId:
+                                                shopsData.data?.id.toString() ??
+                                                '',
+                                          );
                                     },
                                     messageOnTap: () {
                                       if (_enquiryDisabled ||
