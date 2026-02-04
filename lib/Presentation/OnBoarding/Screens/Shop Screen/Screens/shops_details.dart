@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
@@ -85,6 +87,10 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
       ref
           .read(shopsNotifierProvider.notifier)
           .showSpecificShopDetails(shopId: widget.shopId ?? '');
+      final notifier = ref.read(shopsNotifierProvider.notifier);
+
+      // ✅ Reset old follow state FIRST
+      notifier.resetFollowState();
     });
 
     final curve = CurvedAnimation(
@@ -157,6 +163,15 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _ac.forward());
+  }
+
+  @override
+  void didUpdateWidget(covariant ShopsDetails oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.shopId != widget.shopId) {
+      ref.read(shopsNotifierProvider.notifier).resetFollowState();
+    }
   }
 
   @override
@@ -264,6 +279,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(shopsNotifierProvider);
+    final notifier = ref.watch(shopsNotifierProvider.notifier);
     final stateS = ref.watch(homeNotifierProvider);
 
     final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
@@ -286,6 +302,10 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
     final services = shopsData.data?.services ?? [];
     final products = shopsData.data?.products ?? [];
+    final bool isFollowing =
+        state.followResponse?.data.isFollowing ??
+        shopsData.data?.isFollowing ??
+        false;
 
     final hasServices = services.isNotEmpty;
     final hasProducts = products.isNotEmpty;
@@ -380,16 +400,80 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                   ),
-                                  child: Text(
-                                    shopsData.data?.englishName.toString() ??
-                                        '',
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColor.darkBlue,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          shopsData.data?.englishName
+                                                  .toString() ??
+                                              '',
+                                          style: GoogleFonts.mulish(
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColor.darkBlue,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      CommonContainer.followButton(
+                                        isLoading: state.followButtonLoader,
+                                        isFollowing: state.isFollowing,
+                                        onTap: () {
+                                          ref
+                                              .read(
+                                                shopsNotifierProvider.notifier,
+                                              )
+                                              .followButton(
+                                                shopId:
+                                                    shopsData.data?.id
+                                                        .toString() ??
+                                                    '',
+                                                follow: !state.isFollowing,
+                                              );
+                                        },
+                                      ),
+
+                                      // CommonContainer.followButton(
+                                      //   isLoading: state.followButtonLoader,
+                                      //   isFollowing: state.isFollowing,
+                                      //   onTap: () {
+                                      //     ref
+                                      //         .read(
+                                      //           shopsNotifierProvider.notifier,
+                                      //         )
+                                      //         .followButton(
+                                      //           shopId:
+                                      //               shopsData.data?.id
+                                      //                   .toString() ??
+                                      //               '',
+                                      //           follow: !state.isFollowing,
+                                      //         );
+                                      //   },
+                                      // ),
+                                    ],
                                   ),
                                 ),
+                                // Padding(
+                                //   padding: const EdgeInsets.symmetric(
+                                //     horizontal: 16,
+                                //   ),
+                                //   child: Row(
+                                //     children: [
+                                //       Text(
+                                //         shopsData.data?.englishName.toString() ??
+                                //             '',
+                                //         style: GoogleFont.Mulish(
+                                //           fontSize: 25,
+                                //           fontWeight: FontWeight.bold,
+                                //           color: AppColor.darkBlue,
+                                //         ),
+                                //       ),
+                                //
+                                //     ],
+                                //   ),
+                                // ),
                               ),
 
                               SizedBox(height: 14),
@@ -542,79 +626,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                               const SizedBox(height: 20),
 
-                              // SingleChildScrollView(
-                              //   physics: BouncingScrollPhysics(),
-                              //   padding: EdgeInsets.symmetric(horizontal: 16),
-                              //   scrollDirection: Axis.horizontal,
-                              //   child: Row(
-                              //     children: [
-                              //       Stack(
-                              //         children: [
-                              //           Image.asset(
-                              //             AppImages.imageContainer2,
-                              //             height: 250,
-                              //             width: 310,
-                              //           ),
-                              //
-                              //           Positioned(
-                              //             top: 20,
-                              //             left: 15,
-                              //             child: Container(
-                              //               padding: const EdgeInsets.symmetric(
-                              //                 horizontal: 8,
-                              //                 vertical: 4,
-                              //               ),
-                              //               decoration: BoxDecoration(
-                              //                 color: AppColor.white,
-                              //                 borderRadius: BorderRadius.circular(
-                              //                   30,
-                              //                 ),
-                              //               ),
-                              //               child: Row(
-                              //                 mainAxisSize: MainAxisSize.min,
-                              //                 children: [
-                              //                   Text(
-                              //                     '4.5',
-                              //                     style: GoogleFont.Mulish(
-                              //                       fontWeight: FontWeight.bold,
-                              //                       fontSize: 14,
-                              //                       color: AppColor.darkBlue,
-                              //                     ),
-                              //                   ),
-                              //                   const SizedBox(width: 5),
-                              //                   Image.asset(
-                              //                     AppImages.starImage,
-                              //                     height: 9,
-                              //                     color: AppColor.green,
-                              //                   ),
-                              //                   const SizedBox(width: 5),
-                              //                   Container(
-                              //                     width: 1.5,
-                              //                     height: 11,
-                              //                     decoration: BoxDecoration(
-                              //                       color: AppColor.darkBlue
-                              //                           .withOpacity(0.2),
-                              //                       borderRadius:
-                              //                           BorderRadius.circular(1),
-                              //                     ),
-                              //                   ),
-                              //                   const SizedBox(width: 5),
-                              //                   Text(
-                              //                     '16',
-                              //                     style: GoogleFont.Mulish(
-                              //                       fontSize: 12,
-                              //                       color: AppColor.darkBlue,
-                              //                     ),
-                              //                   ),
-                              //                 ],
-                              //               ),
-                              //             ),
-                              //           ),
-                              //         ],
-                              //       ),
-                              //     ],
-                              //   ),
-                              // ),
                               SizedBox(
                                 height: 260,
                                 child: ListView.builder(
@@ -793,132 +804,164 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                 ),
                               ),
                               const SizedBox(height: 25),
-
-                              _staggerFromTop(
-                                aOffer,
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: Stack(
-                                    clipBehavior: Clip
-                                        .none, // allow gift to overflow above
-                                    children: [
-                                      // Base pill: NOT positioned → Stack takes this size (auto height)
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  SurpriseScreens(
-                                                    shopId:
-                                                        shopsData.data?.id
-                                                            .toString() ??
-                                                        '',
-                                                    shopLat: double.parse(
-                                                      shopsData
-                                                              .data
-                                                              ?.gpsLatitude ??
-                                                          "0",
+                              if (shopsData.data?.surprise?.hasOffer ==
+                                  true) ...[
+                                _staggerFromTop(
+                                  aOffer,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    child: Stack(
+                                      clipBehavior: Clip
+                                          .none, // allow gift to overflow above
+                                      children: [
+                                        // Base pill: NOT positioned → Stack takes this size (auto height)
+                                        GestureDetector(
+                                          onTap:
+                                              shopsData
+                                                      .data
+                                                      ?.surprise
+                                                      ?.isClaimed ==
+                                                  true
+                                              ? null
+                                              : () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => SurpriseScreens(
+                                                        shopId:
+                                                            shopsData.data?.id
+                                                                .toString() ??
+                                                            '',
+                                                        shopLat: double.parse(
+                                                          shopsData
+                                                                  .data
+                                                                  ?.gpsLatitude ??
+                                                              "0",
+                                                        ),
+                                                        shopLng: double.parse(
+                                                          shopsData
+                                                                  .data
+                                                                  ?.gpsLongitude ??
+                                                              "0",
+                                                        ),
+                                                      ),
                                                     ),
-                                                    shopLng: double.parse(
-                                                      shopsData
-                                                              .data
-                                                              ?.gpsLongitude ??
-                                                          "0",
-                                                    ),
-                                                  ),
+                                                  );
+                                                },
+                                          child: Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                              24,
+                                              8,
+                                              giftSize + 70,
+                                              18,
                                             ),
-                                          );
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.fromLTRB(
-                                            24,
-                                            8,
-                                            giftSize + 70,
-                                            18,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            image: DecorationImage(
-                                              image: AssetImage(
-                                                AppImages.surpriseOffer,
-                                              ),
-                                              fit: BoxFit.cover,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            gradient: LinearGradient(
-                                              begin: Alignment.center,
-                                              end: Alignment.centerRight,
-                                              colors: [
-                                                AppColor.lightMintGreen,
-                                                AppColor.lightMintGreen
-                                                    .withOpacity(0.5),
-                                                // AppColor.lightMintGreen,
-                                                AppColor.whiteSmoke.withOpacity(
-                                                  0.99,
+                                            decoration: BoxDecoration(
+                                              image: DecorationImage(
+                                                image: AssetImage(
+                                                  AppImages.surpriseOffer,
                                                 ),
-                                                AppColor.whiteSmoke.withOpacity(
-                                                  0.99,
+                                                fit: BoxFit.cover,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              gradient: LinearGradient(
+                                                begin: Alignment.center,
+                                                end: Alignment.centerRight,
+                                                colors: [
+                                                  AppColor.lightMintGreen,
+                                                  AppColor.lightMintGreen
+                                                      .withOpacity(0.5),
+                                                  // AppColor.lightMintGreen,
+                                                  AppColor.whiteSmoke
+                                                      .withOpacity(0.99),
+                                                  AppColor.whiteSmoke
+                                                      .withOpacity(0.99),
+                                                ],
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize
+                                                  .min, // 👈 auto height from content
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  shopsData
+                                                              .data
+                                                              ?.surprise
+                                                              ?.isClaimed ==
+                                                          true
+                                                      ? 'Surprise Claimed 🎉'
+                                                      : 'Surprise Offer',
+                                                  style: GoogleFont.Mulish(
+                                                    fontSize:
+                                                        shopsData
+                                                                .data
+                                                                ?.surprise
+                                                                ?.isClaimed ==
+                                                            true
+                                                        ? 16
+                                                        : 22,
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w900,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        offset: Offset(1, 3),
+                                                        blurRadius: 10,
+                                                        color: Colors.black38,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Text(
+                                                  shopsData
+                                                              .data
+                                                              ?.surprise
+                                                              ?.isClaimed ==
+                                                          true
+                                                      ? 'You’ve already unlocked this offer'
+                                                      : 'Visit the shop nearby to unlock',
+                                                  style: GoogleFont.Mulish(
+                                                    fontSize:
+                                                        shopsData
+                                                                .data
+                                                                ?.surprise
+                                                                ?.isClaimed ==
+                                                            true
+                                                        ? 14
+                                                        : 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize
-                                                .min, // 👈 auto height from content
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Surprise Offer',
-                                                style: GoogleFont.Mulish(
-                                                  fontSize: 22,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w900,
-                                                  shadows: const [
-                                                    Shadow(
-                                                      offset: Offset(1, 3),
-                                                      blurRadius: 10,
-                                                      color: Colors.black38,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Text(
-                                                'Unlock by near the shop',
-                                                style: GoogleFont.Mulish(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
-                                      ),
 
-                                      // Gift image overlapping on top-right
-                                      Positioned(
-                                        right: 0,
-                                        top:
-                                            -giftSize *
-                                            0.23, // slight lift above pill
-                                        child: SizedBox(
-                                          height: 120,
-                                          width: 110,
-                                          child: Image.asset(
-                                            AppImages.surpriseOfferGift,
-                                            fit: BoxFit.contain,
+                                        // Gift image overlapping on top-right
+                                        Positioned(
+                                          right: 0,
+                                          top:
+                                              -giftSize *
+                                              0.23, // slight lift above pill
+                                          child: SizedBox(
+                                            height: 120,
+                                            width: 110,
+                                            child: Image.asset(
+                                              AppImages.surpriseOfferGift,
+                                              fit: BoxFit.contain,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(height: 34),
+                                SizedBox(height: 34),
+                              ],
                             ],
                           ),
                         ],

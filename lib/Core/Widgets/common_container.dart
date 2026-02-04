@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -1230,6 +1231,139 @@ class CommonContainer {
         child: Padding(
           padding: const EdgeInsets.all(11.5),
           child: Image.asset(AppImages.leftSideArrow, height: 13),
+        ),
+      ),
+    );
+  }
+
+  //
+  // static followButton({VoidCallback? onTap}) {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       gradient: LinearGradient(
+  //         colors: [Color(0xFFE1306C), Color(0xFFC13584), Color(0xFF833AB4)],
+  //         begin: Alignment.topLeft,
+  //         end: Alignment.bottomRight,
+  //       ),
+  //       borderRadius: BorderRadius.circular(12),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Color(0xFFE1306C).withOpacity(0.3),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Material(
+  //       color: Colors.transparent,
+  //       child: InkWell(
+  //         onTap: onTap,
+  //         borderRadius: BorderRadius.circular(12),
+  //         child: Padding(
+  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+  //           child: Row(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               const Icon(Icons.add, color: Colors.white, size: 18),
+  //               const SizedBox(width: 6),
+  //               Text(
+  //                 'Follow',
+  //                 style: GoogleFonts.mulish(
+  //                   fontSize: 14,
+  //                   fontWeight: FontWeight.w600,
+  //                   color: Colors.white,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+  static Widget followButton({
+    required VoidCallback onTap,
+    required bool isLoading,
+    required bool isFollowing,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isFollowing
+            ? null
+            : const LinearGradient(
+                colors: [
+                  Color(0xFFE1306C),
+                  Color(0xFFC13584),
+                  Color(0xFF833AB4),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        color: isFollowing ? Colors.transparent : null,
+        borderRadius: BorderRadius.circular(12),
+        border: isFollowing
+            ? Border.all(
+                color: const Color(0xFF13A0A7), // teal border
+                width: 1.5,
+              )
+            : null,
+        boxShadow: isFollowing
+            ? []
+            : [
+                BoxShadow(
+                  color: const Color(0xFFE1306C).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+            child: SizedBox(
+              height: 18,
+              child: Center(
+                child: isLoading
+                    ? const SizedBox(
+                        height: 11,
+                        width: 11,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isFollowing) ...[
+                            const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(
+                            isFollowing ? 'Following' : 'Follow',
+                            style: GoogleFonts.mulish(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isFollowing
+                                  ? const Color(0xFF13A0A7)
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -1610,7 +1610,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                         context,
                                                         services.primaryPhone,
                                                       );
-                                                      AppLogger.log.w(services.id);
+                                                      AppLogger.log.w(
+                                                        services.id,
+                                                      );
 
                                                       await ref
                                                           .read(
@@ -1618,7 +1620,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                                 .notifier,
                                                           )
                                                           .markCallOrLocation(
-                                                        type: 'CALL',
+                                                            type: 'CALL',
                                                             shopId:
                                                                 services.id
                                                                     .toString() ??
@@ -2042,16 +2044,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     );
                                                     await ref
                                                         .read(
-                                                      homeNotifierProvider
-                                                          .notifier,
-                                                    )
+                                                          homeNotifierProvider
+                                                              .notifier,
+                                                        )
                                                         .markCallOrLocation(
-                                                      type: 'CALL',
-                                                      shopId:
-                                                      shops.id
-                                                          .toString() ??
-                                                          '',
-                                                    );
+                                                          type: 'CALL',
+                                                          shopId:
+                                                              shops.id
+                                                                  .toString() ??
+                                                              '',
+                                                        );
                                                   },
 
                                                   horizontalDivider: true,

@@ -242,11 +242,9 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               await ref
                                   .read(homeNotifierProvider.notifier)
                                   .markCallOrLocation(
-                                type: 'CALL',
-                                shopId:
-                                data.id.toString() ??
-                                    '',
-                              );
+                                    type: 'CALL',
+                                    shopId: data.id.toString() ?? '',
+                                  );
                             },
                             horizontalDivider: true,
                             onTap: () {

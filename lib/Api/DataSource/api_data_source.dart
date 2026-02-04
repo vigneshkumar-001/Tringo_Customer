@@ -21,6 +21,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Search%20Screen/Model
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/service_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/service_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Models/services_list_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/follow_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
@@ -1581,7 +1582,6 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
-
   Future<Either<Failure, WithdrawRequestResponse>> uIDWithRawApi({
     required String upiId,
     required String tcoin,
@@ -1590,48 +1590,48 @@ class ApiDataSource extends BaseApiDataSource {
       final String url = ApiUrl.uIDWithRawApi;
       final payload = {"upiId": upiId, "tcoin": tcoin};
 
-      final response = await Request.sendRequest(url, payload, 'Post', true);
+      final response = await Request.sendRequest(
+        url,
+        payload,
+        'Post',
+        true,
+      );
 
-      if (response is DioException) {
-        final errorData = response.response?.data;
-        if (errorData is Map && errorData['message'] != null) {
-          return Left(ServerFailure(errorData['message'].toString()));
-        }
-        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
-      }
+      // 🔥 Always try to read body first
+      final body = response.data;
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = response.data;
-
-        if (body is Map<String, dynamic>) {
-          // ✅ status=false -> show API message
-          if (body['status'] != true) {
-            return Left(
-              ServerFailure((body['message'] ?? "Withdraw failed").toString()),
-            );
-          }
-
-          // ✅ parse withdraw response (NOT SendTcoinResponse)
-          final parsed = WithdrawRequestResponse.fromJson(body);
-
-          // ✅ if inner success=false
-          if (parsed.data.success != true) {
-            return Left(
-              ServerFailure((body['message'] ?? "Withdraw failed").toString()),
-            );
-          }
-
-          return Right(parsed);
+      if (body is Map<String, dynamic>) {
+        if (body['status'] != true) {
+          return Left(
+            ServerFailure((body['message'] ?? "Withdraw failed").toString()),
+          );
         }
 
-        return Left(ServerFailure("Invalid response format"));
+        final parsed = WithdrawRequestResponse.fromJson(body);
+
+        if (parsed.data.success != true) {
+          return Left(
+            ServerFailure((body['message'] ?? "Withdraw failed").toString()),
+          );
+        }
+
+        return Right(parsed);
       }
 
       return Left(ServerFailure("HTTP ${response.statusCode}"));
+    } on DioException catch (e) {
+      final errorData = e.response?.data;
+
+      if (errorData is Map && errorData['message'] != null) {
+        return Left(ServerFailure(errorData['message'].toString()));
+      }
+
+      return Left(ServerFailure(e.message ?? "Network error"));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
+
 
   Future<Either<Failure, ReferralHistoryResponse>> referralHistory() async {
     try {
@@ -1882,9 +1882,14 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final url = ApiUrl.markCallOrMapEnquiry(shopId: shopId);
 
-      dynamic response = await Request.sendRequest(url, {
-        "type": type //CALL or MAP
-      }, 'POST', true);
+      dynamic response = await Request.sendRequest(
+        url,
+        {
+          "type": type, //CALL or MAP
+        },
+        'POST',
+        true,
+      );
 
       AppLogger.log.i(response);
 
@@ -1913,6 +1918,49 @@ class ApiDataSource extends BaseApiDataSource {
       }
     } catch (e) {
       AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, FollowResponse>> followButton({
+    required String shopId,
+    required String followOrUnfollow,
+  }) async {
+    try {
+      AppLogger.log.i(shopId);
+      final url = ApiUrl.follow(shopId: shopId);
+
+      final response = await Request.sendRequest(
+        url,
+        {
+          "action": followOrUnfollow, // 'FOLLOW' | 'UNFOLLOW'
+        },
+        'Post',
+        true,
+      );
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(FollowResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
