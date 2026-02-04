@@ -10,7 +10,8 @@ import '../../Home Screen/Screens/home_screen.dart';
 import '../controller/terms_and_condition_notifier.dart';
 
 class PrivacyPolicy extends ConsumerStatefulWidget {
-  const PrivacyPolicy({super.key});
+  final bool showAcceptReject;
+  const PrivacyPolicy({super.key, this.showAcceptReject = true});
 
   @override
   ConsumerState<PrivacyPolicy> createState() => _PrivacyPolicyState();
@@ -226,7 +227,7 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
 
                     const SizedBox(height: 35),
 
-                    if (hasContent && !state.isLoading)
+                    if (widget.showAcceptReject && hasContent && !state.isLoading)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 35),
                         child: Row(
@@ -234,17 +235,14 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                             InkWell(
                               borderRadius: BorderRadius.circular(15),
                               onTap: () {
-                                // TODO: Reject action (maybe pop/back or close app)
+                                // TODO: Reject action
                               },
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: AppColor.textWhite,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 34,
-                                  vertical: 20,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 20),
                                 child: Text(
                                   'Reject',
                                   style: GoogleFont.Mulish(
@@ -255,17 +253,13 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                                 ),
                               ),
                             ),
-
                             const SizedBox(width: 15),
-
                             InkWell(
                               borderRadius: BorderRadius.circular(15),
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) => HomeScreen(),
-                                  ),
+                                  MaterialPageRoute(builder: (context) => HomeScreen()),
                                 );
                               },
                               child: Container(
@@ -273,10 +267,7 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                                   color: AppColor.blue,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 50,
-                                  vertical: 20,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
                                 child: Text(
                                   'Accept',
                                   style: GoogleFont.Mulish(
@@ -289,7 +280,10 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                             ),
                           ],
                         ),
-                      ),
+                      )
+                    else
+                      const SizedBox.shrink(),
+
                   ],
                 ),
               ),

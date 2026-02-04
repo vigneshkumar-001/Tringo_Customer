@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
@@ -305,7 +306,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     CommonContainer.leftSideArrow(
                       onTap: () {
-                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeScreen()),
+                        );
+                        // Navigator.pop(context);
                       },
                     ),
                     // Spacer(),
@@ -474,9 +479,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => WalletScreens(),
-                      ),
+                      MaterialPageRoute(builder: (context) => WalletScreens()),
                     );
                   },
                   label: 'Earnings',
@@ -489,9 +492,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ReferralScreen(),
-                      ),
+                      MaterialPageRoute(builder: (context) => ReferralScreen()),
                     );
                   },
                   label: 'My Referrals',
@@ -536,7 +537,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PrivacyPolicy()),
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            PrivacyPolicy(showAcceptReject: false),
+                      ),
                     );
                   },
                   label: 'Privacy Policy',
