@@ -95,6 +95,10 @@ class ApiUrl {
     return "${base}api/v1/public/shops/$shopId/products";
   }
 
+   static String follow({required String shopId}) {
+     return "${base}api/v1/public/shops/$shopId/follow";
+   }
+
   static String viewAllServices({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/services?page=1&limit=20";
   }
