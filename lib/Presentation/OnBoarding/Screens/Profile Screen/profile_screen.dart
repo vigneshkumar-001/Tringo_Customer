@@ -524,14 +524,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   iconHeight: 25,
                   iconWidth: 19,
                 ),
-                SizedBox(height: 15),
-                CommonContainer.profileList(
-                  onTap: () {},
-                  label: 'Search History',
-                  iconPath: AppImages.searchHistory,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
+                // SizedBox(height: 15),
+                // CommonContainer.profileList(
+                //   onTap: () {},
+                //   label: 'Search History',
+                //   iconPath: AppImages.searchHistory,
+                //   iconHeight: 25,
+                //   iconWidth: 19,
+                // ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
                   onTap: () {

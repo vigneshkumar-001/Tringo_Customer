@@ -42,31 +42,6 @@
         android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:node="remove" />
 
-    <!-- ===== PACKAGE VISIBILITY ===== -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.DIAL"/>
-            <data android:scheme="tel"/>
-        </intent>
-        <package android:name="com.whatsapp"/>
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <category android:name="android.intent.category.BROWSABLE"/>
-            <data android:scheme="https"/>
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <data android:scheme="geo"/>
-        </intent>
-    </queries>
-    <uses-feature
-        android:name="android.hardware.telephony"
-        android:required="true" />
-
     <application
         android:name="android.app.Application"
         android:icon="@mipmap/ic_launcher"
@@ -102,8 +77,6 @@
             </intent-filter>
         </service>
 
-
-
         <!-- ✅ FIX: NOT phoneCall -->
         <service
             android:name="com.feni.tringo.tringo_app.TringoOverlayService"
@@ -122,32 +95,6 @@
                 android:value="false" />
         </service>
 
-        <!-- Incoming calls -->
-        <receiver
-            android:name=".CallReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.PHONE_STATE"/>
-            </intent-filter>
-        </receiver>
-
-        <!-- Overlay call service -->
-        <service
-            android:name=".TringoOverlayService"
-            android:exported="false"
-            android:foregroundServiceType="phoneCall"/>
-
-        <!-- Call redirection -->
-        <service
-            android:name=".TringoRedirectionService"
-            android:permission="android.permission.BIND_CALL_REDIRECTION_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.telecom.CallRedirectionService"/>
-            </intent-filter>
-        </service>
-
         <receiver
             android:name="com.feni.tringo.tringo_app.TringoCallEndReceiver"
             android:exported="true">
@@ -163,8 +110,6 @@
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
-
-
 
         <meta-data android:name="flutterEmbedding" android:value="2" />
     </application>
