@@ -77,6 +77,13 @@ class Request {
         " BODY  : $body \n"
         " HEADERS: $headers",
       );
+      print(
+        "REQUEST \n"
+        " METHOD: $httpMethod \n"
+        " API   : $url \n"
+        " BODY  : $body \n"
+        " HEADERS: $headers",
+      );
 
       late Response response;
 
@@ -176,6 +183,14 @@ class Request {
       }
 
       AppLogger.log.i(
+        "RESPONSE \n"
+        " API: $url \n"
+        " Token : $token \n"
+        " session Token : $sessionToken \n"
+        " Headers : $headers \n"
+        " RESPONSE: ${response.toString()}",
+      );
+      print(
         "RESPONSE \n"
         " API: $url \n"
         " Token : $token \n"
@@ -355,11 +370,13 @@ class Request {
       AppLogger.log.i(
         "RESPONSE \n API: $url \n RESPONSE: ${response.toString()}",
       );
+      print("RESPONSE \n API: $url \n RESPONSE: ${response.toString()}");
       AppLogger.log.i("$token");
       AppLogger.log.i("$body");
 
       return response;
     } catch (e) {
+      print(e);
       AppLogger.log.e('API: $url \n ERROR: $e ');
 
       return e;
@@ -439,9 +456,13 @@ class Request {
       AppLogger.log.i(
         "GET RESPONSE \n API: $url \nToken: $token\nSessionToken: $sessionToken\nRESPONSE: ${response.toString()}",
       );
+      print(
+        "GET RESPONSE \n API: $url \nToken: $token\nSessionToken: $sessionToken\nRESPONSE: ${response.toString()}",
+      );
       return response;
-    } catch (e,st) {
+    } catch (e, st) {
       AppLogger.log.e('GET API: $url \n ERROR: $e\n\nStack Trace: $st');
+      print('GET API: $url \n ERROR: $e\n\nStack Trace: $st');
       return null;
     }
   }
