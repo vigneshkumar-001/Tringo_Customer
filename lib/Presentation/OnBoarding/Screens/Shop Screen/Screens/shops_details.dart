@@ -416,24 +416,24 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      CommonContainer.followButton(
-                                        isLoading: state.followButtonLoader,
-                                        isFollowing: state.isFollowing,
-                                        onTap: () {
-                                          ref
-                                              .read(
-                                                shopsNotifierProvider.notifier,
-                                              )
-                                              .followButton(
-                                                shopId:
-                                                    shopsData.data?.id
-                                                        .toString() ??
-                                                    '',
-                                                follow: !state.isFollowing,
-                                              );
-                                        },
-                                      ),
+                                      const SizedBox(width: 9),
+                                      // CommonContainer.followButton(
+                                      //   isLoading: state.followButtonLoader,
+                                      //   isFollowing: state.isFollowing,
+                                      //   onTap: () {
+                                      //     ref
+                                      //         .read(
+                                      //           shopsNotifierProvider.notifier,
+                                      //         )
+                                      //         .followButton(
+                                      //           shopId:
+                                      //               shopsData.data?.id
+                                      //                   .toString() ??
+                                      //               '',
+                                      //           follow: !state.isFollowing,
+                                      //         );
+                                      //   },
+                                      // ),
 
                                       // CommonContainer.followButton(
                                       //   isLoading: state.followButtonLoader,
@@ -515,7 +515,23 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               ),
 
                               SizedBox(height: 27),
-
+                              // CommonContainer.followButton(
+                              //   isLoading: state.followButtonLoader,
+                              //   isFollowing: state.isFollowing,
+                              //   onTap: () {
+                              //     ref
+                              //         .read(
+                              //           shopsNotifierProvider.notifier,
+                              //         )
+                              //         .followButton(
+                              //           shopId:
+                              //               shopsData.data?.id
+                              //                   .toString() ??
+                              //               '',
+                              //           follow: !state.isFollowing,
+                              //         );
+                              //   },
+                              // ),
                               // Actions row
                               _staggerFromTop(
                                 aActions,
@@ -524,6 +540,20 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   padding: EdgeInsets.symmetric(horizontal: 16),
                                   scrollDirection: Axis.horizontal,
                                   child: CommonContainer.callNowButton(
+                                    isFollowing: state.isFollowing,
+                                    followButtonLoading:
+                                        state.followButtonLoader,
+                                    followButtonOnTap: () {
+                                      ref
+                                          .read(shopsNotifierProvider.notifier)
+                                          .followButton(
+                                            shopId:
+                                                shopsData.data?.id.toString() ??
+                                                '',
+                                            follow: !state.isFollowing,
+                                          );
+                                    },
+                                    canFollow: true,
                                     callOnTap: () async {
                                       await MapUrls.openDialer(
                                         context,

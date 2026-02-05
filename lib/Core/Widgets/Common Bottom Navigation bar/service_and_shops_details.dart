@@ -13,12 +13,18 @@ import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';
 import '../filter_popup_screen.dart';
+import '../tringo_map_screens.dart';
 
 class ServiceAndShopsDetails extends StatefulWidget {
   final int initialIndex;
   final String? shopId;
   final String? type;
-  const ServiceAndShopsDetails({super.key, this.initialIndex = 0, this.shopId, this.type});
+  const ServiceAndShopsDetails({
+    super.key,
+    this.initialIndex = 0,
+    this.shopId,
+    this.type,
+  });
 
   @override
   State<ServiceAndShopsDetails> createState() => _ServiceAndShopsDetailsState();
@@ -43,7 +49,7 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
       SearchScreen(), // 1
       // _ExploreScreenStub(), // 2
       ServiceDetails(serviceID: widget.shopId), // 3
-      ShopsDetails(shopId: widget.shopId,page : widget.type), // 4
+      ShopsDetails(shopId: widget.shopId, page: widget.type), // 4
     ];
   }
 
@@ -249,85 +255,133 @@ class FigmaBottomNavBar extends StatelessWidget {
                   ),
                   SizedBox(width: 10),
 
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TringoMapScreen(
+                            onShopSelected: (shop) {
+                              // Handle shop selection - dial/call
+                              print(
+                                'Selected shop: ${shop['name']} - ${shop['phone']}',
+                              );
+                              // Navigator.pop(context, shop); // Return shop data
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColor.blue),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              AppImages.locationImage,
+                              height: 19,
+                              color: AppColor.blue,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Map',
+                              style: GoogleFont.Mulish(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: AppColor.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   // SPARKLE gradient circle
-                //   _gradientCircle(
-                //     size: 40,
-                //     onTap: () => onChanged(2),
-                //     child: Icon(
-                //       Icons.auto_awesome,
-                //       color: Colors.white,
-                //       size: 20,
-                //     ),
-                //   ),
-                //   SizedBox(width: 10),
-                //   InkWell(
-                //     onTap: () {},
-                //     child: Container(
-                //       decoration: BoxDecoration(
-                //         border: Border.all(color: AppColor.blue),
-                //         borderRadius: BorderRadius.circular(30),
-                //       ),
-                //       child: Padding(
-                //         padding: const EdgeInsets.symmetric(
-                //           horizontal: 18,
-                //           vertical: 6,
-                //         ),
-                //         child: Row(
-                //           children: [
-                //             Image.asset(
-                //               AppImages.messageImage,
-                //               height: 19,
-                //               color: AppColor.blue,
-                //             ),
-                //             SizedBox(width: 6),
-                //             Text(
-                //               'Enquire Now',
-                //               style: GoogleFont.Mulish(
-                //                 fontWeight: FontWeight.bold,
-                //                 fontSize: 14,
-                //                 color: AppColor.blue,
-                //               ),
-                //             ),
-                //           ],
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                //   SizedBox(width: 10),
-                //   InkWell(
-                //     onTap: () {},
-                //     child: Container(
-                //       decoration: BoxDecoration(
-                //         border: Border.all(color: AppColor.darkBlue),
-                //         borderRadius: BorderRadius.circular(30),
-                //       ),
-                //       child: Padding(
-                //         padding: const EdgeInsets.symmetric(
-                //           horizontal: 18,
-                //           vertical: 6,
-                //         ),
-                //         child: Row(
-                //           children: [
-                //             Image.asset(
-                //               AppImages.reviewImage,
-                //               height: 19,
-                //               color: AppColor.darkBlue,
-                //             ),
-                //             SizedBox(width: 10),
-                //             Text(
-                //               'Reviews',
-                //               style: GoogleFont.Mulish(
-                //                 fontWeight: FontWeight.bold,
-                //                 fontSize: 14,
-                //                 color: AppColor.darkBlue,
-                //               ),
-                //             ),
-                //           ],
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                 ],
+                  //   _gradientCircle(
+                  //     size: 40,
+                  //     onTap: () => onChanged(2),
+                  //     child: Icon(
+                  //       Icons.auto_awesome,
+                  //       color: Colors.white,
+                  //       size: 20,
+                  //     ),
+                  //   ),
+                  //   SizedBox(width: 10),
+                  //   InkWell(
+                  //     onTap: () {},
+                  //     child: Container(
+                  //       decoration: BoxDecoration(
+                  //         border: Border.all(color: AppColor.blue),
+                  //         borderRadius: BorderRadius.circular(30),
+                  //       ),
+                  //       child: Padding(
+                  //         padding: const EdgeInsets.symmetric(
+                  //           horizontal: 18,
+                  //           vertical: 6,
+                  //         ),
+                  //         child: Row(
+                  //           children: [
+                  //             Image.asset(
+                  //               AppImages.messageImage,
+                  //               height: 19,
+                  //               color: AppColor.blue,
+                  //             ),
+                  //             SizedBox(width: 6),
+                  //             Text(
+                  //               'Enquire Now',
+                  //               style: GoogleFont.Mulish(
+                  //                 fontWeight: FontWeight.bold,
+                  //                 fontSize: 14,
+                  //                 color: AppColor.blue,
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  //   SizedBox(width: 10),
+                  //   InkWell(
+                  //     onTap: () {},
+                  //     child: Container(
+                  //       decoration: BoxDecoration(
+                  //         border: Border.all(color: AppColor.darkBlue),
+                  //         borderRadius: BorderRadius.circular(30),
+                  //       ),
+                  //       child: Padding(
+                  //         padding: const EdgeInsets.symmetric(
+                  //           horizontal: 18,
+                  //           vertical: 6,
+                  //         ),
+                  //         child: Row(
+                  //           children: [
+                  //             Image.asset(
+                  //               AppImages.reviewImage,
+                  //               height: 19,
+                  //               color: AppColor.darkBlue,
+                  //             ),
+                  //             SizedBox(width: 10),
+                  //             Text(
+                  //               'Reviews',
+                  //               style: GoogleFont.Mulish(
+                  //                 fontWeight: FontWeight.bold,
+                  //                 fontSize: 14,
+                  //                 color: AppColor.darkBlue,
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                ],
               ),
             ),
           ),

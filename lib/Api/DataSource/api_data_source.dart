@@ -1268,6 +1268,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
     } catch (e) {
       AppLogger.log.e(e.toString());
+
       return Left(ServerFailure(e.toString()));
     }
   }
