@@ -1,4 +1,6 @@
-// surprise_offer_response.dart
+// surprise_offer_response.dart (FULL UPDATED)
+
+import 'package:intl/intl.dart'; // ✅ ADD
 
 class SurpriseStatusResponse {
   final bool status;
@@ -22,7 +24,6 @@ class SurpriseStatusData {
   final String stage;
   final String shopId;
 
-  // ✅ nullable (because API returns null in LOCKED stage)
   final Shop? shop;
   final Offer? offer;
   final Geo? geo;
@@ -56,24 +57,16 @@ class SurpriseStatusData {
       stage: (json['stage'] ?? '').toString(),
       shopId: (json['shopId'] ?? '').toString(),
 
-      shop: _asMap(json['shop']) != null
-          ? Shop.fromJson(_asMap(json['shop'])!)
-          : null,
-      offer: _asMap(json['offer']) != null
-          ? Offer.fromJson(_asMap(json['offer'])!)
-          : null,
-      geo: _asMap(json['geo']) != null
-          ? Geo.fromJson(_asMap(json['geo'])!)
-          : null,
-      state: _asMap(json['state']) != null
-          ? OfferState.fromJson(_asMap(json['state'])!)
-          : null,
-      legacy: _asMap(json['legacy']) != null
-          ? Legacy.fromJson(_asMap(json['legacy'])!)
-          : null,
+      shop: _asMap(json['shop']) != null ? Shop.fromJson(_asMap(json['shop'])!) : null,
+      offer: _asMap(json['offer']) != null ? Offer.fromJson(_asMap(json['offer'])!) : null,
+      geo: _asMap(json['geo']) != null ? Geo.fromJson(_asMap(json['geo'])!) : null,
+      state: _asMap(json['state']) != null ? OfferState.fromJson(_asMap(json['state'])!) : null,
+      legacy: _asMap(json['legacy']) != null ? Legacy.fromJson(_asMap(json['legacy'])!) : null,
 
       ui: UiConfig.fromJson(_asMap(json['ui']) ?? <String, dynamic>{}),
-      code: json['code'] ?? ''.toString(),
+
+      // ✅ FIX (toString order)
+      code: (json['code'] ?? '').toString(),
       message: json['message']?.toString(),
     );
   }
@@ -134,7 +127,9 @@ class Offer {
   final String shortText;
   final String description;
   final String? terms;
-  final DateTime? validUpto; // ✅ null-safe parse
+
+  // ✅ FIX: parse dd-MMM-yyyy like "11-Feb-2026"
+  final DateTime? validUpto;
 
   Offer({
     required this.id,
@@ -149,11 +144,20 @@ class Offer {
   factory Offer.fromJson(Map<String, dynamic> json) {
     DateTime? _tryDate(dynamic v) {
       if (v == null) return null;
+      final s = v.toString().trim();
+      if (s.isEmpty) return null;
+
+      // ✅ API: "11-Feb-2026"
       try {
-        return DateTime.parse(v.toString());
-      } catch (_) {
-        return null;
-      }
+        return DateFormat('dd-MMM-yyyy', 'en_US').parseStrict(s);
+      } catch (_) {}
+
+      // ✅ fallback: if backend sends ISO sometimes
+      try {
+        return DateTime.parse(s);
+      } catch (_) {}
+
+      return null;
     }
 
     return Offer(
@@ -244,14 +248,15 @@ class UiConfig {
     return UiConfig(
       screenTitle: (json['screenTitle'] ?? 'Open Offer').toString(),
       primaryText: json['primaryText']?.toString(),
-      secondaryText: json['secondaryText'] ?? ''.toString(),
+
+      // ✅ FIX (toString order)
+      secondaryText: (json['secondaryText'] ?? '').toString(),
+
       giftClosedKey: (json['giftClosedKey'] ?? 'GIFT_CLOSED').toString(),
       giftOpenKey: (json['giftOpenKey'] ?? 'GIFT_OPEN').toString(),
-      openingAnimationKey: (json['openingAnimationKey'] ?? 'GIFT_OPEN')
-          .toString(),
+      openingAnimationKey: (json['openingAnimationKey'] ?? 'GIFT_OPEN').toString(),
       openingDurationMs: _toInt(json['openingDurationMs']),
-      afterOpeningAction: (json['afterOpeningAction'] ?? 'AUTO_CLAIM')
-          .toString(),
+      afterOpeningAction: (json['afterOpeningAction'] ?? 'AUTO_CLAIM').toString(),
       codeLabel: (json['codeLabel'] ?? 'Offer Code').toString(),
       copyButtonText: (json['copyButtonText'] ?? 'Copy').toString(),
     );
