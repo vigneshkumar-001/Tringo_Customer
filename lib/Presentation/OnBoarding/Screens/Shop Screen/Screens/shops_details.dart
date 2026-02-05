@@ -310,6 +310,12 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     final hasServices = services.isNotEmpty;
     final hasProducts = products.isNotEmpty;
 
+    if ((shopsData.data?.productCategories?.isNotEmpty ?? false) &&
+        selectedIndex == null) {
+      selectedIndex = 0; // ✅ default select "All"
+    }
+
+
     // final Widget bigImage = ClipRRect(
     //   clipBehavior: Clip.antiAlias,
     //   borderRadius: BorderRadius.circular(20),
@@ -1028,13 +1034,20 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 8),
                                     child: CommonContainer.categoryChip(
+                                      IconColor: isSelected
+                                          ? AppColor.gray84
+                                          : AppColor.lightGray2,
                                       tag.label ?? '',
                                       rightSideArrow: true,
                                       ContainerColor: isSelected
                                           ? AppColor.white
                                           : Colors.transparent,
-                                      BorderColor: AppColor.brightGray,
-                                      TextColor: AppColor.lightGray2,
+                                      BorderColor: isSelected
+                                          ? AppColor.gray84
+                                          : AppColor.brightGray,
+                                      TextColor: isSelected
+                                          ? AppColor.gray84
+                                          : AppColor.lightGray2,
                                       isSelected: isSelected,
                                       onTap: () {
                                         setState(() => selectedIndex = index);
@@ -1532,11 +1545,18 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     tag.label ??
                                         '', // label as positional (same as services section)
                                     rightSideArrow: true,
+                                    IconColor: isSelected
+                                        ? AppColor.gray84
+                                        : AppColor.lightGray2,
                                     ContainerColor: isSelected
                                         ? AppColor.white
                                         : Colors.transparent,
-                                    BorderColor: AppColor.brightGray,
-                                    TextColor: AppColor.lightGray2,
+                                    BorderColor: isSelected
+                                        ? AppColor.gray84
+                                        : AppColor.brightGray,
+                                    TextColor: isSelected
+                                        ? AppColor.gray84
+                                        : AppColor.lightGray2,
                                     isSelected: isSelected,
                                     onTap: () {
                                       setState(() => selectedIndex = index);
@@ -1568,12 +1588,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               selectedSlug = tags[selectedIndex!].slug;
                             }
 
-                            // 2) Filter products by category / subCategory
+                            // ✅ IMPORTANT: All / null / empty => show all products
                             final filteredProducts =
-                                (selectedSlug == null || selectedSlug.isEmpty)
+                                (selectedSlug == null ||
+                                    selectedSlug.isEmpty ||
+                                    selectedSlug.toLowerCase() == "all")
                                 ? allProducts
                                 : allProducts.where((product) {
-                                    //  adjust these fields if your model uses different names
                                     final cat = product.category;
                                     final subCat = product.subCategory;
                                     return cat == selectedSlug ||

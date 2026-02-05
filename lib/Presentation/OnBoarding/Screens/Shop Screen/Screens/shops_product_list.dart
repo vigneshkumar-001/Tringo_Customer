@@ -418,11 +418,18 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                                 child: CommonContainer.categoryChip(
                                   c.label ?? '',
                                   rightSideArrow: true,
+                                  IconColor: isSelected
+                                      ? AppColor.gray84
+                                      : AppColor.lightGray2,
                                   ContainerColor: isSelected
                                       ? AppColor.white
                                       : Colors.transparent,
-                                  BorderColor: AppColor.brightGray,
-                                  TextColor: AppColor.lightGray2,
+                                  BorderColor: isSelected
+                                      ? AppColor.gray84
+                                      : AppColor.brightGray,
+                                  TextColor: isSelected
+                                      ? AppColor.gray84
+                                      : AppColor.lightGray2,
                                   isSelected: isSelected,
                                   onTap: () {
                                     setState(() {

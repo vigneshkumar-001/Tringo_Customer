@@ -987,11 +987,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppColor.brightGray,
+                                  color: AppColor.white,
                                 ),
                                 child: Image.asset(
-                                  AppImages.qrCodeLogo,
-                                  height: 20,
+                                  AppImages.qRColor,
+                                  height: 23,
                                 ),
                               ),
                             ),

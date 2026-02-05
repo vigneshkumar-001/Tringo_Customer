@@ -419,6 +419,7 @@ class CommonContainer {
     Color? ContainerColor,
     Color? BorderColor,
     Color? TextColor,
+    Color? IconColor,
     bool rightSideArrow = false,
   }) {
     return InkWell(
@@ -449,11 +450,7 @@ class CommonContainer {
             ),
             SizedBox(width: 6),
             if (rightSideArrow)
-              Image.asset(
-                AppImages.rightArrow,
-                height: 11,
-                color: AppColor.lightGray2,
-              ),
+              Image.asset(AppImages.rightArrow, height: 11, color: IconColor),
           ],
         ),
       ),
