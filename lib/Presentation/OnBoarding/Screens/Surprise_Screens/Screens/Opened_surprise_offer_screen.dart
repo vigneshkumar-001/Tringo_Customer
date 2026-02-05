@@ -1,11 +1,11 @@
-// opened_surprise_offer_screen.dart
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
@@ -332,24 +332,39 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
 
                 // OFFER BANNER
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: showNetworkBanner
-                        ? Image.network(
-                            bannerUrl,
-                            width: double.infinity,
-                            height: 215,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return brokenBanner(height: 215);
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return brokenBanner(height: 215);
-                            },
-                          )
-                        : brokenBanner(height: 215),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColor.lightGray, // ✅ teal border
+                        width: 0.2, // ✅ thickness
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: CachedNetworkImage(
+                        imageUrl: bannerUrl,
+                        width: double.infinity,
+                        height: 215,
+                        fit: BoxFit.cover,
+
+                        placeholder: (context, url) => Container(
+                          width: double.infinity,
+                          height: 215,
+                          alignment: Alignment.center,
+                          child: AppLoader.circularLoader(),
+                        ),
+
+                        errorWidget: (context, url, error) => Container(
+                          width: double.infinity,
+                          height: 215,
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image, size: 40),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
 
@@ -368,56 +383,56 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                       color: AppColor.lowGery1,
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
                       children: [
-                        Text(
-                          offerTitle.isNotEmpty ? offerTitle : '-',
-                          style: GoogleFont.Mulish(
-                            fontSize: 20,
-                            color: AppColor.darkBlue,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        const SizedBox(height: 11),
-                        Text(
-                          offerDesc.isNotEmpty ? offerDesc : '-',
-                          style: GoogleFont.Mulish(
-                            fontSize: 12,
-                            color: AppColor.lightGray3,
-                            fontWeight: FontWeight.w400,
-                            height: 1.45,
-                          ),
-                        ),
-
-                        if (validUpto.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Text(
-                                'Valid Upto',
-                                style: GoogleFont.Mulish(
-                                  fontSize: 12,
-                                  color: AppColor.lightGray3,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              offerTitle.isNotEmpty ? offerTitle : '-',
+                              style: GoogleFont.Mulish(
+                                fontSize: 20,
+                                color: AppColor.darkBlue,
+                                fontWeight: FontWeight.w700,
                               ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  validUpto,
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 12,
-                                    color: AppColor.darkBlue,
-                                    fontWeight: FontWeight.w700,
+                            ),
+                            const SizedBox(height: 5),
+
+                            Text(
+                              offerDesc.isNotEmpty ? offerDesc : '-',
+                              style: GoogleFont.Mulish(
+                                fontSize: 12,
+                                color: AppColor.lightGray3,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+
+                            if (validUpto.isNotEmpty) ...[
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Valid Upto',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 12,
+                                      color: AppColor.lightGray3,
+                                      fontWeight: FontWeight.w400,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    validUpto,
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 12,
+                                      color: AppColor.darkBlue,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -473,7 +488,7 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                             style: GoogleFont.Mulish(
                               fontSize: 20,
                               color: AppColor.darkBlue,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),

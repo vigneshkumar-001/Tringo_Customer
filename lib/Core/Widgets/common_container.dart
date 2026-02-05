@@ -252,7 +252,7 @@ class CommonContainer {
                       width: 257,
                       fit: BoxFit.cover,
                       placeholder: (context, url) =>
-                          const Center(child: CircularProgressIndicator()),
+                            Center(child: AppLoader.circularLoader(color: AppColor.darkBlue)),
                       errorWidget: (context, url, error) =>
                           const Icon(Icons.error),
                     ),
@@ -499,9 +499,11 @@ class CommonContainer {
     VoidCallback? messageOnTap,
     VoidCallback? whatsAppOnTap,
     VoidCallback? fireOnTap,
+    VoidCallback? followButtonOnTap,
 
     bool messageContainer = false,
     bool mapBox = false,
+    bool canFollow = false,
     bool fullEnquiry = false,
     bool whatsAppIcon = false,
     bool MessageIcon = false,
@@ -510,6 +512,8 @@ class CommonContainer {
 
     // 🔹 NEW: message loading flag
     bool messageLoading = false,
+    bool followButtonLoading = false,
+    bool isFollowing = false,
 
     bool messageDisabled = false,
 
@@ -619,6 +623,7 @@ class CommonContainer {
             return bounded ? Expanded(child: callBtn) : callBtn;
           },
         ),
+
         if (fullEnquiry)
           Padding(
             padding: const EdgeInsets.only(left: 10),
@@ -707,6 +712,14 @@ class CommonContainer {
             ),
           ),
 
+        canFollow ? const SizedBox(width: 9) : SizedBox.shrink(),
+        canFollow
+            ? CommonContainer.followButton(
+                isLoading: followButtonLoading,
+                isFollowing: isFollowing,
+                onTap: followButtonOnTap ?? () {},
+              )
+            : SizedBox.shrink(),
         if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
           const SizedBox(width: 9),
 
@@ -1233,51 +1246,6 @@ class CommonContainer {
     );
   }
 
-  //
-  // static followButton({VoidCallback? onTap}) {
-  //   return Container(
-  //     decoration: BoxDecoration(
-  //       gradient: LinearGradient(
-  //         colors: [Color(0xFFE1306C), Color(0xFFC13584), Color(0xFF833AB4)],
-  //         begin: Alignment.topLeft,
-  //         end: Alignment.bottomRight,
-  //       ),
-  //       borderRadius: BorderRadius.circular(12),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Color(0xFFE1306C).withOpacity(0.3),
-  //           blurRadius: 8,
-  //           offset: const Offset(0, 4),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Material(
-  //       color: Colors.transparent,
-  //       child: InkWell(
-  //         onTap: onTap,
-  //         borderRadius: BorderRadius.circular(12),
-  //         child: Padding(
-  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
-  //           child: Row(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               const Icon(Icons.add, color: Colors.white, size: 18),
-  //               const SizedBox(width: 6),
-  //               Text(
-  //                 'Follow',
-  //                 style: GoogleFonts.mulish(
-  //                   fontSize: 14,
-  //                   fontWeight: FontWeight.w600,
-  //                   color: Colors.white,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
   static Widget followButton({
     required VoidCallback onTap,
     required bool isLoading,
@@ -1285,75 +1253,48 @@ class CommonContainer {
   }) {
     return Container(
       decoration: BoxDecoration(
-        gradient: isFollowing
-            ? null
-            : const LinearGradient(
-                colors: [
-                  Color(0xFFE1306C),
-                  Color(0xFFC13584),
-                  Color(0xFF833AB4),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-        color: isFollowing ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(12),
-        border: isFollowing
-            ? Border.all(
-                color: const Color(0xFF13A0A7), // teal border
-                width: 1.5,
-              )
-            : null,
-        boxShadow: isFollowing
-            ? []
-            : [
-                BoxShadow(
-                  color: const Color(0xFFE1306C).withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        border: Border.all(color: AppColor.blue, width: 1.5),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: isLoading ? null : onTap,
           borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
-            child: SizedBox(
-              height: 18,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: 44, // keeps height stable
+              minWidth: 120, // keeps width stable (tweak as you like)
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Center(
                 child: isLoading
                     ? const SizedBox(
-                        height: 11,
-                        width: 11,
+                        height: 18,
+                        width: 18,
                         child: CircularProgressIndicator(
-                          strokeWidth: 1.5,
+                          strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                            AppColor.blue,
                           ),
                         ),
                       )
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (!isFollowing) ...[
-                            const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                          ],
+                          Image.asset(
+                            height: 21,
+                            width: 21,
+                            isFollowing ? AppImages.unfollow : AppImages.follow,
+                          ),
+                          const SizedBox(width: 6),
                           Text(
-                            isFollowing ? 'Following' : 'Follow',
+                            isFollowing ? 'Un-Follow Shop' : 'Follow Shop',
                             style: GoogleFonts.mulish(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isFollowing
-                                  ? const Color(0xFF13A0A7)
-                                  : Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColor.blue,
                             ),
                           ),
                         ],
@@ -1365,6 +1306,73 @@ class CommonContainer {
       ),
     );
   }
+
+  // static Widget followButton({
+  //   required VoidCallback onTap,
+  //   required bool isLoading,
+  //   required bool isFollowing,
+  // }) {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: AppColor.blue, // teal border
+  //         width: 1.5,
+  //       ),
+  //     ),
+  //     child: Material(
+  //       color: Colors.transparent,
+  //       child: InkWell(
+  //         onTap: isLoading ? null : onTap,
+  //         borderRadius: BorderRadius.circular(12),
+  //         child: Padding(
+  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+  //           child: SizedBox(
+  //             height: 27,
+  //             child: Center(
+  //               child: isLoading
+  //                   ? const SizedBox(
+  //                       height: 11,
+  //                       width: 11,
+  //                       child: CircularProgressIndicator(
+  //                         strokeWidth: 1.5,
+  //                         valueColor: AlwaysStoppedAnimation<Color>(
+  //                           AppColor.blue,
+  //                         ),
+  //                       ),
+  //                     )
+  //                   : Row(
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       children: [
+  //                         // Icon(
+  //                         //   isFollowing == true ? Icons.logi : Icons.add,
+  //                         //   color: Colors.white,
+  //                         //   size: 18,
+  //                         // ),
+  //                         Image.asset(
+  //                           height: 21,
+  //                           width: 21,
+  //                           isFollowing ? AppImages.unfollow : AppImages.follow,
+  //                         ),
+  //                         const SizedBox(width: 6),
+  //
+  //                         Text(
+  //                           isFollowing ? 'Un-Follow' : 'Follow',
+  //                           style: GoogleFonts.mulish(
+  //                             fontSize: 16,
+  //                             fontWeight: FontWeight.bold,
+  //                             color: AppColor.blue,
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   static Widget foodList({
     required String image,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/Opened_surprise_offer_screen.dart';
 import 'package:video_player/video_player.dart';
 
@@ -495,7 +496,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                     child: Column(
                                       children: [
                                         if (_loadingDistance)
-                                          const CircularProgressIndicator(
+                                            AppLoader.circularLoader(
                                             color: Colors.white,
                                           )
                                         else

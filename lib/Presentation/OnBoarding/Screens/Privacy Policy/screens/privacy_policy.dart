@@ -227,7 +227,9 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
 
                     const SizedBox(height: 35),
 
-                    if (widget.showAcceptReject && hasContent && !state.isLoading)
+                    if (widget.showAcceptReject &&
+                        hasContent &&
+                        !state.isLoading)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 35),
                         child: Row(
@@ -242,7 +244,10 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                                   color: AppColor.textWhite,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 20),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 34,
+                                  vertical: 20,
+                                ),
                                 child: Text(
                                   'Reject',
                                   style: GoogleFont.Mulish(
@@ -259,7 +264,9 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => HomeScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) => HomeScreen(),
+                                  ),
                                 );
                               },
                               child: Container(
@@ -267,7 +274,10 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                                   color: AppColor.blue,
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 50,
+                                  vertical: 20,
+                                ),
                                 child: Text(
                                   'Accept',
                                   style: GoogleFont.Mulish(
@@ -283,7 +293,6 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                       )
                     else
                       const SizedBox.shrink(),
-
                   ],
                 ),
               ),

@@ -243,53 +243,56 @@ class CategoryItem {
   Map<String, dynamic> toJson() => {'slug': slug, 'name': name, 'count': count};
 }
 
+
 // -----------------------------------------------------------------------------
 // BANNERS
 // -----------------------------------------------------------------------------
 class HomeBanner {
   final String id;
   final String title;
-  final String? subtitle;
-  final String imageUrl; // sanitized
+  final String subtitle;
+  final String imageUrl;
   final String? ctaLabel;
   final String? ctaLink;
   final String? city;
   final bool isActive;
   final int displayOrder;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final String? shopId;
+  final String type; // RETAIL / PRODUCT / SERVICE
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   const HomeBanner({
     required this.id,
     required this.title,
-    this.subtitle,
+    required this.subtitle,
     required this.imageUrl,
     this.ctaLabel,
     this.ctaLink,
     this.city,
     required this.isActive,
     required this.displayOrder,
-    this.createdAt,
-    this.updatedAt,
+    this.shopId,
+    required this.type,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory HomeBanner.fromJson(Map<String, dynamic> json) {
     return HomeBanner(
-      id: (json['id'] ?? '').toString(),
-      title: (json['title'] ?? '').toString(),
-      subtitle: json['subtitle'] as String?,
-      imageUrl: _sanitizeUrl(json['imageUrl']?.toString()),
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString() ?? '',
+      imageUrl: _sanitizeUrl(json['imageUrl']),
       ctaLabel: json['ctaLabel'] as String?,
       ctaLink: json['ctaLink'] as String?,
       city: json['city'] as String?,
       isActive: json['isActive'] == true,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString())
-          : null,
+      shopId: json['shopId'] as String?,
+      type: (json['type'] ?? '').toString().toUpperCase(),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
 
@@ -303,10 +306,75 @@ class HomeBanner {
     'city': city,
     'isActive': isActive,
     'displayOrder': displayOrder,
-    'createdAt': createdAt?.toIso8601String(),
-    'updatedAt': updatedAt?.toIso8601String(),
+    'shopId': shopId,
+    'type': type,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
   };
 }
+
+
+// class HomeBanner {
+//   final String id;
+//   final String title;
+//   final String? subtitle;
+//   final String imageUrl; // sanitized
+//   final String? ctaLabel;
+//   final String? ctaLink;
+//   final String? city;
+//   final bool isActive;
+//   final int displayOrder;
+//   final DateTime? createdAt;
+//   final DateTime? updatedAt;
+//
+//   const HomeBanner({
+//     required this.id,
+//     required this.title,
+//     this.subtitle,
+//     required this.imageUrl,
+//     this.ctaLabel,
+//     this.ctaLink,
+//     this.city,
+//     required this.isActive,
+//     required this.displayOrder,
+//     this.createdAt,
+//     this.updatedAt,
+//   });
+//
+//   factory HomeBanner.fromJson(Map<String, dynamic> json) {
+//     return HomeBanner(
+//       id: (json['id'] ?? '').toString(),
+//       title: (json['title'] ?? '').toString(),
+//       subtitle: json['subtitle'] as String?,
+//       imageUrl: _sanitizeUrl(json['imageUrl']?.toString()),
+//       ctaLabel: json['ctaLabel'] as String?,
+//       ctaLink: json['ctaLink'] as String?,
+//       city: json['city'] as String?,
+//       isActive: json['isActive'] == true,
+//       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
+//       createdAt: json['createdAt'] != null
+//           ? DateTime.tryParse(json['createdAt'].toString())
+//           : null,
+//       updatedAt: json['updatedAt'] != null
+//           ? DateTime.tryParse(json['updatedAt'].toString())
+//           : null,
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() => {
+//     'id': id,
+//     'title': title,
+//     'subtitle': subtitle,
+//     'imageUrl': imageUrl,
+//     'ctaLabel': ctaLabel,
+//     'ctaLink': ctaLink,
+//     'city': city,
+//     'isActive': isActive,
+//     'displayOrder': displayOrder,
+//     'createdAt': createdAt?.toIso8601String(),
+//     'updatedAt': updatedAt?.toIso8601String(),
+//   };
+// }
 
 class Offer {
   final String id;
@@ -814,10 +882,17 @@ List<dynamic> _asList(dynamic v) {
 /// - null -> null
 /// - "https:////next...." -> "https://next...."
 /// - "http:////..." -> "http://..."
-String _sanitizeUrl(String? url) {
-  final u = url?.trim();
-  if (u == null || u.isEmpty) return "";
-  return u;
+///
+///
+// String _sanitizeUrl(String? url) {
+//   final u = url?.trim();
+//   if (u == null || u.isEmpty) return "";
+//   return u;
+// }
+String _sanitizeUrl(dynamic value) {
+  if (value == null) return '';
+  final url = value.toString().trim();
+  return url.startsWith('http') ? url : '';
 }
 
 bool? _parseBool(dynamic value) {

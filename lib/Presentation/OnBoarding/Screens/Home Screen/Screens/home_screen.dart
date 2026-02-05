@@ -1219,9 +1219,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     color: Colors.transparent,
                                                     child: InkWell(
                                                       onTap: () {
-                                                        // TODO: handle deep link from banner.ctaLink if needed
-                                                        // e.g. open "tringo://..." with your navigation
-                                                        print(banner.ctaLink);
+                                                        print(banner.shopId);
+                                                        print(banner.type);
+
+                                                        if (banner
+                                                            .type
+                                                            .isEmpty) {
+                                                          print(
+                                                            'BANNER TYPE EMPTY — NO NAVIGATION',
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        final bannerType =
+                                                            banner.type
+                                                                .trim()
+                                                                .toUpperCase();
+                                                        String? passType;
+
+                                                        if (bannerType.contains(
+                                                          'RETAIL',
+                                                        )) {
+                                                          passType = 'products';
+                                                        } else if (bannerType
+                                                            .contains(
+                                                              'SERVICE',
+                                                            )) {
+                                                          passType = 'services';
+                                                        }
+
+                                                        // 🚫 If not RETAIL or SERVICE → STOP
+                                                        if (passType == null ||
+                                                            banner.shopId ==
+                                                                null) {
+                                                          print(
+                                                            'INVALID BANNER — NO NAVIGATION',
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                ServiceAndShopsDetails(
+                                                                  type:
+                                                                      passType,
+                                                                  shopId: banner
+                                                                      .shopId!,
+                                                                  initialIndex:
+                                                                      passType ==
+                                                                          'products'
+                                                                      ? 3
+                                                                      : 0,
+                                                                ),
+                                                          ),
+                                                        );
+
+                                                        print(
+                                                          'NAVIGATED AS => $passType',
+                                                        );
                                                       },
                                                     ),
                                                   ),

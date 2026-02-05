@@ -121,33 +121,4 @@ class MapUrls {
     }
   }
 
-  //
-  // static Future<void> openWhatsapp({
-  //   required BuildContext context,
-  //   required String phone,
-  //   String? message,
-  // }) async {
-  //   String normalized = phone.replaceAll(RegExp(r'[^0-9+]'), '');
-  //   if (!normalized.startsWith('+')) {
-  //     normalized = '+91$normalized';
-  //   }
-  //
-  //   final encodedMsg = Uri.encodeComponent(message ?? '');
-  //   final uri = Uri.parse('https://wa.me/$normalized?text=$encodedMsg');
-  //
-  //   try {
-  //     final can = await canLaunchUrl(uri);
-  //     if (!can) {
-  //       AppSnackBar.info(context, 'WhatsApp not available on this device');
-  //
-  //       return;
-  //     }
-  //     await launchUrl(uri, mode: LaunchMode.externalApplication);
-  //   } catch (e) {
-  //     if (!context.mounted) return;
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text('Could not open WhatsApp: $e')));
-  //   }
-  // }
 }
