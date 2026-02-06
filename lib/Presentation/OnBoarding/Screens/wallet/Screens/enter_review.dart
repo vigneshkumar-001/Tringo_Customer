@@ -94,8 +94,8 @@ class _EnterReviewState extends ConsumerState<EnterReview>
           context,
           next.reviewCreateResponse?.data.note ==
                   "ALREADY_REVIEWED_UPDATED_ONLY"
-              ? "Review updated ✅"
-              : "Review submitted ✅",
+              ? "Review updated"
+              : "Review submitted",
         );
 
         // ✅ clear
