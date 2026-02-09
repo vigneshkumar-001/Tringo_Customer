@@ -146,6 +146,7 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
         children: _pages,
       ),
       bottomNavigationBar: FigmaBottomNavBar(
+        shopId: widget.shopId?? '',
         selectedIndex: _selectedIndex,
         filterCount: _filterCount,
         onChanged: _onBarTap,
@@ -174,12 +175,14 @@ class FigmaBottomNavBar extends StatelessWidget {
   const FigmaBottomNavBar({
     super.key,
     required this.selectedIndex,
+    required this.shopId,
     required this.onChanged,
     this.filterCount = 0,
     this.onClearFilters,
   });
 
   final int selectedIndex;
+  final String shopId;
   final int filterCount;
   final VoidCallback? onClearFilters;
   final ValueChanged<int> onChanged;
@@ -260,17 +263,15 @@ class FigmaBottomNavBar extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => TringoMapScreen(
+                          builder: (_) => TringoMapScreen(
+                            shopId: shopId, // <-- current shop detail id
                             onShopSelected: (shop) {
-                              // Handle shop selection - dial/call
-                              print(
-                                'Selected shop: ${shop['name']} - ${shop['phone']}',
-                              );
-                              // Navigator.pop(context, shop); // Return shop data
+                              print('Selected shop: ${shop.name} - ${shop.phone}');
                             },
                           ),
                         ),
                       );
+
                     },
                     child: Container(
                       decoration: BoxDecoration(

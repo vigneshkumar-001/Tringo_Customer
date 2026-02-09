@@ -10,6 +10,7 @@ import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_shops_details.dart';
+import '../../../../../Core/Widgets/advetisements_screens.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/current_location_widget.dart';
 import '../../Home Screen/Controller/home_notifier.dart';
@@ -49,6 +50,9 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
             force: true,
             highlightId: widget.highlightId ?? '',
           );
+      ref
+          .read(homeNotifierProvider.notifier)
+          .advertisements( placement: 'SHOP_LIST',lat: 0.0,lang: 0.0);
       _ac.forward();
     });
     final curve = CurvedAnimation(parent: _ac, curve: Curves.easeOutCubic);
@@ -95,7 +99,11 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
   Widget build(BuildContext context) {
     final state = ref.watch(serviceNotifierProvider);
     final states = ref.watch(homeNotifierProvider);
+    final ads = states.advertisementResponse;
 
+    final addsBanner = (ads != null && ads.data.isNotEmpty)
+        ? ads.data.first
+        : null;
     if (state.isLoading) {
       return Scaffold(
         body: Center(child: ThreeDotsLoader(dotColor: AppColor.black)),
@@ -247,7 +255,14 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                         },
                       ),
 
-                      SizedBox(height: 6),
+                      SizedBox(height: 6),    addsBanner == null
+                          ? const SizedBox.shrink()
+                          : DismissibleAdBanner(
+                        imageUrl: addsBanner?.imageUrl.toString()?? '',
+                        onTap: () {
+                          // open banner.ctaUrl if needed
+                        },
+                      ),
                     ],
                   ),
                 ),
