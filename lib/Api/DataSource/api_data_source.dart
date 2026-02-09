@@ -719,7 +719,9 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e) {
+    } catch (e,st) {
+      AppLogger.log.e('$e/n$st');
+      print('$e/n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -752,7 +754,9 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e) {
+    } catch (e,st) {
+      print('$e\n$st');
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }

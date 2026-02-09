@@ -22,7 +22,7 @@ class NoDataScreen extends StatelessWidget {
     super.key,
     this.title = 'No Data Found',
     this.message =
-    'No matching records were detected. Kindly adjust your inputs and try again.',
+        'No matching records were detected. Kindly adjust your inputs and try again.',
     this.buttonText = 'Back',
     this.onBackTap,
     this.onTopBackTap,

@@ -2,7 +2,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.feni.tringo.tringo_app">
+    <queries>
+        <!-- WhatsApp consumer + business -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
 
+        <!-- whatsapp:// scheme -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="whatsapp" />
+        </intent>
+
+        <!-- https scheme (wa.me) -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

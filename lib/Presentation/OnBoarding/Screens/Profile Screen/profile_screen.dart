@@ -283,6 +283,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
       AppSnackBar.success(context, "Account deleted successfully");
+
       context.goNamed(AppRoutes.login);
     } else {
       AppSnackBar.error(context, st.error ?? "Delete failed");

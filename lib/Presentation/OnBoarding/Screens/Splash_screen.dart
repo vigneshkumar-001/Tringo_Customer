@@ -40,25 +40,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // ✅ 1) MUST request Phone/CallLog/Contacts first
-      final ok = await PermissionService.requestCorePermissionsWithDialog(
-        context,
-      );
+      final ok = await PermissionService.ensureAllRequiredPermissions(context);
       if (!ok) return;
-      // final nativeOk = await CallerIdRoleHelper.debugPhonePerm();
-      // debugPrint("✅ NATIVE READ_PHONE_STATE => $nativeOk");
-      // ✅ 2) Overlay permission (optional here)
-      final req = await CallerIdRoleHelper.requestReadPhoneState();
-      final now = await CallerIdRoleHelper.debugPhonePerm();
-      print("PHONE req=$req now=$now");
 
-      await PermissionService.requestOverlayIfNeeded();
-
-      // ✅ 3) Continue your flow
+      // ✅ only after all permissions ok
       await checkNavigation();
     });
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   // ✅ 1) MUST request Phone/CallLog/Contacts first
+    //   final ok = await PermissionService.requestCorePermissionsWithDialog(
+    //     context,
+    //   );
+    //   if (!ok) return;
+    //   // final nativeOk = await CallerIdRoleHelper.debugPhonePerm();
+    //   // debugPrint("✅ NATIVE READ_PHONE_STATE => $nativeOk");
+    //   // ✅ 2) Overlay permission (optional here)
+    //   final req = await CallerIdRoleHelper.requestReadPhoneState();
+    //   final now = await CallerIdRoleHelper.debugPhonePerm();
+    //   print("PHONE req=$req now=$now");
+    //
+    //   await PermissionService.requestOverlayIfNeeded();
+    //
+    //   // ✅ 3) Continue your flow
+    //   await checkNavigation();
+    // });
   }
 
   @override
