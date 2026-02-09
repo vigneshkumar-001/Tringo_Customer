@@ -529,24 +529,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               ),
 
                               SizedBox(height: 27),
-                              // CommonContainer.followButton(
-                              //   isLoading: state.followButtonLoader,
-                              //   isFollowing: state.isFollowing,
-                              //   onTap: () {
-                              //     ref
-                              //         .read(
-                              //           shopsNotifierProvider.notifier,
-                              //         )
-                              //         .followButton(
-                              //           shopId:
-                              //               shopsData.data?.id
-                              //                   .toString() ??
-                              //               '',
-                              //           follow: !state.isFollowing,
-                              //         );
-                              //   },
-                              // ),
-                              // Actions row
+
                               _staggerFromTop(
                                 aActions,
                                 SingleChildScrollView(
@@ -606,27 +589,24 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                 '',
                                           );
                                     },
-                                    messageOnTap: () {
-                                      if (_enquiryDisabled ||
-                                          stateS.isEnquiryLoading)
-                                        return;
+                                    messageOnTap: () async {
+                                      if (_enquiryDisabled || stateS.isEnquiryLoading) return;
 
-                                      setState(() {
-                                        _enquiryDisabled = true;
-                                      });
+                                      final ok = await ref.read(homeNotifierProvider.notifier).putEnquiry(
+                                        context: context,
+                                        serviceId: '',
+                                        productId: '',
+                                        message: '',
+                                        shopId: shopsData.data?.id.toString() ?? '',
+                                      );
 
-                                      ref
-                                          .read(homeNotifierProvider.notifier)
-                                          .putEnquiry(
-                                            context: context,
-                                            serviceId: '',
-                                            productId: '',
-                                            message: '',
-                                            shopId:
-                                                shopsData.data?.id.toString() ??
-                                                '',
-                                          );
+                                      if (!mounted) return;
+
+                                      if (ok) {
+                                        setState(() => _enquiryDisabled = true); // ✅ disable only on success
+                                      }
                                     },
+
                                     whatsAppIcon: true,
                                     whatsAppOnTap: () {
                                       MapUrls.openWhatsapp(
@@ -1164,7 +1144,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         children: [
                                           CommonContainer.serviceDetails(
                                             filedName: data.englishName,
-                                            imageWidth: 130,
+                                            imageWidth: 120,
                                             image: data.imageUrl, // ✅ FIX
                                             ratingStar: data.rating.toString(),
                                             ratingCount: data.ratingCount

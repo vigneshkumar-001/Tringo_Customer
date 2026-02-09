@@ -352,13 +352,6 @@ class Shop {
   });
 
   factory Shop.fromJson(Map<String, dynamic> json) {
-    double? parseDouble(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value.toDouble();
-      if (value is String) return double.tryParse(value);
-      return null;
-    }
-
     return Shop(
       id: json['id'] ?? '',
       englishName: json['englishName'] ?? '',
@@ -368,17 +361,21 @@ class Shop {
       city: json['city'] ?? '',
       state: json['state'] ?? '',
       country: json['country'] ?? '',
+
       ownershipType: json['ownershipType'],
-      gpsLatitude: parseDouble(json['gpsLatitude']),
-      gpsLongitude: parseDouble(json['gpsLongitude']),
+      gpsLatitude: parseDoubleNullable(json['gpsLatitude']),
+      gpsLongitude: parseDoubleNullable(json['gpsLongitude']),
       shopWeeklyHours: (json['shopWeeklyHours'] as List? ?? []),
-      rating: json['rating'] ?? 0,
-      ratingCount: json['ratingCount'] ?? 0,
+
+      // ✅ FIX HERE
+      rating: parseInt(json['rating']),
+      ratingCount: parseInt(json['ratingCount']),
+
       isTrusted: json['isTrusted'] ?? false,
       doorDelivery: json['doorDelivery'] ?? false,
       shopKind: json['shopKind'] ?? '',
       primaryPhone: json['primaryPhone'] ?? '',
-      distanceKm: parseDouble(json['distanceKm']),
+      distanceKm: parseDoubleNullable(json['distanceKm']),
       distanceLabel: json['distanceLabel'],
       openLabel: json['openLabel'],
       isOpen: json['isOpen'] ?? false,
@@ -386,6 +383,7 @@ class Shop {
       closeTime: json['closeTime'],
     );
   }
+
 
   Map<String, dynamic> toJson() {
     return {
@@ -601,6 +599,28 @@ class ReviewSummary {
     return {'rating': rating, 'count': count};
   }
 }
+int parseInt(dynamic v, {int def = 0}) {
+  if (v == null) return def;
+  if (v is int) return v;
+  if (v is double) return v.toInt();
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? double.tryParse(v)?.toInt() ?? def;
+  return def;
+}
+
+double? parseDoubleNullable(dynamic v) {
+  if (v == null) return null;
+  if (v is double) return v;
+  if (v is int) return v.toDouble();
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v);
+  return null;
+}
+
+double parseDouble(dynamic v, {double def = 0.0}) {
+  return parseDoubleNullable(v) ?? def;
+}
+
 
 /// If later API gives you review item fields, extend this.
 class ReviewItem {
