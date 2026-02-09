@@ -28,6 +28,7 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigate
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/food_details_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/search_screen_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_shops_details.dart';
+import '../../../../../Core/Widgets/advetisements_screens.dart';
 import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
@@ -103,6 +104,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ref
           .read(homeNotifierProvider.notifier)
           .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
+      ref
+          .read(homeNotifierProvider.notifier)
+          .advertisements(placement: 'HOME_TOP', lang: 0.0, lat: 0.0);
     });
 
     _listenServiceChanges();
@@ -489,6 +493,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final state = ref.watch(homeNotifierProvider);
     final home = state.homeResponse;
+    final ads = state.advertisementResponse;
+
+    final addsBanner = (ads != null && ads.data.isNotEmpty)
+        ? ads.data.first
+        : null;
 
     if (state.isLoading && home == null) {
       return Scaffold(
@@ -505,6 +514,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               await ref
                   .read(homeNotifierProvider.notifier)
                   .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
+              ref
+                  .read(homeNotifierProvider.notifier)
+                  .advertisements(placement: 'HOME_TOP', lang: 0.0, lat: 0.0);
             },
             showBottomButton: false,
             showTopBackArrow: false,
@@ -591,6 +603,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               await ref
                   .read(homeNotifierProvider.notifier)
                   .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
+              ref
+                  .read(homeNotifierProvider.notifier)
+                  .advertisements(placement: 'HOME_TOP', lang: 0.0, lat: 0.0);
             },
             child: SingleChildScrollView(
               controller: _homeScrollCtrl,
@@ -1806,7 +1821,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ],
                           ),
                         ),
-
+                        addsBanner == null
+                            ? const SizedBox.shrink()
+                            : DismissibleAdBanner(
+                                imageUrl: addsBanner.imageUrl,
+                                onTap: () {
+                                  // open banner.ctaUrl if needed
+                                },
+                              ),
                         /* filteredShops.isEmpty
                             ? Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -1824,7 +1846,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ),
                               )
                             :*/
-                        Container(
+
+                        /*     Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -1847,7 +1870,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                             ],
                           ),
-                        ),
+                        ),*/
                         SizedBox(height: 57),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

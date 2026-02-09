@@ -1,21 +1,32 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:ui';
+
+import '../../Presentation/OnBoarding/Screens/Home Screen/Controller/nearby_shop_map_notifier.dart';
+import '../../Presentation/OnBoarding/Screens/Home Screen/Model/nearby_map_response.dart';
 import '../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_details.dart';
-import '../Utility/map_service.dart';
+import '../Utility/map_urls.dart';
 
-class TringoMapScreen extends StatefulWidget {
+class TringoMapScreen extends ConsumerStatefulWidget {
+  final String shopId; // ✅ required (base shop id for nearby API)
   final LatLng? initialLocation;
-  final Function(Map<String, dynamic>)? onShopSelected;
+  final Function(NearbyShopItem shop)? onShopSelected;
 
-  const TringoMapScreen({super.key, this.initialLocation, this.onShopSelected});
+  const TringoMapScreen({
+    super.key,
+    required this.shopId,
+    this.initialLocation,
+    this.onShopSelected,
+  });
 
   @override
-  State<TringoMapScreen> createState() => _TringoMapScreenState();
+  ConsumerState<TringoMapScreen> createState() => _TringoMapScreenState();
 }
 
-class _TringoMapScreenState extends State<TringoMapScreen>
+class _TringoMapScreenState extends ConsumerState<TringoMapScreen>
     with TickerProviderStateMixin {
   GoogleMapController? _mapController;
   late AnimationController _pulseController;
@@ -23,9 +34,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
 
   LatLng? selectedLocation;
   Set<Marker> _shopMarkers = {};
-  List<Map<String, dynamic>> _tringoShops = [];
   bool _movedToMyLocation = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -47,17 +56,17 @@ class _TringoMapScreenState extends State<TringoMapScreen>
   void dispose() {
     _pulseController.dispose();
     _slideController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 
   Future<void> _initLocationAndLoad() async {
-    setState(() => _isLoading = true);
-
+    // If initial location is passed from previous screen
     if (widget.initialLocation != null) {
       selectedLocation = widget.initialLocation!;
       await _loadShopsOnMap();
       await _tryMoveCameraToSelected();
-      setState(() => _isLoading = false);
+      _slideController.forward();
       return;
     }
 
@@ -69,10 +78,11 @@ class _TringoMapScreenState extends State<TringoMapScreen>
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
+        // fallback
         selectedLocation = const LatLng(13.0827, 80.2707);
         await _loadShopsOnMap();
         await _tryMoveCameraToSelected();
-        setState(() => _isLoading = false);
+        _slideController.forward();
         return;
       }
 
@@ -83,13 +93,12 @@ class _TringoMapScreenState extends State<TringoMapScreen>
       selectedLocation = LatLng(pos.latitude, pos.longitude);
       await _loadShopsOnMap();
       await _tryMoveCameraToSelected();
-    } catch (e) {
+    } catch (_) {
       selectedLocation = const LatLng(13.0827, 80.2707);
       await _loadShopsOnMap();
       await _tryMoveCameraToSelected();
     }
 
-    setState(() => _isLoading = false);
     _slideController.forward();
   }
 
@@ -107,36 +116,22 @@ class _TringoMapScreenState extends State<TringoMapScreen>
   Future<void> _loadShopsOnMap() async {
     if (selectedLocation == null) return;
 
-    _tringoShops = MapService.getTringoShops(selectedLocation!);
-    _shopMarkers.clear();
+    // ✅ CALL API (Riverpod Notifier)
+    await ref
+        .read(nearbyNotifierProvider.notifier)
+        .fetchNearbyShops(
+          shopId: widget.shopId,
+          lat: selectedLocation!.latitude,
+          lng: selectedLocation!.longitude,
+        );
 
-    for (var shop in _tringoShops) {
-      _shopMarkers.add(
-        Marker(
-          markerId: MarkerId(shop['id']),
-          position: LatLng(shop['lat'], shop['lng']),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: InfoWindow(
-            title: shop['name'],
-            snippet: '${shop['address']} • ${(shop['distance'] / 1000).toStringAsFixed(1)}km',
-          ),
-          onTap: () => _showShopDetails(shop),
-        ),
-      );
-    }
+    final nearby = ref.read(nearbyNotifierProvider);
+    final items = nearby.nearbyResponse?.data?.items ?? [];
 
-    _shopMarkers.add(
-      Marker(
-        markerId: const MarkerId('selected'),
-        position: selectedLocation!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(title: 'Your Location'),
-      ),
-    );
+    _buildMarkersFromApi(items);
 
-    if (mounted) setState(() {});
-
-    await Future.delayed(const Duration(milliseconds: 300));
+    // Fit bounds around selected location
+    await Future.delayed(const Duration(milliseconds: 250));
     if (_mapController != null && selectedLocation != null) {
       await _mapController!.animateCamera(
         CameraUpdate.newLatLngBounds(
@@ -154,27 +149,58 @@ class _TringoMapScreenState extends State<TringoMapScreen>
         ),
       );
     }
+
+    if (mounted) setState(() {});
   }
 
-  void _showShopDetails(Map<String, dynamic> shop) {
+  void _buildMarkersFromApi(List<NearbyShopItem> items) {
+    _shopMarkers.clear();
+
+    for (final shop in items) {
+      _shopMarkers.add(
+        Marker(
+          markerId: MarkerId(shop.id),
+          position: LatLng(shop.lat, shop.lng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueOrange,
+          ),
+          infoWindow: InfoWindow(
+            title: shop.name,
+            snippet: '${shop.categoryLabel} • ${shop.distanceLabel}',
+          ),
+          onTap: () => _showShopDetails(shop),
+        ),
+      );
+    }
+
+    if (selectedLocation != null) {
+      _shopMarkers.add(
+        Marker(
+          markerId: const MarkerId('selected'),
+          position: selectedLocation!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'Your Location'),
+        ),
+      );
+    }
+  }
+
+  void _showShopDetails(NearbyShopItem shop) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildShopDetailsSheet(shop),
+      builder: (_) => _buildShopDetailsSheet(shop),
     );
   }
 
-  Widget _buildShopDetailsSheet(Map<String, dynamic> shop) {
+  Widget _buildShopDetailsSheet(NearbyShopItem shop) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Colors.orange.shade50.withOpacity(0.3),
-          ],
+          colors: [Colors.white, Colors.orange.shade50.withOpacity(0.3)],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
@@ -191,7 +217,6 @@ class _TringoMapScreenState extends State<TringoMapScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag Handle
               Container(
                 width: 50,
                 height: 5,
@@ -202,7 +227,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
               ),
               const SizedBox(height: 24),
 
-              // Shop Header with Gradient Card
+              // Header
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -241,7 +266,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            shop['name'],
+                            shop.name,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -269,7 +294,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${(shop['distance'] / 1000).toStringAsFixed(1)}km away',
+                                  shop.distanceLabel,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
@@ -288,7 +313,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
 
               const SizedBox(height: 20),
 
-              // Address Card with Glassmorphism
+              // Category / City card (API doesn't have address, so we show city + category)
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: BackdropFilter(
@@ -318,7 +343,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
-                            Icons.location_on_outlined,
+                            Icons.category_outlined,
                             color: Colors.white,
                             size: 20,
                           ),
@@ -326,7 +351,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                         const SizedBox(width: 14),
                         Expanded(
                           child: Text(
-                            shop['address'],
+                            '${shop.categoryLabel} • ${shop.city}',
                             style: TextStyle(
                               fontSize: 15,
                               color: Colors.grey.shade800,
@@ -342,7 +367,6 @@ class _TringoMapScreenState extends State<TringoMapScreen>
 
               const SizedBox(height: 24),
 
-              // Action Buttons with Modern Design
               Row(
                 children: [
                   Expanded(
@@ -353,9 +377,11 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                       gradient: LinearGradient(
                         colors: [Colors.green.shade500, Colors.green.shade700],
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        widget.onShopSelected?.call(shop);
+                      onPressed: () async {
+                        await MapUrls.openDialer(
+                          context,
+                          shop. phone ,
+                        );
                       },
                     ),
                   ),
@@ -373,10 +399,10 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                           context,
                           MaterialPageRoute(
                             builder: (_) => ShopsDetails(
-                              shopId: shop['id']?.toString(),
+                              shopId: shop.id,
                               page: 'map',
-                              heroTag: 'shop_${shop['id']}',
-                              image: shop['image']?.toString(),
+                              heroTag: 'shop_${shop.id}',
+                              image: shop.imageUrl,
                             ),
                           ),
                         );
@@ -440,6 +466,11 @@ class _TringoMapScreenState extends State<TringoMapScreen>
 
   @override
   Widget build(BuildContext context) {
+    final nearby = ref.watch(nearbyNotifierProvider);
+    final items = nearby.nearbyResponse?.data?.items ?? [];
+    final isLoading = nearby.isLoading;
+    final error = nearby.error;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
@@ -476,9 +507,9 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                       color: Colors.black87,
                     ),
                   ),
-                  if (_tringoShops.isNotEmpty)
+                  if (items.isNotEmpty)
                     Text(
-                      '${_tringoShops.length} locations found',
+                      '${items.length} locations found',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -493,7 +524,6 @@ class _TringoMapScreenState extends State<TringoMapScreen>
       ),
       body: Stack(
         children: [
-          // Google Map
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: selectedLocation ?? const LatLng(13.0827, 80.2707),
@@ -518,8 +548,27 @@ class _TringoMapScreenState extends State<TringoMapScreen>
             zoomControlsEnabled: false,
           ),
 
-          // Loading Indicator
-          if (_isLoading)
+          // Error toast/card
+          if (error != null)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 160,
+              child: Material(
+                elevation: 2,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    error,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+
+          // Loading overlay
+          if (isLoading)
             Container(
               color: Colors.black.withOpacity(0.3),
               child: Center(
@@ -539,7 +588,9 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.orange.shade600),
+                        valueColor: AlwaysStoppedAnimation(
+                          Colors.orange.shade600,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -555,8 +606,8 @@ class _TringoMapScreenState extends State<TringoMapScreen>
               ),
             ),
 
-          // Shop Counter Badge with Pulse Animation
-          if (_tringoShops.isNotEmpty)
+          // Shop Counter Badge
+          if (items.isNotEmpty)
             Positioned(
               top: 100,
               right: 16,
@@ -596,7 +647,7 @@ class _TringoMapScreenState extends State<TringoMapScreen>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '${_tringoShops.length}',
+                            '${items.length}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -616,17 +667,23 @@ class _TringoMapScreenState extends State<TringoMapScreen>
             bottom: 90,
             right: 16,
             child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(2, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: _slideController,
-                curve: Curves.elasticOut,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(2, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: _slideController,
+                      curve: Curves.elasticOut,
+                    ),
+                  ),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.orange.shade500, Colors.deepOrange.shade600],
+                    colors: [
+                      Colors.orange.shade500,
+                      Colors.deepOrange.shade600,
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [

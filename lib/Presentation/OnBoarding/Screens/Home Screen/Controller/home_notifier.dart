@@ -5,6 +5,7 @@ import 'package:tringo_app/Api/DataSource/api_data_source.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/mark_enquiry.dart';
@@ -14,36 +15,43 @@ import '../../Login Screen/Controller/login_notifier.dart';
 class homeState {
   final bool isLoading;
   final bool isEnquiryLoading;
+  final bool isAdsLoading;
   final String? error;
   final String? activeEnquiryId;
   final MarkEnquiry? markEnquiry;
   final HomeResponse? homeResponse;
   final EnquiryResponse? enquiryResponse;
+  final AdvertisementResponse? advertisementResponse;
 
   const homeState({
     this.isLoading = true,
     this.isEnquiryLoading = false,
+    this.isAdsLoading = false,
     this.markEnquiry,
     this.error,
     this.homeResponse,
     this.enquiryResponse,
     this.activeEnquiryId,
+    this.advertisementResponse,
   });
 
   factory homeState.initial() => const homeState();
 
   homeState copyWith({
     bool? isLoading,
+    bool? isAdsLoading,
     String? activeEnquiryId,
     MarkEnquiry? markEnquiry,
     bool? isEnquiryLoading,
     String? error,
     HomeResponse? homeResponse,
+    AdvertisementResponse? advertisementResponse,
     EnquiryResponse? enquiryResponse,
   }) {
     return homeState(
       isLoading: isLoading ?? this.isLoading,
       isEnquiryLoading: isEnquiryLoading ?? this.isEnquiryLoading,
+      isAdsLoading: isAdsLoading ?? this.isAdsLoading,
       markEnquiry: markEnquiry ?? this.markEnquiry,
       // when we call copyWith we usually want to override error explicitly
       error: error,
@@ -51,6 +59,8 @@ class homeState {
       homeResponse: homeResponse ?? this.homeResponse,
       // keep existing enquiryResponse unless explicitly replaced
       enquiryResponse: enquiryResponse ?? this.enquiryResponse,
+      advertisementResponse:
+          advertisementResponse ?? this.advertisementResponse,
       activeEnquiryId: activeEnquiryId ?? this.activeEnquiryId,
       // activeEnquiryId: activeEnquiryId,
     );
@@ -144,16 +154,40 @@ class HomeNotifier extends Notifier<homeState> {
     );
   }
 
+  Future<void> advertisements({
+    required String placement,
+    required double lat,
+    required double lang,
+  }) async {
+    state = state.copyWith(isAdsLoading: true, error: null);
+
+    final result = await api.advertisements(
+      placement: placement,
+      lat: lat,
+      lang: lang,
+    );
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isAdsLoading: false,
+        error: failure.message,
+        advertisementResponse: null,
+      ),
+      (response) => state = state.copyWith(
+        isAdsLoading: false,
+        error: null,
+        advertisementResponse: response,
+      ),
+    );
+  }
+
   Future<void> markCallOrLocation({
     required String type,
     required String shopId,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await api.markCallOrMapEnquiry(
-       type : type,
-      shopId: shopId,
-    );
+    final result = await api.markCallOrMapEnquiry(type: type, shopId: shopId);
 
     result.fold(
       (failure) => state = state.copyWith(

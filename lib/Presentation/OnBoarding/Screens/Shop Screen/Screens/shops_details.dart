@@ -10,6 +10,7 @@ import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/shops_product.dart';
+import 'package:tringo_app/Core/Widgets/advetisements_screens.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
@@ -87,6 +88,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
       ref
           .read(shopsNotifierProvider.notifier)
           .showSpecificShopDetails(shopId: widget.shopId ?? '');
+      ref
+          .read(homeNotifierProvider.notifier)
+          .advertisements( placement: 'SHOP_DETAIL',lat: 0.0,lang: 0.0);
       final notifier = ref.read(shopsNotifierProvider.notifier);
 
       // ✅ Reset old follow state FIRST
@@ -281,7 +285,11 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     final state = ref.watch(shopsNotifierProvider);
     final notifier = ref.watch(shopsNotifierProvider.notifier);
     final stateS = ref.watch(homeNotifierProvider);
+    final ads = stateS.advertisementResponse;
 
+    final addsBanner = (ads != null && ads.data.isNotEmpty)
+        ? ads.data.first
+        : null;
     final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
 
     if (state.isLoading) {
@@ -1175,7 +1183,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                               );
                                             },
                                           ),
-                                          const SizedBox(height: 35),
+
                                         ],
                                       ),
                                     );
@@ -1257,13 +1265,21 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     ),
                                   ),
                                 ),
+
                               ],
                             );
                           },
                         ),
                       ),
-
-                      const SizedBox(height: 40),
+                      addsBanner == null
+                          ? const SizedBox.shrink()
+                          : DismissibleAdBanner(
+                        imageUrl: addsBanner.imageUrl,
+                        onTap: () {
+                          // open banner.ctaUrl if needed
+                        },
+                      ),
+                      const SizedBox(height: 20),
                       _staggerFromTop(
                         aHorizonalDivider,
                         CommonContainer.horizonalDivider(),
@@ -1775,7 +1791,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                           },
                         ),
                       ),
-
+                      addsBanner == null
+                          ? const SizedBox.shrink()
+                          : DismissibleAdBanner(
+                        imageUrl: addsBanner.imageUrl,
+                        onTap: () {
+                          // open banner.ctaUrl if needed
+                        },
+                      ),
                       SizedBox(height: 40),
                     ],
 

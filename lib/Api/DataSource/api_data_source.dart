@@ -6,9 +6,11 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Model/edit_profile_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/mark_enquiry.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/nearby_map_response.dart';
 
 // ✅ Use SAME model files everywhere
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/login_response.dart';
@@ -1583,6 +1585,7 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+
   Future<Either<Failure, WithdrawRequestResponse>> uIDWithRawApi({
     required String upiId,
     required String tcoin,
@@ -1591,12 +1594,7 @@ class ApiDataSource extends BaseApiDataSource {
       final String url = ApiUrl.uIDWithRawApi;
       final payload = {"upiId": upiId, "tcoin": tcoin};
 
-      final response = await Request.sendRequest(
-        url,
-        payload,
-        'Post',
-        true,
-      );
+      final response = await Request.sendRequest(url, payload, 'Post', true);
 
       // 🔥 Always try to read body first
       final body = response.data;
@@ -1632,7 +1630,6 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
-
 
   Future<Either<Failure, ReferralHistoryResponse>> referralHistory() async {
     try {
@@ -1962,6 +1959,88 @@ class ApiDataSource extends BaseApiDataSource {
     } catch (e) {
       AppLogger.log.e(e);
       print(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, AdvertisementResponse>> advertisements({
+    required String placement,
+    required double lat,
+    required double lang,
+  }) async {
+    try {
+      final url = ApiUrl.ads(placement: placement, lat: lat, lang: lang);
+
+      dynamic response = await Request.sendRequest(url, {}, 'Get', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        // If status code is success
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(AdvertisementResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          // ❗ API returned non-success code but has JSON error message
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, NearbyMapResponse>> getNearbyShops({
+    required String shopId,
+    required double lat,
+    required double lng,
+  }) async {
+    try {
+      final url = ApiUrl.nearbyShops(shopId: shopId, lat: lat, lang: lng);
+
+      dynamic response = await Request.sendRequest(url, {}, 'Get', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        // If status code is success
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(NearbyMapResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          // ❗ API returned non-success code but has JSON error message
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
