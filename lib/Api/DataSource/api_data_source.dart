@@ -1583,6 +1583,7 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
+
   Future<Either<Failure, WithdrawRequestResponse>> uIDWithRawApi({
     required String upiId,
     required String tcoin,
@@ -1591,12 +1592,7 @@ class ApiDataSource extends BaseApiDataSource {
       final String url = ApiUrl.uIDWithRawApi;
       final payload = {"upiId": upiId, "tcoin": tcoin};
 
-      final response = await Request.sendRequest(
-        url,
-        payload,
-        'Post',
-        true,
-      );
+      final response = await Request.sendRequest(url, payload, 'Post', true);
 
       // 🔥 Always try to read body first
       final body = response.data;
@@ -1632,7 +1628,6 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(e.toString()));
     }
   }
-
 
   Future<Either<Failure, ReferralHistoryResponse>> referralHistory() async {
     try {
@@ -1767,12 +1762,14 @@ class ApiDataSource extends BaseApiDataSource {
     required double lng,
     required double lat,
     required String shopId,
+    String? offerId,
   }) async {
     try {
       final url = ApiUrl.surpriseStatusCheck(
         lat: lat,
         lng: lng,
         shopId: shopId,
+        offerId: offerId,
       );
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
@@ -1807,13 +1804,14 @@ class ApiDataSource extends BaseApiDataSource {
     required double lng,
     required double lat,
     required String shopId,
+    required String offerId,
   }) async {
     try {
-      final url = ApiUrl.surpriseClaimed(shopId: shopId);
+      final url = ApiUrl.surpriseClaimed(shopId: shopId, );
 
       final response = await Request.sendRequest(
         url,
-        {"lat": lat, "lng": lng},
+        {"lat": lat, "lng": lng,"offerId" :offerId },
         'Post',
         true,
       );

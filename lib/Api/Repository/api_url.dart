@@ -2,8 +2,7 @@ class ApiUrl {
   // static const String base =
   //     "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
 
-
-   static const String base = "https://bknd.tringobiz.com/";
+  static const String base = "https://bknd.tringobiz.com/";
 
   static const String register = "${base}api/v1/auth/request-otp";
   static const String verifyOtp = "${base}api/v1/auth/verify-otp";
@@ -55,28 +54,22 @@ class ApiUrl {
   static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lng";
   }
-   static String markCallOrMapEnquiry({
-     required String shopId,
 
-   }) {
-     return "${base}api/v1/public/shops/$shopId/track";
-   }
+  static String markCallOrMapEnquiry({required String shopId}) {
+    return "${base}api/v1/public/shops/$shopId/track";
+  }
 
   static String surpriseStatusCheck({
     required double lng,
     required String shopId,
     required double lat,
+    String? offerId,
   }) {
     return "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
-
   }
-  static String surpriseClaimed({
 
-    required String shopId,
-
-  }) {
+  static String surpriseClaimed({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/surprise/claim";
-
   }
 
   static String walletHistory({required String type}) {
@@ -95,9 +88,9 @@ class ApiUrl {
     return "${base}api/v1/public/shops/$shopId/products";
   }
 
-   static String follow({required String shopId}) {
-     return "${base}api/v1/public/shops/$shopId/follow";
-   }
+  static String follow({required String shopId}) {
+    return "${base}api/v1/public/shops/$shopId/follow";
+  }
 
   static String viewAllServices({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/services?page=1&limit=20";
