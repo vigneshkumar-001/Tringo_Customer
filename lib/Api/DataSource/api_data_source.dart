@@ -1764,12 +1764,14 @@ class ApiDataSource extends BaseApiDataSource {
     required double lng,
     required double lat,
     required String shopId,
+    String? offerId,
   }) async {
     try {
       final url = ApiUrl.surpriseStatusCheck(
         lat: lat,
         lng: lng,
         shopId: shopId,
+        offerId: offerId,
       );
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
@@ -1804,13 +1806,14 @@ class ApiDataSource extends BaseApiDataSource {
     required double lng,
     required double lat,
     required String shopId,
+    required String offerId,
   }) async {
     try {
-      final url = ApiUrl.surpriseClaimed(shopId: shopId);
+      final url = ApiUrl.surpriseClaimed(shopId: shopId, );
 
       final response = await Request.sendRequest(
         url,
-        {"lat": lat, "lng": lng},
+        {"lat": lat, "lng": lng,"offerId" :offerId },
         'Post',
         true,
       );

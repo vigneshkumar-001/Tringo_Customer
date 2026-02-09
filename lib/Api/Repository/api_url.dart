@@ -63,6 +63,7 @@ class ApiUrl {
     required double lng,
     required String shopId,
     required double lat,
+    String? offerId,
   }) {
     return "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
   }

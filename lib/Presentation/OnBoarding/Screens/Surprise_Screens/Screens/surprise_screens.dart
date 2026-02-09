@@ -24,12 +24,14 @@ class SurpriseScreens extends ConsumerStatefulWidget {
   final double shopLat;
   final double shopLng;
   final String shopId;
+  final String? subOfferId;
 
   const SurpriseScreens({
     super.key,
     required this.shopLat,
     required this.shopLng,
     required this.shopId,
+    this.subOfferId,
   });
 
   @override
@@ -273,7 +275,12 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       // 5) call CLAIM API
       final claimRes = await ref
           .read(surpriseNotifierProvider.notifier)
-          .surpriseClaimed(lat: _lat!, lng: _lng!, shopId: widget.shopId);
+          .surpriseClaimed(
+            lat: _lat!,
+            lng: _lng!,
+            shopId: widget.shopId,
+            offerId: widget.subOfferId ?? '',
+          );
 
       if (!mounted) return;
 
@@ -496,7 +503,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                     child: Column(
                                       children: [
                                         if (_loadingDistance)
-                                            AppLoader.circularLoader(
+                                          AppLoader.circularLoader(
                                             color: Colors.white,
                                           )
                                         else

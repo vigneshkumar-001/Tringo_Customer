@@ -1396,11 +1396,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                 heroTag:
                                                     'shop1', // unique tag for this shop
                                                 onTap: () {
+                                                  final offerId = data.id;
+
                                                   Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
                                                       builder: (context) =>
                                                           SurpriseScreens(
+                                                            subOfferId: offerId,
                                                             shopLat: 0.0,
                                                             shopLng: 0.0,
                                                             shopId:
