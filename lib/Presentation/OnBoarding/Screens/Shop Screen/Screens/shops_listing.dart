@@ -226,14 +226,19 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               : null;
 
                           Widget card = CommonContainer.servicesContainer(
-                            whatsAppOnTap: () {
-                              MapUrls.openWhatsapp(
+                            whatsAppOnTap: () async {
+                              await MapUrls.openWhatsapp(
                                 message: 'hi',
                                 context: context,
-                                phone: data.primaryPhone,
+                                phone: data.primaryPhone.toString() ?? '',
+                              );
+                              await ref
+                                  .read(homeNotifierProvider.notifier)
+                                  .markCallOrLocation(
+                                type: 'WHATSAPP',
+                                shopId: data.id.toString(),
                               );
                             },
-
                             isMessageLoading: isThisCardLoading,
                             messageDisabled: hasMessaged,
 

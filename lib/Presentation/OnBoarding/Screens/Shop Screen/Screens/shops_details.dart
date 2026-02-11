@@ -608,14 +608,20 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     },
 
                                     whatsAppIcon: true,
-                                    whatsAppOnTap: () {
-                                      MapUrls.openWhatsapp(
+                                    whatsAppOnTap: ()async {
+                                      await   MapUrls.openWhatsapp(
                                         message: 'hi',
                                         context: context,
                                         phone:
                                             shopsData.data?.primaryPhone
                                                 .toString() ??
                                             '',
+                                      );
+                                      await ref
+                                          .read(homeNotifierProvider.notifier)
+                                          .markCallOrLocation(
+                                        type: 'WHATSAPP',
+                                        shopId: shopsData.data?.id.toString()?? '',
                                       );
                                     },
                                     messageLoading: stateS.isEnquiryLoading,
