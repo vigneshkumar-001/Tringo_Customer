@@ -229,6 +229,19 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                           final anim = aServices[index % aServices.length];
 
                           final card = CommonContainer.servicesContainer(
+                            whatsAppOnTap: () async {
+                              await MapUrls.openWhatsapp(
+                                message: 'hi',
+                                context: context,
+                                phone: data.primaryPhone.toString() ?? '',
+                              );
+                              await ref
+                                  .read(homeNotifierProvider.notifier)
+                                  .markCallOrLocation(
+                                    type: 'WHATSAPP',
+                                    shopId: id.toString(),
+                                  );
+                            },
                             callTap: () async {
                               await MapUrls.openDialer(
                                 context,

@@ -29,13 +29,15 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 class TringoOverlayService : Service() {
 
@@ -428,7 +430,55 @@ class TringoOverlayService : Service() {
     }
 
     // ==========================================================
-    // Overlay UI (CACHE FIRST) ✅ FIXED for Person + Business buttons
+    // ✅ OPEN FLUTTER SCREEN FROM OVERLAY (Deep link)
+    // ==========================================================
+    private fun openFlutterShopDetails(shopId: String, tabIndex: Int = 4) {
+        try {
+            val uri = Uri.parse("tringo://app/shop/details?shopId=$shopId&tab=$tabIndex")
+
+            val i = Intent(Intent.ACTION_VIEW, uri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                setPackage(packageName)
+            }
+            startActivity(i)
+            removeOverlay()
+        } catch (e: Exception) {
+            Log.e(TAG, "openFlutterShopDetails failed: ${e.message}", e)
+        }
+    }
+
+    // ==========================================================
+    // ✅ Fallback UI when API fails (522 etc.)
+    // ==========================================================
+    private fun applyFallbackUi(
+        headerBusiness: View?,
+        headerPerson: View?,
+        businessTv: TextView?,
+        businessMetaTv: TextView?,
+        personTv: TextView?,
+        personMetaTv: TextView?,
+        logoBiz: ImageView?,
+        logoPerson: ImageView?,
+        phone: String,
+        contactName: String,
+        reason: String
+    ) {
+        // If overlay already removed, don't touch views
+        if (overlayView == null) return
+
+        headerBusiness?.visibility = View.GONE
+        headerPerson?.visibility = View.VISIBLE
+
+        personTv?.text = if (contactName.isNotBlank()) contactName else phone
+        personMetaTv?.text = reason
+
+        try {
+            logoPerson?.setImageResource(android.R.drawable.ic_menu_call)
+        } catch (_: Exception) {}
+    }
+
+    // ==========================================================
+    // Overlay UI (CACHE FIRST)
     // ==========================================================
     private fun showOverlay(phone: String, contactName: String, preferCache: Boolean) {
         removeOverlay()
@@ -454,7 +504,7 @@ class TringoOverlayService : Service() {
         val personMetaTv = v.findViewById<TextView>(R.id.personMetaText)
         val logoPerson = v.findViewById<ImageView>(R.id.logoImagePerson)
 
-        // ✅ NEW PERSON BUTTONS
+        // Person buttons
         val callBtnPerson = v.findViewById<View>(R.id.callBtnPerson)
         val chatBtnPerson = v.findViewById<View>(R.id.chatBtnPerson)
 
@@ -469,13 +519,11 @@ class TringoOverlayService : Service() {
             removeOverlay()
         }
 
-        // ✅ icons size small like figma
         setButtonIconDp(callBtnBusiness, R.drawable.ic_call_png, 16f)
         setButtonIconDp(chatBtnBusiness, R.drawable.ic_whatsapp_png, 16f)
         setButtonIconDp(callBtnPerson, R.drawable.ic_call_png, 16f)
         setButtonIconDp(chatBtnPerson, R.drawable.ic_whatsapp_png, 16f)
 
-        // ✅ Click listeners for BOTH
         val dialClick = View.OnClickListener {
             val num = (cachePhone ?: pendingPhone).trim()
             if (num.isNotBlank() && !num.equals("UNKNOWN", true)) dialNumber(num)
@@ -496,10 +544,14 @@ class TringoOverlayService : Service() {
         val recycler = v.findViewById<RecyclerView>(R.id.adsRecycler)
 
         recycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        adsAdapter = OverlayAdsAdapter()
+
+        // ✅ click callback -> open flutter page
+        adsAdapter = OverlayAdsAdapter { ad ->
+            val sid = ad.shopId.ifBlank { ad.id } // fallback
+            openFlutterShopDetails(sid, tabIndex = 4)
+        }
         recycler.adapter = adsAdapter
 
-        // Window
         val flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
@@ -528,7 +580,7 @@ class TringoOverlayService : Service() {
             return
         }
 
-        // ✅ default UI while loading
+        // ✅ default loading UI
         headerBusiness.visibility = View.GONE
         headerPerson.visibility = View.VISIBLE
         personTv.text = if (contactName.isNotBlank()) contactName else phone
@@ -606,15 +658,20 @@ class TringoOverlayService : Service() {
                 val rawItems: List<Any> = listAny?.mapNotNull { it as? Any } ?: emptyList()
 
                 val cards = rawItems.mapIndexed { idx, item ->
+                    val adId = pickString(item, "id", "_id") ?: "ad_$idx"
+                    val shopId = pickString(item, "shopId") ?: adId // ✅ fallback to adId
+
                     OverlayAdCard(
-                        id = pickString(item, "id", "_id") ?: "ad_$idx",
+                        id = adId,
+                        shopId = shopId,
                         title = pickString(item, "englishName", "title", "name") ?: "Ad ${idx + 1}",
                         subtitle = buildAdSubtitle(item),
                         rating = pickDouble(item, "rating", "avgRating"),
                         ratingCount = pickInt(item, "ratingCount", "totalRatings"),
                         openText = pickString(item, "openLabel", "openText"),
                         isTrusted = pickBool(item, "isTrusted", "trusted") ?: false,
-                        imageUrl = pickString(item, "primaryImageUrl", "imageUrl") ?: ""
+                        imageUrl = pickString(item, "primaryImageUrl", "imageUrl") ?: "",
+                        phone = pickString(item, "primaryPhone", "phone")
                     )
                 }
 
@@ -643,7 +700,36 @@ class TringoOverlayService : Service() {
                 applyAdsVisibilityNow()
 
             } catch (e: Exception) {
+                // ✅ Ignore cancellation (normal)
+                if (e is CancellationException) {
+                    Log.w("TRINGO_API", "API cancelled (normal)")
+                    return@launch
+                }
+
+                val reason = when (e) {
+                    is HttpException -> {
+                        val code = e.code()
+                        if (code == 522 || code == 524) "Server busy (HTTP $code). Try again."
+                        else "API error (HTTP $code)"
+                    }
+                    else -> "Network error. Check internet."
+                }
+
                 Log.e("TRINGO_API", "API failed: ${e.message}", e)
+
+                applyFallbackUi(
+                    headerBusiness = headerBusiness,
+                    headerPerson = headerPerson,
+                    businessTv = businessTv,
+                    businessMetaTv = businessMetaTv,
+                    personTv = personTv,
+                    personMetaTv = personMetaTv,
+                    logoBiz = logoBiz,
+                    logoPerson = logoPerson,
+                    phone = phone,
+                    contactName = contactName,
+                    reason = reason
+                )
             }
         }
     }
@@ -657,7 +743,6 @@ class TringoOverlayService : Service() {
         return listOf(addr, place).filter { it.isNotBlank() }.joinToString(" • ")
     }
 
-    // ✅ FIXED: Business metaText + Person personMetaText set separately
     private fun applyCacheToUi(
         headerBusiness: View?, headerPerson: View?,
         businessTv: TextView?, businessMetaTv: TextView?,
@@ -873,7 +958,7 @@ class TringoOverlayService : Service() {
     }
 }
 
-
+//
 //package com.feni.tringo.tringo_app
 //
 //import android.Manifest
@@ -1714,4 +1799,4 @@ class TringoOverlayService : Service() {
 //        return null
 //    }
 //}
-
+//

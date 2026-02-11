@@ -1,5 +1,6 @@
 // lib/Core/Routing/app_go_routes.dart
 import 'package:go_router/go_router.dart';
+import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Screens/edit_profile.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Screens/referral_screens.dart';
 
@@ -83,6 +84,20 @@ final goRouter = GoRouter(
         return OtpScreen(phoneNumber: phone);
       },
     ),
+    GoRoute(
+      path: '/shop/details',
+      builder: (context, state) {
+        final shopId = state.uri.queryParameters['shopId'] ?? '';
+        final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
+
+        return ServiceAndShopsDetails(
+          shopId: shopId,
+          initialIndex: 4,
+        );
+      },
+    ),
+
+
     GoRoute(
       path: AppRoutes.homePath,
       name: AppRoutes.home,
