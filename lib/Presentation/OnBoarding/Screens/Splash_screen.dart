@@ -41,8 +41,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final ok = await PermissionService.ensureAllRequiredPermissions(context);
-      if (!ok) return;
+      // final ok = await PermissionService.ensureAllRequiredPermissions(context);
+      // if (!ok) return;
 
       // ✅ only after all permissions ok
       await checkNavigation();
@@ -74,13 +74,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // ✅ Only check again if still on splash (not navigated)
-    if (state == AppLifecycleState.resumed && !_navigated) {
-      _batteryOptimizationFlow();
-    }
-  }
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   // ✅ Only check again if still on splash (not navigated)
+  //   if (state == AppLifecycleState.resumed && !_navigated) {
+  //     _batteryOptimizationFlow();
+  //   }
+  // }
 
   Future<void> checkNavigation() async {
     final prefs = await SharedPreferences.getInstance();
@@ -128,52 +128,52 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   // ---------------- ✅ Battery Flow (FIXED) ----------------
   Future<void> _batteryOptimizationFlow() async {
-    if (!Platform.isAndroid) return;
-    if (_batteryFlowRunning) return;
-    if (_navigated) return;
-    if (_batterySheetOpen) return;
-
-    _batteryFlowRunning = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      // ✅ true = battery optimization disabled (good)
-      final isUnrestricted =
-          await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
-
-      final batteryOk = isUnrestricted == true;
-
-      // last state saved in device
-      final lastOk = prefs.getBool(_batteryLastOkKey); // null on first install
-
-      // always update current state
-      await prefs.setBool(_batteryLastOkKey, batteryOk);
-
-      debugPrint("BatteryFlow => batteryOk=$batteryOk lastOk=$lastOk");
-
-      // ✅ if currently OK => never show
-      if (batteryOk) return;
-
-      // ❌ currently BAD:
-      // show only if:
-      // - first time install (lastOk == null)
-      // - OR user changed from OK -> BAD (lastOk == true)
-      final shouldShow = (lastOk == null) || (lastOk == true);
-      if (!shouldShow) return;
-
-      if (!mounted) return;
-
-      _batterySheetOpen = true;
-      final openSettings = await _showBatteryBottomSheet();
-      _batterySheetOpen = false;
-
-      if (openSettings == true) {
-        await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
-      }
-    } finally {
-      _batteryFlowRunning = false;
-    }
+    // if (!Platform.isAndroid) return;
+    // if (_batteryFlowRunning) return;
+    // if (_navigated) return;
+    // if (_batterySheetOpen) return;
+    //
+    // _batteryFlowRunning = true;
+    //
+    // try {
+    //   final prefs = await SharedPreferences.getInstance();
+    //
+    //   // ✅ true = battery optimization disabled (good)
+    //   final isUnrestricted =
+    //       await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
+    //
+    //   final batteryOk = isUnrestricted == true;
+    //
+    //   // last state saved in device
+    //   final lastOk = prefs.getBool(_batteryLastOkKey); // null on first install
+    //
+    //   // always update current state
+    //   await prefs.setBool(_batteryLastOkKey, batteryOk);
+    //
+    //   debugPrint("BatteryFlow => batteryOk=$batteryOk lastOk=$lastOk");
+    //
+    //   // ✅ if currently OK => never show
+    //   if (batteryOk) return;
+    //
+    //   // ❌ currently BAD:
+    //   // show only if:
+    //   // - first time install (lastOk == null)
+    //   // - OR user changed from OK -> BAD (lastOk == true)
+    //   final shouldShow = (lastOk == null) || (lastOk == true);
+    //   if (!shouldShow) return;
+    //
+    //   if (!mounted) return;
+    //
+    //   _batterySheetOpen = true;
+    //   final openSettings = await _showBatteryBottomSheet();
+    //   _batterySheetOpen = false;
+    //
+    //   if (openSettings == true) {
+    //     await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
+    //   }
+    // } finally {
+    //   _batteryFlowRunning = false;
+    // }
   }
 
   Future<bool?> _showBatteryBottomSheet() async {

@@ -2,56 +2,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.feni.tringo.tringo_app">
-    <queries>
-        <!-- WhatsApp consumer + business -->
-        <package android:name="com.whatsapp" />
-        <package android:name="com.whatsapp.w4b" />
 
-        <!-- whatsapp:// scheme -->
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="whatsapp" />
-        </intent>
-
-        <!-- https scheme (wa.me) -->
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="https" />
-        </intent>
-    </queries>
-    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Location (for Google Map + Geolocator) -->
+    <!-- ✅ ONLY LOCATION -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Keep background only if you REALLY need it -->
-    <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->
 
-    <!-- Phone (only if you use these features) -->
+    <!-- Optional: Notifications only if you need it -->
+    <!-- <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> -->
+
+    <!-- ❌ REMOVE / COMMENT all phone & call log & contacts & overlay -->
+    <!--
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission
-        android:name="android.permission.READ_PHONE_STATE"
-        tools:node="replace" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="replace" />
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
-
-    <!-- Overlay -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-    <!-- Notifications (Android 13+) -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    -->
 
-    <!-- MUST NOT exist -->
     <uses-permission
         android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:node="remove" />
@@ -63,7 +37,6 @@
         android:extractNativeLibs="true"
         android:enableOnBackInvokedCallback="true">
 
-        <!-- Google Maps API KEY -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAoOiPmmtlMJ7dqbk3yW13itbM1B5grOdc" />
@@ -87,51 +60,16 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name="com.feni.tringo.tringo_app.TringoCallScreeningService"
-            android:exported="true"
-            android:permission="android.permission.BIND_SCREENING_SERVICE">
-            <intent-filter>
-                <action android:name="android.telecom.CallScreeningService" />
-            </intent-filter>
-        </service>
-
-        <service
-            android:name="com.feni.tringo.tringo_app.TringoOverlayService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
-            android:name="com.feni.tringo.tringo_app.TringoInCallService"
-            android:exported="true"
-            android:permission="android.permission.BIND_INCALL_SERVICE">
-            <intent-filter>
-                <action android:name="android.telecom.InCallService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.telecom.IN_CALL_SERVICE_UI"
-                android:value="false" />
-        </service>
-
-        <receiver
-            android:name="com.feni.tringo.tringo_app.TringoCallEndReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.PHONE_STATE" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name="com.feni.tringo.tringo_app.TringoCallReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.PHONE_STATE" />
-            </intent-filter>
-        </receiver>
+        <!-- ❌ For now: remove/disable call services & receivers too (safer) -->
+        <!--
+        <service android:name="com.feni.tringo.tringo_app.TringoCallScreeningService" ... />
+        <service android:name="com.feni.tringo.tringo_app.TringoOverlayService" ... />
+        <service android:name="com.feni.tringo.tringo_app.TringoInCallService" ... />
+        <receiver android:name="com.feni.tringo.tringo_app.TringoCallEndReceiver" ... />
+        <receiver android:name="com.feni.tringo.tringo_app.TringoCallReceiver" ... />
+        -->
 
         <meta-data android:name="flutterEmbedding" android:value="2" />
-
     </application>
 
 </manifest>
@@ -141,27 +79,43 @@
 <!--<manifest xmlns:android="http://schemas.android.com/apk/res/android"-->
 <!--    xmlns:tools="http://schemas.android.com/tools"-->
 <!--    package="com.feni.tringo.tringo_app">-->
+<!--    <queries>-->
+<!--        &lt;!&ndash; WhatsApp consumer + business &ndash;&gt;-->
+<!--        <package android:name="com.whatsapp" />-->
+<!--        <package android:name="com.whatsapp.w4b" />-->
 
-<!--    <uses-sdk-->
-<!--        android:minSdkVersion="21"-->
-<!--        android:targetSdkVersion="35" />-->
+<!--        &lt;!&ndash; whatsapp:// scheme &ndash;&gt;-->
+<!--        <intent>-->
+<!--            <action android:name="android.intent.action.VIEW" />-->
+<!--            <category android:name="android.intent.category.BROWSABLE" />-->
+<!--            <data android:scheme="whatsapp" />-->
+<!--        </intent>-->
 
+<!--        &lt;!&ndash; https scheme (wa.me) &ndash;&gt;-->
+<!--        <intent>-->
+<!--            <action android:name="android.intent.action.VIEW" />-->
+<!--            <category android:name="android.intent.category.BROWSABLE" />-->
+<!--            <data android:scheme="https" />-->
+<!--        </intent>-->
+<!--    </queries>-->
+<!--    &lt;!&ndash; Permissions &ndash;&gt;-->
 <!--    <uses-permission android:name="android.permission.INTERNET" />-->
-<!--    <uses-feature android:name="android.hardware.telephony" android:required="false" />-->
-<!--    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>-->
-<!--    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>-->
-<!--    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>-->
-<!--    <uses-permission android:name="android.permission.CALL_PHONE" />-->
+<!--    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />-->
 
-<!--    &lt;!&ndash; ✅ REQUIRED &ndash;&gt;-->
+<!--    &lt;!&ndash; Location (for Google Map + Geolocator) &ndash;&gt;-->
+<!--    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />-->
+<!--    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />-->
+<!--    &lt;!&ndash; Keep background only if you REALLY need it &ndash;&gt;-->
+<!--    &lt;!&ndash; <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> &ndash;&gt;-->
+
+<!--    &lt;!&ndash; Phone (only if you use these features) &ndash;&gt;-->
+<!--    <uses-feature android:name="android.hardware.telephony" android:required="false" />-->
+<!--    <uses-permission android:name="android.permission.CALL_PHONE" />-->
 <!--    <uses-permission-->
 <!--        android:name="android.permission.READ_PHONE_STATE"-->
 <!--        tools:node="replace" />-->
-
 <!--    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />-->
 <!--    <uses-permission android:name="android.permission.READ_CONTACTS" />-->
-
-<!--    &lt;!&ndash; Keep only if you use it &ndash;&gt;-->
 <!--    <uses-permission android:name="android.permission.READ_CALL_LOG" />-->
 
 <!--    &lt;!&ndash; Overlay &ndash;&gt;-->
@@ -174,22 +128,25 @@
 <!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />-->
 <!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />-->
 
-<!--    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />-->
-
-<!--    &lt;!&ndash; ✅ MUST NEVER EXIST &ndash;&gt;-->
+<!--    &lt;!&ndash; MUST NOT exist &ndash;&gt;-->
 <!--    <uses-permission-->
 <!--        android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"-->
 <!--        tools:node="remove" />-->
 
 <!--    <application-->
-<!--        android:name="android.app.Application"-->
+<!--        android:name="${applicationName}"-->
 <!--        android:icon="@mipmap/ic_launcher"-->
 <!--        android:label="Tringo"-->
 <!--        android:extractNativeLibs="true"-->
 <!--        android:enableOnBackInvokedCallback="true">-->
 
+<!--        &lt;!&ndash; Google Maps API KEY &ndash;&gt;-->
+<!--        <meta-data-->
+<!--            android:name="com.google.android.geo.API_KEY"-->
+<!--            android:value="AIzaSyAoOiPmmtlMJ7dqbk3yW13itbM1B5grOdc" />-->
+
 <!--        <activity-->
-<!--            android:name="com.feni.tringo.tringo_app.MainActivity"-->
+<!--            android:name=".MainActivity"-->
 <!--            android:exported="true"-->
 <!--            android:launchMode="singleTop"-->
 <!--            android:hardwareAccelerated="true"-->
@@ -216,7 +173,6 @@
 <!--            </intent-filter>-->
 <!--        </service>-->
 
-<!--        &lt;!&ndash; ✅ FIX: NOT phoneCall &ndash;&gt;-->
 <!--        <service-->
 <!--            android:name="com.feni.tringo.tringo_app.TringoOverlayService"-->
 <!--            android:exported="false"-->
@@ -229,6 +185,7 @@
 <!--            <intent-filter>-->
 <!--                <action android:name="android.telecom.InCallService" />-->
 <!--            </intent-filter>-->
+
 <!--            <meta-data-->
 <!--                android:name="android.telecom.IN_CALL_SERVICE_UI"-->
 <!--                android:value="false" />-->
@@ -251,8 +208,8 @@
 <!--        </receiver>-->
 
 <!--        <meta-data android:name="flutterEmbedding" android:value="2" />-->
+
 <!--    </application>-->
 
 <!--</manifest>-->
-
 <!-- -->

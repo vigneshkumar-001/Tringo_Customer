@@ -1228,6 +1228,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
                                         children: [
+                                          /* ${serviceCategories.length}*/
                                           Text(
                                             'Services',
                                             style: GoogleFont.Mulish(

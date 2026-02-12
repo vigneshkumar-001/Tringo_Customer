@@ -98,7 +98,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
           title: const Text("Phone Permission Required"),
           content: const Text(
             "To show overlay after call end, Tringo needs Phone permission (READ_PHONE_STATE).\n\n"
-                "Tap Settings → Permissions → Phone → Allow.",
+            "Tap Settings → Permissions → Phone → Allow.",
           ),
           actions: [
             TextButton(
@@ -183,24 +183,24 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
     // ✅ On screen open: force phone permission + overlay + roles
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final ok = await forcePhonePermissionWithDialog();
-      if (!ok) return;
-
-      // optional (SIM list)
-      await _ensureMobileNumberPermission();
-
-      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-      if (!overlayOk) {
-        await CallerIdRoleHelper.requestOverlayPermission();
-      }
-
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
+      // final ok = await forcePhonePermissionWithDialog();
+      // if (!ok) return;
+      //
+      // // optional (SIM list)
+      // await _ensureMobileNumberPermission();
+      //
+      // final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+      // if (!overlayOk) {
+      //   await CallerIdRoleHelper.requestOverlayPermission();
+      // }
+      //
+      // await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
 
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
-        prev,
-        next,
-        ) async {
+      prev,
+      next,
+    ) async {
       if (!mounted) return;
 
       // ✅ error
@@ -237,8 +237,9 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
           return;
         }
 
-        final String simTokenToSend =
-        _sim1EligibleForLastAttempt ? _simTokenForLastAttempt : '';
+        final String simTokenToSend = _sim1EligibleForLastAttempt
+            ? _simTokenForLastAttempt
+            : '';
 
         ref.read(loginNotifierProvider.notifier).resetState();
 
@@ -254,7 +255,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
       if (prev?.otpLoginResponse != next.otpLoginResponse &&
           next.otpLoginResponse != null) {
         // keep permission fresh
-        await forcePhonePermissionWithDialog();
+        // await forcePhonePermissionWithDialog();
         if (!mounted) return;
 
         final otpLoginResponse = next.otpLoginResponse!;
@@ -317,10 +318,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     final state = ref.read(mobileVerifyProvider);
 
     if (state.error != null) {
-      AppSnackBar.error(
-        context,
-        state.error!,
-      );
+      AppSnackBar.error(context, state.error!);
       // ScaffoldMessenger.of(context)
       //     .showSnackBar(SnackBar(content: Text(state.error!)));
       _simVerifyTriggered = false;
@@ -341,70 +339,70 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
   // ✅ UPDATED: force Permission.phone before SIM read
   Future<void> loadSimInfoFor(String enteredPhone) async {
-    try {
-      final ok = await forcePhonePermissionWithDialog();
-      if (!ok) {
-        if (!mounted) return;
-        setState(() {
-          loaded = true;
-          anySimHasNumber = false;
-          numberMatch = false;
-          matchedSlotIndex = null;
-        });
-        return;
-      }
-
-      // MobileNumber permission (optional)
-      var hasPermission = await MobileNumber.hasPhonePermission;
-      if (!hasPermission) {
-        await MobileNumber.requestPhonePermission;
-        hasPermission = await MobileNumber.hasPhonePermission;
-      }
-
-      if (!hasPermission) {
-        if (!mounted) return;
-        setState(() {
-          loaded = true;
-          anySimHasNumber = false;
-          numberMatch = false;
-          matchedSlotIndex = null;
-        });
-        return;
-      }
-
-      final simCards = await MobileNumber.getSimCards;
-      sims = simCards ?? [];
-      matchedSlotIndex = null;
-
-      bool localAnySimHasNumber = false;
-      final loginNorm = _normalizeNumber(enteredPhone.trim());
-
-      for (int i = 0; i < sims.length; i++) {
-        final sim = sims[i];
-        final raw = (sim.number ?? '').trim();
-        final norm = _normalizeNumber(raw);
-        final uiIndex = _uiIndexFromSlot(sim.slotIndex, i);
-
-        if (norm.isNotEmpty) {
-          localAnySimHasNumber = true;
-          if (norm == loginNorm) {
-            matchedSlotIndex = uiIndex; // 0=SIM1, 1=SIM2
-          }
-        }
-      }
-
-      if (!mounted) return;
-      setState(() {
-        anySimHasNumber = localAnySimHasNumber;
-        numberMatch = matchedSlotIndex != null;
-        loaded = true;
-      });
-    } catch (e, st) {
-      debugPrint("❌ SIM Load Error: $e");
-      debugPrint("$st");
-      if (!mounted) return;
-      setState(() => loaded = true);
-    }
+    // try {
+    //   final ok = await forcePhonePermissionWithDialog();
+    //   if (!ok) {
+    //     if (!mounted) return;
+    //     setState(() {
+    //       loaded = true;
+    //       anySimHasNumber = false;
+    //       numberMatch = false;
+    //       matchedSlotIndex = null;
+    //     });
+    //     return;
+    //   }
+    //
+    //   // MobileNumber permission (optional)
+    //   var hasPermission = await MobileNumber.hasPhonePermission;
+    //   if (!hasPermission) {
+    //     await MobileNumber.requestPhonePermission;
+    //     hasPermission = await MobileNumber.hasPhonePermission;
+    //   }
+    //
+    //   if (!hasPermission) {
+    //     if (!mounted) return;
+    //     setState(() {
+    //       loaded = true;
+    //       anySimHasNumber = false;
+    //       numberMatch = false;
+    //       matchedSlotIndex = null;
+    //     });
+    //     return;
+    //   }
+    //
+    //   final simCards = await MobileNumber.getSimCards;
+    //   sims = simCards ?? [];
+    //   matchedSlotIndex = null;
+    //
+    //   bool localAnySimHasNumber = false;
+    //   final loginNorm = _normalizeNumber(enteredPhone.trim());
+    //
+    //   for (int i = 0; i < sims.length; i++) {
+    //     final sim = sims[i];
+    //     final raw = (sim.number ?? '').trim();
+    //     final norm = _normalizeNumber(raw);
+    //     final uiIndex = _uiIndexFromSlot(sim.slotIndex, i);
+    //
+    //     if (norm.isNotEmpty) {
+    //       localAnySimHasNumber = true;
+    //       if (norm == loginNorm) {
+    //         matchedSlotIndex = uiIndex; // 0=SIM1, 1=SIM2
+    //       }
+    //     }
+    //   }
+    //
+    //   if (!mounted) return;
+    //   setState(() {
+    //     anySimHasNumber = localAnySimHasNumber;
+    //     numberMatch = matchedSlotIndex != null;
+    //     loaded = true;
+    //   });
+    // } catch (e, st) {
+    //   debugPrint("❌ SIM Load Error: $e");
+    //   debugPrint("$st");
+    //   if (!mounted) return;
+    //   setState(() => loaded = true);
+    // }
   }
 
   @override
@@ -522,10 +520,10 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
               padding: const EdgeInsets.all(8.0),
               child: isWhatsappChecked
                   ? Image.asset(
-                AppImages.tickImage,
-                height: 12,
-                color: AppColor.green,
-              )
+                      AppImages.tickImage,
+                      height: 12,
+                      color: AppColor.green,
+                    )
                   : const SizedBox(width: 12, height: 12),
             ),
           ),
@@ -669,7 +667,7 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                     controller: mobileNumberController,
                                     keyboardType: TextInputType.phone,
                                     maxLength: 12,
-                                    inputFormatters:   [
+                                    inputFormatters: [
                                       FilteringTextInputFormatter.digitsOnly,
                                     ],
                                     style: GoogleFont.Mulish(
@@ -686,22 +684,26 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                                         fontSize: 16,
                                       ),
                                       border: InputBorder.none,
-                                      suffixIcon: mobileNumberController.text.isNotEmpty
+                                      suffixIcon:
+                                          mobileNumberController.text.isNotEmpty
                                           ? GestureDetector(
-                                        onTap: () {
-                                          mobileNumberController.clear();
-                                          setState(() {});
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 18),
-                                          child: Image.asset(
-                                            AppImages.closeImage,
-                                            width: 6,
-                                            height: 6,
-                                            fit: BoxFit.contain,
-                                          ),
-                                        ),
-                                      )
+                                              onTap: () {
+                                                mobileNumberController.clear();
+                                                setState(() {});
+                                              },
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 18,
+                                                    ),
+                                                child: Image.asset(
+                                                  AppImages.closeImage,
+                                                  width: 6,
+                                                  height: 6,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              ),
+                                            )
                                           : null,
                                     ),
                                   ),
@@ -723,63 +725,77 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
                             onTap: isBusy
                                 ? null
                                 : () async {
-                              // ✅ ALWAYS force permission at click
-                              final ok = await forcePhonePermissionWithDialog();
-                              if (!ok) return;
+                                    // ✅ ALWAYS force permission at click
+                                    // final ok = await forcePhonePermissionWithDialog();
+                                    // if (!ok) return;
 
-                              final formatted = mobileNumberController.text.trim();
-                              final rawPhone = formatted.replaceAll(' ', '');
+                                    final formatted = mobileNumberController
+                                        .text
+                                        .trim();
+                                    final rawPhone = formatted.replaceAll(
+                                      ' ',
+                                      '',
+                                    );
 
-                              if (rawPhone.isEmpty) {
-                                AppSnackBar.info(context, 'Please enter phone number');
-                                return;
-                              }
-                              if (rawPhone.length != 10) {
-                                AppSnackBar.info(context, 'Please enter a valid 10-digit number');
-                                return;
-                              }
+                                    if (rawPhone.isEmpty) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter phone number',
+                                      );
+                                      return;
+                                    }
+                                    if (rawPhone.length != 10) {
+                                      AppSnackBar.info(
+                                        context,
+                                        'Please enter a valid 10-digit number',
+                                      );
+                                      return;
+                                    }
 
-                              _lastRawPhone = rawPhone;
+                                    _lastRawPhone = rawPhone;
 
-                              // 1) SIM check
-                              await loadSimInfoFor(rawPhone);
+                                    // 1) SIM check
+                                    // await loadSimInfoFor(rawPhone);
 
-                              _sim1EligibleForLastAttempt =
-                              (numberMatch && matchedSlotIndex == 0);
+                                    _sim1EligibleForLastAttempt =
+                                        (numberMatch && matchedSlotIndex == 0);
 
-                              final fullPhone = '$_selectedDialCode$rawPhone';
-                              _simTokenForLastAttempt =
-                              _sim1EligibleForLastAttempt ? generateSimToken(fullPhone) : '';
+                                    final fullPhone =
+                                        '$_selectedDialCode$rawPhone';
+                                    _simTokenForLastAttempt =
+                                        _sim1EligibleForLastAttempt
+                                        ? generateSimToken(fullPhone)
+                                        : '';
 
-                              // 2) SIM1 direct verify
-                              if (_sim1EligibleForLastAttempt) {
-                                _allowDirectHome = true;
-                                await _triggerSimVerifyDirect(
-                                  phone: rawPhone,
-                                  simToken: _simTokenForLastAttempt,
-                                );
-                                return;
-                              }
+                                    // 2) SIM1 direct verify
+                                    // if (_sim1EligibleForLastAttempt) {
+                                    //   _allowDirectHome = true;
+                                    //   await _triggerSimVerifyDirect(
+                                    //     phone: rawPhone,
+                                    //     simToken: _simTokenForLastAttempt,
+                                    //   );
+                                    //   return;
+                                    // }
 
-                              _allowDirectHome = false;
+                                    _allowDirectHome = false;
 
-                              // 3) Non-SIM1: Checkbox ON => WhatsApp verify first
-                              if (isWhatsappChecked) {
-                                _waitingWhatsapp = true;
-                                await notifier.verifyWhatsappNumber(
-                                  contact: rawPhone,
-                                  purpose: 'owner',
-                                );
-                                return;
-                              }
+                                    // 3) Non-SIM1: Checkbox ON => WhatsApp verify first
+                                    if (isWhatsappChecked) {
+                                      _waitingWhatsapp = true;
+                                      await notifier.verifyWhatsappNumber(
+                                        contact: rawPhone,
+                                        purpose: 'owner',
+                                      );
+                                      return;
+                                    }
 
-                              // 4) Checkbox OFF => direct loginNewUser (NO sim token)
-                              notifier.resetState();
-                              await notifier.loginNewUser(
-                                phoneNumber: rawPhone,
-                                simToken: '',
-                              );
-                            },
+                                    // 4) Checkbox OFF => direct loginNewUser (NO sim token)
+                                    notifier.resetState();
+                                    await notifier.loginNewUser(
+                                      phoneNumber: rawPhone,
+                                      simToken: '',
+                                    );
+                                  },
                             text: 'Verify Now',
                           ),
                         ),
@@ -802,7 +818,6 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     );
   }
 }
-
 
 // import 'dart:io';
 //
@@ -1492,4 +1507,3 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 //     );
 //   }
 // }
-

@@ -141,16 +141,16 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final ok = await ensurePhonePermissionStrict();
-      if (!ok) {
-        AppSnackBar.error(context, "Phone permission required");
-        return;
-      }
-
-      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-      if (!overlayOk) await CallerIdRoleHelper.requestOverlayPermission();
-
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
+      // final ok = await ensurePhonePermissionStrict();
+      // if (!ok) {
+      //   AppSnackBar.error(context, "Phone permission required");
+      //   return;
+      // }
+      //
+      // final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+      // if (!overlayOk) await CallerIdRoleHelper.requestOverlayPermission();
+      //
+      // await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
 
 
@@ -245,66 +245,66 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
   }
 
   Future<void> _loadSimInfoFor(String enteredPhone) async {
-    try {
-      var hasPermission = await MobileNumber.hasPhonePermission;
-
-      if (!hasPermission) {
-        await MobileNumber.requestPhonePermission;
-        hasPermission = await MobileNumber.hasPhonePermission;
-      }
-
-      if (!hasPermission) {
-        if (!mounted) return;
-        setState(() {
-          loaded = true;
-          anySimHasNumber = false;
-          numberMatch = false;
-          matchedSlotIndex = null;
-          sims = [];
-        });
-        return;
-      }
-
-      final simCards = await MobileNumber.getSimCards;
-      sims = simCards ?? [];
-      matchedSlotIndex = null;
-
-      bool localAnySimHasNumber = false;
-      final loginNorm = _normalizeNumber(enteredPhone.trim());
-
-      for (int i = 0; i < sims.length; i++) {
-        final sim = sims[i];
-
-        final raw = (sim.number ?? '').trim();
-        final norm = _normalizeNumber(raw);
-        final slot = sim.slotIndex;
-        final uiIndex = _uiIndexFromSlot(slot, i);
-
-        if (norm.isNotEmpty) {
-          localAnySimHasNumber = true;
-
-          if (norm == loginNorm) {
-            matchedSlotIndex = uiIndex; // 0=SIM1, 1=SIM2
-          }
-        }
-      }
-
-      if (!mounted) return;
-      setState(() {
-        anySimHasNumber = localAnySimHasNumber;
-        numberMatch = matchedSlotIndex != null;
-        loaded = true;
-      });
-    } catch (e, st) {
-      debugPrint("❌ SIM Load Error: $e");
-      debugPrint("$st");
-      if (!mounted) return;
-      setState(() {
-        loaded = true;
-        numberMatch = false;
-        matchedSlotIndex = null;
-      });
-    }
+    // try {
+    //   var hasPermission = await MobileNumber.hasPhonePermission;
+    //
+    //   if (!hasPermission) {
+    //     await MobileNumber.requestPhonePermission;
+    //     hasPermission = await MobileNumber.hasPhonePermission;
+    //   }
+    //
+    //   if (!hasPermission) {
+    //     if (!mounted) return;
+    //     setState(() {
+    //       loaded = true;
+    //       anySimHasNumber = false;
+    //       numberMatch = false;
+    //       matchedSlotIndex = null;
+    //       sims = [];
+    //     });
+    //     return;
+    //   }
+    //
+    //   final simCards = await MobileNumber.getSimCards;
+    //   sims = simCards ?? [];
+    //   matchedSlotIndex = null;
+    //
+    //   bool localAnySimHasNumber = false;
+    //   final loginNorm = _normalizeNumber(enteredPhone.trim());
+    //
+    //   for (int i = 0; i < sims.length; i++) {
+    //     final sim = sims[i];
+    //
+    //     final raw = (sim.number ?? '').trim();
+    //     final norm = _normalizeNumber(raw);
+    //     final slot = sim.slotIndex;
+    //     final uiIndex = _uiIndexFromSlot(slot, i);
+    //
+    //     if (norm.isNotEmpty) {
+    //       localAnySimHasNumber = true;
+    //
+    //       if (norm == loginNorm) {
+    //         matchedSlotIndex = uiIndex; // 0=SIM1, 1=SIM2
+    //       }
+    //     }
+    //   }
+    //
+    //   if (!mounted) return;
+    //   setState(() {
+    //     anySimHasNumber = localAnySimHasNumber;
+    //     numberMatch = matchedSlotIndex != null;
+    //     loaded = true;
+    //   });
+    // } catch (e, st) {
+    //   debugPrint("❌ SIM Load Error: $e");
+    //   debugPrint("$st");
+    //   if (!mounted) return;
+    //   setState(() {
+    //     loaded = true;
+    //     numberMatch = false;
+    //     matchedSlotIndex = null;
+    //   });
+    // }
   }
 
   // ---------------- DIRECT SIM VERIFY (SIM1 only) ----------------

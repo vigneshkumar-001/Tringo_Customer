@@ -124,7 +124,8 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
     // if (index == _selectedIndex) return;
     switch (i) {
       case 0:
-        _pushCategory('Home');
+        _goTo(0);
+        // _pushCategory('Home');
         break; // Home
       case 1:
         openSearchShell(context);
