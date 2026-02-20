@@ -3,11 +3,12 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.feni.tringo.tringo_app"
-    compileSdk = 35
+    compileSdk = 36
 //        flutter.compileSdkVersion
     ndkVersion =  "27.0.12077973"
 //        flutter.ndkVersion
@@ -15,6 +16,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -29,7 +31,7 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
 //            flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
 //            flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -55,7 +57,8 @@ dependencies {
 
     implementation("com.google.android.material:material:1.12.0")
 //    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-
+    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     // ✅ ADD THIS (for loading imageUrl in overlay)
     implementation("io.coil-kt:coil:2.6.0")
 }
