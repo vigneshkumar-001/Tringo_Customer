@@ -2,24 +2,39 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/smart_connect_history.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 
-import '../../../../Core/Utility/app_color.dart';
-import '../../../../Core/Utility/google_font.dart';
-import '../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
+import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/Widgets/common_container.dart';
 
-class CreateSmartConnect extends StatefulWidget {
+class CreateSmartConnect extends ConsumerStatefulWidget {
   final String? title;
-  const CreateSmartConnect({super.key, this.title});
+  final String? listingId;
+  final String? listingType;
+  final String? shopId;
+
+  const CreateSmartConnect({
+    super.key,
+    this.title,
+    this.listingId,
+    this.listingType,
+    this.shopId,
+  });
 
   @override
-  State<CreateSmartConnect> createState() => _CreateSmartConnectState();
+  ConsumerState<CreateSmartConnect> createState() => _CreateSmartConnectState();
 }
 
-class _CreateSmartConnectState extends State<CreateSmartConnect> {
-  final _controller = TextEditingController();
+class _CreateSmartConnectState extends ConsumerState<CreateSmartConnect> {
+  final _productController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
   final _focusNode = FocusNode();
   Timer? _debounce;
   List<_Suggest> _view = [];
@@ -43,23 +58,31 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
   }
 
   void _onChanged(String q) {
-    // we don't need debounce or filtering anymore
     _debounce?.cancel();
     setState(() {
-      _view = const []; // keep suggestions empty
+      _view = const [];
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _productController.dispose();
+    _descriptionController.dispose();
     _focusNode.dispose();
     _debounce?.cancel();
     super.dispose();
   }
 
   @override
+  void initState() {
+    super.initState();
+    _productController.text = widget.title ?? '';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final notifier = ref.read(smartConnectNotifierProvider.notifier);
+    final state = ref.watch(smartConnectNotifierProvider);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -112,7 +135,8 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                   child: Stack(
                     children: [
                       TextField(
-                        controller: _controller,
+                        readOnly: true,
+                        controller: _productController,
                         focusNode: _focusNode,
                         onChanged: _onChanged,
                         textAlignVertical: TextAlignVertical.center,
@@ -129,16 +153,16 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                             color: AppColor.lightGray,
                             fontSize: 16,
                           ),
-                          suffixIcon: _controller.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    _controller.clear();
-                                    _onChanged('');
-                                    setState(() {});
-                                  },
-                                )
-                              : null,
+                          // suffixIcon: _controller.text.isNotEmpty
+                          //     ? IconButton(
+                          //         icon: const Icon(Icons.clear, size: 18),
+                          //         onPressed: () {
+                          //           _controller.clear();
+                          //           _onChanged('');
+                          //           setState(() {});
+                          //         },
+                          //       )
+                          //     : null,
                         ),
                         style: GoogleFont.Mulish(
                           fontSize: 16,
@@ -221,7 +245,7 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                   child: Stack(
                     children: [
                       TextField(
-                        controller: _controller,
+                        controller: _descriptionController,
                         focusNode: _focusNode,
                         onChanged: _onChanged,
                         textAlignVertical: TextAlignVertical.center,
@@ -230,7 +254,7 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                         decoration: InputDecoration(
                           isCollapsed: true,
                           contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
+                            vertical: 25,
                             horizontal: 20,
                           ),
 
@@ -240,11 +264,11 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                             color: AppColor.borderGray,
                             fontSize: 14,
                           ),
-                          suffixIcon: _controller.text.isNotEmpty
+                          suffixIcon: _descriptionController.text.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear, size: 18),
                                   onPressed: () {
-                                    _controller.clear();
+                                    _descriptionController.clear();
                                     _onChanged('');
                                     setState(() {});
                                   },
@@ -301,78 +325,7 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                   ],
                 ),
                 SizedBox(height: 15),
-                // Container(
-                //   decoration: BoxDecoration(
-                //     color: AppColor.white, // Background color
-                //     borderRadius: BorderRadius.circular(35),
-                //     border: Border.all(color: AppColor.borderGray, width: 1.5),
-                //     boxShadow: [
-                //       BoxShadow(
-                //         color: Colors.black.withOpacity(
-                //           0.05,
-                //         ), // subtle outer shadow
-                //         blurRadius: 8,
-                //         offset: Offset(0, 2),
-                //       ),
-                //     ],
-                //   ),
-                //   child: Stack(
-                //     children: [
-                //       Padding(
-                //         padding: const EdgeInsets.symmetric(
-                //           horizontal: 18,
-                //           vertical: 15,
-                //         ),
-                //         child: Row(
-                //           mainAxisAlignment: MainAxisAlignment.center,
-                //           children: [
-                //             Image.asset(AppImages.galleryImage, height: 20),
-                //             SizedBox(width: 10),
-                //             Text(
-                //               'Add Image',
-                //               style: GoogleFont.Mulish(
-                //                 color: AppColor.borderGray,
-                //                 fontSize: 16,
-                //                 fontWeight: FontWeight.w600,
-                //                 shadows: [
-                //                   Shadow(
-                //                     offset: Offset(
-                //                       0,
-                //                       4,
-                //                     ), // horizontal & vertical shadow offset
-                //                     blurRadius: 9, // softness of shadow
-                //                     color: AppColor
-                //                         .borderGray, // shadow color with opacity
-                //                   ),
-                //                 ],
-                //               ),
-                //             ),
-                //           ],
-                //         ),
-                //       ),
-                //       // Optional: inner shadow overlay
-                //       Positioned.fill(
-                //         child: IgnorePointer(
-                //           child: Container(
-                //             decoration: BoxDecoration(
-                //               borderRadius: BorderRadius.circular(35),
-                //               gradient: LinearGradient(
-                //                 begin: Alignment.topCenter,
-                //                 end: Alignment.bottomCenter,
-                //                 colors: [
-                //                   AppColor.mediumBlue.withOpacity(0.05),
-                //                   Colors.transparent,
-                //                   AppColor.mediumBlue.withOpacity(0.05),
-                //                 ],
-                //                 stops: [0, 0.4, 1],
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //       ),
-                //     ],
-                //   ),
-                // ),
+
                 GestureDetector(
                   onTap: _selectedImage == null ? _pickImage : null,
                   child: Container(
@@ -495,15 +448,59 @@ class _CreateSmartConnectState extends State<CreateSmartConnect> {
                 Center(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(50),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SmartConnectHistory(),
+                    onTap: state.isLoading
+                        ? null
+                        : () async {
+                            final attachments = <Map<String, String>>[];
+
+                            final err = await notifier.createSmartConnect(
+                              listingId: widget.listingId ?? '',
+                              listingType: widget.listingType ?? '',
+                              shopId: widget.shopId ?? '',
+                              description: _descriptionController.text.trim(),
+                              attachments: attachments,
+                            );
+
+                            if (!context.mounted) return;
+
+                            if (err == null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SmartConnectHistory(),
+                                ),
+                              );
+                              _productController.clear();
+
+                              setState(() {
+                                _selectedImage = null;
+                                _view = const [];
+                              });
+                            } else {
+                              AppSnackBar.error(context, err);
+                            }
+                          },
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Opacity(
+                          opacity: state.isLoading ? 0 : 1.0, // 👈 value kammi
+                          child: Image.asset(AppImages.aiButton, height: 50),
                         ),
-                      );
-                    },
-                    child: Image.asset(AppImages.aiButton, height: 50),
+
+                        if (state.isLoading)
+                          const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],

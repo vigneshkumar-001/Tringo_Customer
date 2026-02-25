@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../app_go_routes.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
 import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
@@ -6,8 +8,8 @@ import '../../../Presentation/OnBoarding/Screens/Search Screen/Screens/search_sc
 import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Smart Connect/Smart_connect_search.dart';
-import '../../../Presentation/OnBoarding/Screens/Smart Connect/smart_connect_details.dart';
+import '../../../Presentation/OnBoarding/Screens/Smart Connect/Screens/Smart_connect_search.dart';
+import '../../../Presentation/OnBoarding/Screens/Smart Connect/Screens/smart_connect_details.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';
@@ -15,7 +17,12 @@ import '../filter_popup_screen.dart';
 
 class SmartConnectBottombar extends StatefulWidget {
   final int initialIndex;
-  const SmartConnectBottombar({super.key, this.initialIndex = 0});
+  final String requestedId;
+  const SmartConnectBottombar({
+    super.key,
+    this.initialIndex = 0,
+    required this.requestedId,
+  });
 
   @override
   State<SmartConnectBottombar> createState() => _SmartConnectBottombarState();
@@ -39,7 +46,7 @@ class _SmartConnectBottombarState extends State<SmartConnectBottombar> {
       HomeScreen(), // 0
       SmartConnectSearch(), // 1
       _ExploreScreenStub(), // 2
-      SmartConnectDetails(), // 3
+      SmartConnectDetails(requestedId: widget.requestedId), // 3
     ];
   }
 
@@ -81,19 +88,11 @@ class _SmartConnectBottombarState extends State<SmartConnectBottombar> {
 
   /*
   void _pushCategory(String name) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(), // add this param to your page
-      ),
-
-    );
+    if (mounted) context.go(AppRoutes.homeShellPath);
   }
 */
   void _pushCategory(String name) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => HomeScreen()),
-      (route) => false, // remove everything below
-    );
+    if (mounted) context.go(AppRoutes.homeShellPath);
   }
 
   // map taps from the bar

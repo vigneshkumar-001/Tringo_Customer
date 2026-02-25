@@ -29,6 +29,9 @@ class ApiUrl {
   static const String referralHistory = "${base}api/v1/wallet/referral";
   static const String reviewHistory = "${base}api/v1/reviews/history";
   static const String reviewCreate = "${base}api/v1/reviews";
+  static const String smartConnectGuide = "${base}api/smart-connect/guide";
+  static const String smartConnect = "${base}api/smart-connect";
+
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";
@@ -58,6 +61,12 @@ class ApiUrl {
   static String markCallOrMapEnquiry({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/track";
   }
+  static String smartConnectHistory({required int page,required int limit,}) {
+    return "${base}api/smart-connect/history?page=$page&limit=$limit";
+  }
+  static String smartConnectDetails({required String requestId, }) {
+    return "${base}api/smart-connect/$requestId";
+  }
 
   static String surpriseStatusCheck({
     required double lng,
@@ -76,9 +85,9 @@ class ApiUrl {
     return "${base}api/v1/wallet/history?type=$type";
   }
 
-  // static String sendMessage({required String ticketId,  }) {
-  //   return "${base}api/v1/support/tickets/$ticketId/messages";
-  // }
+   static String smartConnectSearch({required String search,  }) {
+     return "${base}api/smart-connect/search?term=$search";
+   }
 
   static String shopList({required String kind, required String highlightId}) {
     return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";

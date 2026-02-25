@@ -27,6 +27,11 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/f
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_create_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_details_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_history_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_search_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Model/surprise_offer_response.dart';
@@ -34,7 +39,6 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Mode
 import '../../Core/Utility/app_prefs.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_verify_response.dart';
-import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_profile_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';
@@ -42,7 +46,6 @@ import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_ver
 import '../../Presentation/OnBoarding/Screens/Privacy Policy/model/terms_and_condition_model.dart';
 import '../../Presentation/OnBoarding/Screens/Profile Screen/Model/delete_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
-import '../../Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/create_support_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/send_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
@@ -338,7 +341,6 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
       AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
@@ -437,7 +439,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -720,9 +722,9 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e,st) {
+    } catch (e, st) {
       AppLogger.log.e('$e/n$st');
-      print('$e/n$st');
+      AppLogger.log.e('$e/n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -755,8 +757,7 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e,st) {
-      print('$e\n$st');
+    } catch (e, st) {
       AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
@@ -838,8 +839,6 @@ class ApiDataSource extends BaseApiDataSource {
     } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
-      print(e);
-      print(st);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1227,7 +1226,6 @@ class ApiDataSource extends BaseApiDataSource {
     } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
-      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1308,7 +1306,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1388,7 +1386,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1429,9 +1427,9 @@ class ApiDataSource extends BaseApiDataSource {
 
       return Left(ServerFailure("Request failed"));
     } catch (e, st) {
-      AppLogger.log.e('${e}\n\n${st}');
+      AppLogger.log.e('$e\n\n$st');
 
-      print('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
 
       return Left(ServerFailure(e.toString()));
     }
@@ -1801,8 +1799,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
-      print('${e}\n${st}');
-      AppLogger.log.e('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1814,11 +1811,11 @@ class ApiDataSource extends BaseApiDataSource {
     required String offerId,
   }) async {
     try {
-      final url = ApiUrl.surpriseClaimed(shopId: shopId, );
+      final url = ApiUrl.surpriseClaimed(shopId: shopId);
 
       final response = await Request.sendRequest(
         url,
-        {"lat": lat, "lng": lng,"offerId" :offerId },
+        {"lat": lat, "lng": lng, "offerId": offerId},
         'Post',
         true,
       );
@@ -1843,8 +1840,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
-      print('${e}\n${st}');
-      AppLogger.log.e('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1875,8 +1871,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
-      print('${e}\n${st}');
-      AppLogger.log.e('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1966,7 +1961,6 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
       AppLogger.log.e(e);
-      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -2047,6 +2041,182 @@ class ApiDataSource extends BaseApiDataSource {
         }
         return Left(ServerFailure(response.message ?? "Unknown Dio error"));
       }
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectResponse>> getSmartConnectGuide() async {
+    try {
+      final url = ApiUrl.smartConnectGuide;
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectSearchResponse>> getSmartConnectSearch({
+    required String search,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnectSearch(search: search);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectSearchResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectCreateResponse>> createSmartConnect({
+    required String listingId,
+    required String listingType,
+    required String shopId,
+    required String description,
+    required List<Map<String, String>> attachments,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnect;
+      final body = {
+        "listingId": listingId,
+        "listingType": listingType,
+        "shopId": shopId,
+        "description": description,
+        "attachments": attachments,
+      };
+      final response = await Request.sendRequest(url, body, 'POST', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectCreateResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectHistoryResponse>> getSmartConnectHistory({
+    required int page,
+    required int limit,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnectHistory(limit: 0, page: 0);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectHistoryResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+
+  Future<Either<Failure, SmartConnectDetailsResponse>> getSmartConnectDetails({
+    required String requestId,
+
+  }) async {
+    try {
+      final url = ApiUrl.smartConnectDetails( requestId : requestId,  );
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectDetailsResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
       AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));

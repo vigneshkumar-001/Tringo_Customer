@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
 import 'dart:async';
 import 'dart:convert';
@@ -10,7 +10,6 @@ import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -22,6 +21,8 @@ import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_guide.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 
 import '../../../../../Core/Utility/app_snackbar.dart';
@@ -39,8 +40,6 @@ import '../../wallet/Screens/qr_scan_screen.dart';
 import '../../wallet/Screens/send_screen.dart';
 import '../../wallet/Screens/wallet_screens.dart';
 
-final callerIdAskedProvider = StateProvider<bool>((ref) => false);
-
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -53,17 +52,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   int selectedIndex = 0;
   int selectedServiceIndex = 0;
 
-  late final TextEditingController textController;
   final ScrollController _homeScrollCtrl = ScrollController();
 
   String? currentAddress;
   bool _locBusy = false;
+  bool _isHomeRefreshRunning = false;
+  ({double lat, double lng}) _lastKnownLoc = (lat: 0.0, lng: 0.0);
 
   bool _shopsPressed = false;
   bool _servicesPressed = false;
 
   StreamSubscription<ServiceStatus>? _serviceSub;
-  StreamSubscription<Position>? _posSub;
 
   /// ✅ Disable message only after SUCCESS
   final Set<String> _disabledMessageShopIds = {};
@@ -83,7 +82,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    textController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
@@ -92,19 +90,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
       await CallerIdRoleHelper.maybeAskOnce(ref: ref);
       await _maybeShowSystemCallerIdPopupOnce();
+      ref.read(smartConnectNotifierProvider.notifier).fetchSmartConnectGuide();
     });
 
-    Future.microtask(() async {
-      final loc = await _initLocationFlow();
-      await ref
-          .read(homeNotifierProvider.notifier)
-          .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
-
-      // ✅ Ads error should never kick user to NoData screen
-      ref
-          .read(homeNotifierProvider.notifier)
-          .advertisements(placement: 'HOME_TOP', lang: 0.0, lat: 0.0);
-    });
+    Future.microtask(() => _refreshHomeData(refreshLocation: true));
 
     _listenServiceChanges();
   }
@@ -122,8 +111,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _serviceSub?.cancel();
-    _posSub?.cancel();
-    textController.dispose();
     _homeScrollCtrl.dispose();
     super.dispose();
   }
@@ -168,6 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Future<({double lat, double lng})> _initLocationFlow() async {
     if (!mounted) return (lat: 0.0, lng: 0.0);
+    if (_locBusy) return _lastKnownLoc;
 
     setState(() {
       _locBusy = true;
@@ -185,8 +173,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           serviceEnabled = await Geolocator.isLocationServiceEnabled();
         }
         if (!serviceEnabled) {
-          if (mounted)
+          if (mounted) {
             setState(() => currentAddress = "Location services disabled");
+          }
           return (lat: 0.0, lng: 0.0);
         }
       }
@@ -197,8 +186,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
 
       if (perm == LocationPermission.denied) {
-        if (mounted)
+        if (mounted) {
           setState(() => currentAddress = "Location permission denied");
+        }
         return (lat: 0.0, lng: 0.0);
       }
 
@@ -207,8 +197,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         if (open == true) {
           await Geolocator.openAppSettings();
         }
-        if (mounted)
+        if (mounted) {
           setState(() => currentAddress = "Permission permanently denied");
+        }
         return (lat: 0.0, lng: 0.0);
       }
 
@@ -227,6 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         });
       }
 
+      _lastKnownLoc = (lat: pos.latitude, lng: pos.longitude);
       return (lat: pos.latitude, lng: pos.longitude);
     } catch (e, st) {
       AppLogger.log.e(e);
@@ -324,6 +316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
 
     if (result == null || result.trim().isEmpty) return;
+    if (!context.mounted) return;
 
     final payload = QrScanPayload.fromScanValue(result);
     final toUid = (payload.toUid ?? '').trim();
@@ -433,13 +426,204 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _refreshAll() async {
-    final loc = await _initLocationFlow();
-    await ref
-        .read(homeNotifierProvider.notifier)
-        .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
-    ref
-        .read(homeNotifierProvider.notifier)
-        .advertisements(placement: 'HOME_TOP', lang: 0.0, lat: 0.0);
+    await _refreshHomeData(refreshLocation: true);
+  }
+
+  Future<void> _refreshHomeData({required bool refreshLocation}) async {
+    if (_isHomeRefreshRunning) return;
+    _isHomeRefreshRunning = true;
+    try {
+      final loc = refreshLocation
+          ? await _initLocationFlow()
+          : (_lastKnownLoc.lat == 0.0 && _lastKnownLoc.lng == 0.0)
+          ? await _initLocationFlow()
+          : _lastKnownLoc;
+
+      await ref
+          .read(homeNotifierProvider.notifier)
+          .fetchHomeDetails(lat: loc.lat, lng: loc.lng);
+
+      if (!mounted) return;
+      ref
+          .read(homeNotifierProvider.notifier)
+          .advertisements(placement: 'HOME_TOP', lang: loc.lng, lat: loc.lat);
+    } finally {
+      _isHomeRefreshRunning = false;
+    }
+  }
+
+  List<Widget> _buildProductCards(
+    List<dynamic> filteredShops,
+    homeState state,
+  ) {
+    return List.generate(filteredShops.length, (index) {
+      final shops = filteredShops[index];
+
+      final isThisCardLoading =
+          state.isEnquiryLoading && state.activeEnquiryId == shops.id;
+
+      final hasMessaged = _disabledMessageShopIds.contains(shops.id);
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: CommonContainer.servicesContainer(
+          whatsAppOnTap: () async {
+            await MapUrls.openWhatsapp(
+              message: 'hi',
+              context: context,
+              phone: shops.primaryPhone,
+            );
+            await ref
+                .read(homeNotifierProvider.notifier)
+                .markCallOrLocation(
+                  type: 'WHATSAPP',
+                  shopId: shops.id.toString(),
+                );
+          },
+          fireTooltip: 'App Offer 5%',
+          isMessageLoading: isThisCardLoading,
+          messageDisabled: hasMessaged,
+          messageOnTap: () async {
+            if (hasMessaged || isThisCardLoading) {
+              return;
+            }
+
+            final ok = await ref
+                .read(homeNotifierProvider.notifier)
+                .putEnquiry(
+                  context: context,
+                  serviceId: '',
+                  productId: '',
+                  message: '',
+                  shopId: shops.id,
+                );
+
+            if (!mounted) return;
+
+            if (ok) {
+              setState(() => _disabledMessageShopIds.add(shops.id));
+            }
+          },
+          callTap: () async {
+            await MapUrls.openDialer(context, shops.primaryPhone);
+            await ref
+                .read(homeNotifierProvider.notifier)
+                .markCallOrLocation(type: 'CALL', shopId: shops.id.toString());
+          },
+          horizontalDivider: true,
+          heroTag: shopHeroTag(
+            index,
+            shops.englishName.toString(),
+            section: 'shops-list',
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ServiceAndShopsDetails(shopId: shops.id, initialIndex: 4),
+              ),
+            );
+          },
+          Verify: shops.isTrusted,
+          image: shops.primaryImageUrl.toString(),
+          companyName: shops.englishName,
+          location: '${shops.addressEn}, ${shops.city}, ${shops.state}',
+          fieldName: shops.distanceLabel.toString(),
+          ratingStar: shops.rating.toString(),
+          ratingCount: shops.ratingCount.toString(),
+          time: shops.closeTime.toString(),
+        ),
+      );
+    });
+  }
+
+  List<Widget> _buildServiceCards(
+    List<dynamic> filteredServiceShops,
+    homeState state,
+  ) {
+    return List.generate(filteredServiceShops.length, (index) {
+      final services = filteredServiceShops[index];
+
+      final isThisCardLoading =
+          state.isEnquiryLoading && state.activeEnquiryId == services.id;
+
+      final hasMessaged = _disabledMessageServiceIds.contains(services.id);
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: CommonContainer.servicesContainer(
+          callTap: () async {
+            await MapUrls.openDialer(context, services.primaryPhone);
+            await ref
+                .read(homeNotifierProvider.notifier)
+                .markCallOrLocation(
+                  type: 'CALL',
+                  shopId: services.id.toString(),
+                );
+          },
+          horizontalDivider: true,
+          fireOnTap: () {},
+          isMessageLoading: isThisCardLoading,
+          messageDisabled: hasMessaged,
+          messageOnTap: () async {
+            if (hasMessaged || isThisCardLoading) {
+              return;
+            }
+
+            final ok = await ref
+                .read(homeNotifierProvider.notifier)
+                .putEnquiry(
+                  context: context,
+                  serviceId: '',
+                  productId: '',
+                  message: '',
+                  shopId: services.id,
+                );
+
+            if (!mounted) return;
+
+            if (ok) {
+              setState(() => _disabledMessageServiceIds.add(services.id));
+            }
+          },
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServiceAndShopsDetails(
+                  type: 'services',
+                  shopId: services.id,
+                  initialIndex: 3,
+                ),
+              ),
+            );
+          },
+          whatsAppOnTap: () async {
+            await MapUrls.openWhatsapp(
+              message: 'hi',
+              context: context,
+              phone: services.primaryPhone,
+            );
+            await ref
+                .read(homeNotifierProvider.notifier)
+                .markCallOrLocation(
+                  type: 'WHATSAPP',
+                  shopId: services.id.toString(),
+                );
+          },
+          Verify: services.isTrusted,
+          image: services.primaryImageUrl.toString(),
+          companyName:
+              '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
+          location: '${services.addressEn},${services.city},${services.state} ',
+          fieldName: services.distanceLabel,
+          ratingStar: services.rating.toString(),
+          ratingCount: services.ratingCount.toString(),
+          time: services.closeTime.toString(),
+        ),
+      );
+    });
   }
 
   @override
@@ -539,8 +723,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ? servicesList
         : servicesList.where((s) => s.category == selectedServiceSlug).toList();
 
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         body: SafeArea(
           child: RefreshIndicator(
@@ -867,22 +1051,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ),
                             const SizedBox(width: 14),
                             InkWell(
-                              onTap: () => _openQrAndAskAction(context),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 13,
-                                  vertical: 15,
-                                ),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColor.white,
-                                ),
-                                child: Image.asset(
-                                  AppImages.qRColor,
-                                  height: 23,
-                                ),
+                              onTap: () async {
+                                // 1) Scroll HomeScreen to top (nice quick animation)
+                                if (_homeScrollCtrl.hasClients) {
+                                  await _homeScrollCtrl.animateTo(
+                                    0,
+                                    duration: const Duration(milliseconds: 350),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
+
+                                // 2) Slide the next page up from bottom
+                                if (!mounted) return;
+                                await Navigator.of(
+                                  context,
+                                ).push(slideUpRoute(SmartConnectGuide()));
+                              },
+                              child: Image.asset(
+                                AppImages.aiGuideImage,
+                                height: 45,
                               ),
                             ),
+                            // InkWell(
+                            //   onTap: () => _openQrAndAskAction(context),
+                            //   child: Container(
+                            //     padding: const EdgeInsets.symmetric(
+                            //       horizontal: 13,
+                            //       vertical: 15,
+                            //     ),
+                            //     decoration: BoxDecoration(
+                            //       shape: BoxShape.circle,
+                            //       color: AppColor.white,
+                            //     ),
+                            //     child: Image.asset(
+                            //       AppImages.qRColor,
+                            //       height: 23,
+                            //     ),
+                            //   ),
+                            // ),
                           ],
                         ),
                       ],
@@ -996,8 +1202,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     child: InkWell(
                                                       onTap: () {
                                                         if ((banner.type)
-                                                            .isEmpty)
+                                                            .isEmpty) {
                                                           return;
+                                                        }
 
                                                         final bannerType =
                                                             banner.type
@@ -1018,8 +1225,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                                                         if (passType == null ||
                                                             banner.shopId ==
-                                                                null)
+                                                                null) {
                                                           return;
+                                                        }
 
                                                         Navigator.push(
                                                           context,
@@ -1117,6 +1325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               SizedBox(
                                 height: 160,
                                 child: ListView.builder(
+                                  itemExtent: 280,
                                   itemCount: surpriseOffers.length,
                                   scrollDirection: Axis.horizontal,
                                   itemBuilder: (context, index) {
@@ -1125,65 +1334,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       decoration: BoxDecoration(
                                         color: AppColor.white,
                                       ),
-                                      child: SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        physics: const BouncingScrollPhysics(),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10.0,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              CommonContainer.shopImageContainer(
-                                                heroTag: 'surprise-${data.id}',
-                                                onTap: () {
-                                                  final offerId = data.id;
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          SurpriseScreens(
-                                                            subOfferId: offerId,
-                                                            shopLat: 0.0,
-                                                            shopLng: 0.0,
-                                                            shopId:
-                                                                data.shop?.id
-                                                                    .toString() ??
-                                                                '',
-                                                          ),
-                                                    ),
-                                                  );
-                                                },
-                                                verify:
-                                                    data.shop?.isTrusted ??
-                                                    false,
-                                                shopName:
-                                                    data.shop?.englishName
-                                                        .toString() ??
-                                                    '',
-                                                location:
-                                                    '${data.shop?.addressEn},${data.shop?.city},${data.shop?.state},${data.shop?.country} ',
-                                                km:
-                                                    data.distanceLabel
-                                                        ?.toString() ??
-                                                    '',
-                                                ratingStar:
-                                                    data.shop?.averageRating
-                                                        .toString() ??
-                                                    '',
-                                                ratingCount:
-                                                    data.shop?.reviewCount
-                                                        .toString() ??
-                                                    '',
-                                                time:
-                                                    data.closeTime
-                                                        ?.toString() ??
-                                                    '',
-                                                Images: data.bannerUrl
-                                                    .toString(),
-                                              ),
-                                            ],
-                                          ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10.0,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            CommonContainer.shopImageContainer(
+                                              heroTag: 'surprise-${data.id}',
+                                              onTap: () {
+                                                final offerId = data.id;
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        SurpriseScreens(
+                                                          subOfferId: offerId,
+                                                          shopLat: 0.0,
+                                                          shopLng: 0.0,
+                                                          shopId:
+                                                              data.shop?.id
+                                                                  .toString() ??
+                                                              '',
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                              verify:
+                                                  data.shop?.isTrusted ?? false,
+                                              shopName:
+                                                  data.shop?.englishName
+                                                      .toString() ??
+                                                  '',
+                                              location:
+                                                  '${data.shop?.addressEn},${data.shop?.city},${data.shop?.state},${data.shop?.country} ',
+                                              km:
+                                                  data.distanceLabel
+                                                      ?.toString() ??
+                                                  '',
+                                              ratingStar:
+                                                  data.shop?.averageRating
+                                                      .toString() ??
+                                                  '',
+                                              ratingCount:
+                                                  data.shop?.reviewCount
+                                                      .toString() ??
+                                                  '',
+                                              time:
+                                                  data.closeTime?.toString() ??
+                                                  '',
+                                              Images: data.bannerUrl.toString(),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     );
@@ -1388,129 +1590,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                             ),
                                           ],
                                         ),
-                                        child: ListView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          itemCount:
-                                              filteredServiceShops.length,
-                                          itemBuilder: (context, index) {
-                                            final services =
-                                                filteredServiceShops[index];
-
-                                            final isThisCardLoading =
-                                                state.isEnquiryLoading &&
-                                                state.activeEnquiryId ==
-                                                    services.id;
-
-                                            final hasMessaged =
-                                                _disabledMessageServiceIds
-                                                    .contains(services.id);
-
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 20,
-                                              ),
-                                              child: CommonContainer.servicesContainer(
-                                                callTap: () async {
-                                                  await MapUrls.openDialer(
-                                                    context,
-                                                    services.primaryPhone,
-                                                  );
-                                                  await ref
-                                                      .read(
-                                                        homeNotifierProvider
-                                                            .notifier,
-                                                      )
-                                                      .markCallOrLocation(
-                                                        type: 'CALL',
-                                                        shopId: services.id
-                                                            .toString(),
-                                                      );
-                                                },
-                                                horizontalDivider: true,
-                                                fireOnTap: () {},
-                                                isMessageLoading:
-                                                    isThisCardLoading,
-                                                messageDisabled: hasMessaged,
-                                                messageOnTap: () async {
-                                                  if (hasMessaged ||
-                                                      isThisCardLoading)
-                                                    return;
-
-                                                  final ok = await ref
-                                                      .read(
-                                                        homeNotifierProvider
-                                                            .notifier,
-                                                      )
-                                                      .putEnquiry(
-                                                        context: context,
-                                                        serviceId: '',
-                                                        productId: '',
-                                                        message: '',
-                                                        shopId: services.id,
-                                                      );
-
-                                                  if (!mounted) return;
-
-                                                  if (ok) {
-                                                    setState(
-                                                      () =>
-                                                          _disabledMessageServiceIds
-                                                              .add(services.id),
-                                                    );
-                                                  }
-                                                },
-                                                onTap: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          ServiceAndShopsDetails(
-                                                            type: 'services',
-                                                            shopId: services.id,
-                                                            initialIndex: 3,
-                                                          ),
-                                                    ),
-                                                  );
-                                                },
-                                                whatsAppOnTap: () async {
-                                                  await MapUrls.openWhatsapp(
-                                                    message: 'hi',
-                                                    context: context,
-                                                    phone:
-                                                        services.primaryPhone,
-                                                  );
-                                                  await ref
-                                                      .read(
-                                                        homeNotifierProvider
-                                                            .notifier,
-                                                      )
-                                                      .markCallOrLocation(
-                                                        type: 'WHATSAPP',
-                                                        shopId: services.id
-                                                            .toString(),
-                                                      );
-                                                },
-                                                Verify: services.isTrusted,
-                                                image: services.primaryImageUrl
-                                                    .toString(),
-                                                companyName:
-                                                    '${services.englishName.toUpperCase()} - ${services.category.toUpperCase()}',
-                                                location:
-                                                    '${services.addressEn},${services.city},${services.state} ',
-                                                fieldName:
-                                                    services.distanceLabel,
-                                                ratingStar: services.rating
-                                                    .toString(),
-                                                ratingCount: services
-                                                    .ratingCount
-                                                    .toString(),
-                                                time: services.closeTime
-                                                    .toString(),
-                                              ),
-                                            );
-                                          },
+                                        child: Column(
+                                          children: _buildServiceCards(
+                                            filteredServiceShops,
+                                            state,
+                                          ),
                                         ),
                                       ),
 
@@ -1731,128 +1815,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                           ),
                                         ],
                                       ),
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount: filteredShops.length,
-                                        itemBuilder: (context, index) {
-                                          final shops = filteredShops[index];
-
-                                          final isThisCardLoading =
-                                              state.isEnquiryLoading &&
-                                              state.activeEnquiryId == shops.id;
-
-                                          final hasMessaged =
-                                              _disabledMessageShopIds.contains(
-                                                shops.id,
-                                              );
-
-                                          return Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 5,
-                                            ),
-                                            child: CommonContainer.servicesContainer(
-                                              whatsAppOnTap: () async {
-                                                await MapUrls.openWhatsapp(
-                                                  message: 'hi',
-                                                  context: context,
-                                                  phone: shops.primaryPhone,
-                                                );
-                                                await ref
-                                                    .read(
-                                                      homeNotifierProvider
-                                                          .notifier,
-                                                    )
-                                                    .markCallOrLocation(
-                                                      type: 'WHATSAPP',
-                                                      shopId: shops.id
-                                                          .toString(),
-                                                    );
-                                              },
-                                              fireTooltip: 'App Offer 5%',
-                                              isMessageLoading:
-                                                  isThisCardLoading,
-                                              messageDisabled: hasMessaged,
-                                              messageOnTap: () async {
-                                                if (hasMessaged ||
-                                                    isThisCardLoading)
-                                                  return;
-
-                                                // ✅ disable ONLY on SUCCESS
-                                                final ok = await ref
-                                                    .read(
-                                                      homeNotifierProvider
-                                                          .notifier,
-                                                    )
-                                                    .putEnquiry(
-                                                      context: context,
-                                                      serviceId: '',
-                                                      productId: '',
-                                                      message: '',
-                                                      shopId: shops.id,
-                                                    );
-
-                                                if (!mounted) return;
-
-                                                if (ok) {
-                                                  setState(
-                                                    () =>
-                                                        _disabledMessageShopIds
-                                                            .add(shops.id),
-                                                  );
-                                                }
-                                              },
-                                              callTap: () async {
-                                                await MapUrls.openDialer(
-                                                  context,
-                                                  shops.primaryPhone,
-                                                );
-                                                await ref
-                                                    .read(
-                                                      homeNotifierProvider
-                                                          .notifier,
-                                                    )
-                                                    .markCallOrLocation(
-                                                      type: 'CALL',
-                                                      shopId: shops.id
-                                                          .toString(),
-                                                    );
-                                              },
-                                              horizontalDivider: true,
-                                              heroTag: shopHeroTag(
-                                                index,
-                                                shops.englishName.toString(),
-                                                section: 'shops-list',
-                                              ),
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        ServiceAndShopsDetails(
-                                                          shopId: shops.id,
-                                                          initialIndex: 4,
-                                                        ),
-                                                  ),
-                                                );
-                                              },
-                                              Verify: shops.isTrusted,
-                                              image: shops.primaryImageUrl
-                                                  .toString(),
-                                              companyName: shops.englishName,
-                                              location:
-                                                  '${shops.addressEn}, ${shops.city}, ${shops.state}',
-                                              fieldName: shops.distanceLabel
-                                                  .toString(),
-                                              ratingStar: shops.rating
-                                                  .toString(),
-                                              ratingCount: shops.ratingCount
-                                                  .toString(),
-                                              time: shops.closeTime.toString(),
-                                            ),
-                                          );
-                                        },
+                                      child: Column(
+                                        children: _buildProductCards(
+                                          filteredShops,
+                                          state,
+                                        ),
                                       ),
                                     ),
 
@@ -2047,4 +2014,26 @@ class QrScanPayload {
     }
     return const [];
   }
+}
+
+Route<T> slideUpRoute<T>(Widget page) {
+  return PageRouteBuilder<T>(
+    pageBuilder: (_, __, ___) => page,
+    transitionDuration: const Duration(milliseconds: 500),
+    reverseTransitionDuration: const Duration(milliseconds: 500),
+    transitionsBuilder: (context, animation, secondary, child) {
+      final tween = Tween<Offset>(
+        begin: const Offset(0, 1),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic));
+      final fade = Tween<double>(
+        begin: 0,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeOut));
+      return FadeTransition(
+        opacity: animation.drive(fade),
+        child: SlideTransition(position: animation.drive(tween), child: child),
+      );
+    },
+  );
 }

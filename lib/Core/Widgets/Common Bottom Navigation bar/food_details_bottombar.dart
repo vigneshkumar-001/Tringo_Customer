@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../app_go_routes.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_details.dart';
@@ -82,19 +84,11 @@ class _FoodDetailsBottombarState extends State<FoodDetailsBottombar> {
 
   /*
   void _pushCategory(String name) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(), // add this param to your page
-      ),
-
-    );
+    if (mounted) context.go(AppRoutes.homeShellPath);
   }
 */
   void _pushCategory(String name) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => HomeScreen()),
-      (route) => false, // remove everything below
-    );
+    if (mounted) context.go(AppRoutes.homeShellPath);
   }
 
   void openSearchShell(BuildContext context) {
@@ -427,3 +421,6 @@ class FigmaBottomNavBar extends StatelessWidget {
     );
   }
 }
+
+
+

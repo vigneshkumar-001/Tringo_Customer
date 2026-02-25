@@ -138,6 +138,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       },
     );
   }
+
   Future<String?> editProfile({
     required String displayName,
     required String email,
@@ -150,17 +151,19 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
 
     String customerImageUrl = '';
 
-    final hasValidImage = ownerImageFile != null &&
+    final hasValidImage =
+        ownerImageFile != null &&
         ownerImageFile.path.isNotEmpty &&
         await ownerImageFile.exists();
 
     if (hasValidImage) {
-      final uploadResult =
-      await apiDataSource.userProfileUpload(imageFile: ownerImageFile);
+      final uploadResult = await apiDataSource.userProfileUpload(
+        imageFile: ownerImageFile,
+      );
 
       customerImageUrl = uploadResult.fold(
-            (failure) => '',
-            (success) => success.message.toString(),
+        (failure) => '',
+        (success) => success.message.toString(),
       );
     }
 
@@ -174,11 +177,11 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     );
 
     return result.fold(
-          (failure) {
+      (failure) {
         state = state.copyWith(isLoading: false, error: failure.message);
         return failure.message; // ✅ return current error
       },
-          (response) {
+      (response) {
         state = state.copyWith(
           isLoading: false,
           editProfileResponse: response,
@@ -188,7 +191,6 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       },
     );
   }
-
 
   void resetState() {
     state = EditProfileState.initial();

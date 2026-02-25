@@ -1,10 +1,7 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -12,8 +9,6 @@ import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 
 import '../Utility/google_font.dart';
-
-Set<int> selectedIndexes = {};
 
 class CommonContainer {
   static rightSideArrowButton({VoidCallback? onTap}) {
@@ -2737,26 +2732,26 @@ class CommonContainer {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          Showrooms,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: AppColor.blue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Image.asset(
-                        AppImages.rightArrow,
-                        height: 9,
-                        width: 11,
-                        color: AppColor.darkBlue,
-                      ),
-                      const SizedBox(width: 2),
+                      // Flexible(
+                      //   child: Text(
+                      //     Showrooms,
+                      //     maxLines: 1,
+                      //     overflow: TextOverflow.ellipsis,
+                      //     style: GoogleFont.Mulish(
+                      //       fontWeight: FontWeight.w700,
+                      //       fontSize: 12,
+                      //       color: AppColor.blue,
+                      //     ),
+                      //   ),
+                      // ),
+                      // const SizedBox(width: 2),
+                      // Image.asset(
+                      //   AppImages.rightArrow,
+                      //   height: 9,
+                      //   width: 11,
+                      //   color: AppColor.darkBlue,
+                      // ),
+                      // const SizedBox(width: 2),
                       Flexible(
                         child: Text(
                           productCategories,

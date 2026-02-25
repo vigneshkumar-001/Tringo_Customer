@@ -1,6 +1,7 @@
 // lib/Core/Routing/app_go_routes.dart
 import 'package:go_router/go_router.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
+import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Screens/edit_profile.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Screens/referral_screens.dart';
 
@@ -20,6 +21,7 @@ class AppRoutes {
   static const String mobileNumberVerify = 'mobileNumberVerify';
   static const String otp = 'otp';
   static const String home = 'home';
+  static const String homeShell = 'homeShell';
   static const String fillProfile = 'fillProfile';
   static const String privacyPolicy = 'privacyPolicy';
   static const String referralScreen = 'referralScreen';
@@ -30,6 +32,7 @@ class AppRoutes {
   static const String mobileNumberVerifyPath = '/mobileNumberVerify';
   static const String otpPath = '/otp';
   static const String homePath = '/home';
+  static const String homeShellPath = '/homeShell';
   static const String fillProfilePath = '/fillProfile';
   static const String privacyPolicyPath = '/privacyPolicy';
   static const String referralScreenPath = '/referralScreenPath';
@@ -102,6 +105,11 @@ final goRouter = GoRouter(
       path: AppRoutes.homePath,
       name: AppRoutes.home,
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.homeShellPath,
+      name: AppRoutes.homeShell,
+      builder: (context, state) => const SearchScreenBottombar(initialIndex: 0),
     ),
     GoRoute(
       path: AppRoutes.fillProfilePath,

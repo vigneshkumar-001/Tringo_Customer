@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
@@ -511,6 +512,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     );
                   },
                   label: 'Support',
+                  iconPath: AppImages.support,
+                  iconHeight: 25,
+                  iconWidth: 19,
+                ),
+
+                SizedBox(height: 20),
+                CommonContainer.profileList(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SmartConnectHistory(),
+                      ),
+                    );
+                  },
+                  label: 'Smart Connect History',
                   iconPath: AppImages.support,
                   iconHeight: 25,
                   iconWidth: 19,

@@ -150,7 +150,9 @@ class HomeNotifier extends Notifier<homeState> {
           enquiryError: failure.message, // ✅ API failure message
           error: state.error,
         );
-        AppSnackBar.error(context, failure.message); // ✅ API msg only
+        if (context.mounted) {
+          AppSnackBar.error(context, failure.message); // ✅ API msg only
+        }
         return false; // ✅ do NOT disable
       },
       (response) {
@@ -163,7 +165,9 @@ class HomeNotifier extends Notifier<homeState> {
         );
 
         // ✅ success msg from API
-        AppSnackBar.success(context, response.data.message);
+        if (context.mounted) {
+          AppSnackBar.success(context, response.data.message);
+        }
         return true; // ✅ success -> disable
       },
     );
