@@ -16,6 +16,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/n
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/login_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/otp_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/whatsapp_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/device_token_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/referral_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_detail_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_list_response.dart';
@@ -2188,13 +2189,11 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
-
   Future<Either<Failure, SmartConnectDetailsResponse>> getSmartConnectDetails({
     required String requestId,
-
   }) async {
     try {
-      final url = ApiUrl.smartConnectDetails( requestId : requestId,  );
+      final url = ApiUrl.smartConnectDetails(requestId: requestId);
 
       final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
@@ -2219,6 +2218,56 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
       AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, DeviceTokenResponse>> fcmTokenSend({
+    required String fcmToken,
+    required String platform,
+    required String deviceId,
+  }) async {
+    try {
+      final url = ApiUrl.fcmToken;
+
+      dynamic response = await Request.sendRequest(
+        url,
+        {
+          "fcmToken":
+              "cShOr4xvTWKtGnkTGH43QW:APA91bGGVyI4Hmb9pnJlar3PXYqOy31nTL1aL6kwdqcLsNn20SeWMN4jUBVQksXhxc99dQ7cMhjoiH_AvYKL_KxxZ_AtjyEethPd-bPgPyqIDSSSQxokimM",
+          "platform": "android",
+          if (deviceId.trim().isNotEmpty) "deviceId": deviceId,
+        },
+        'POST',
+        true,
+      );
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(DeviceTokenResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e, st) {
+      AppLogger.log.e(e);
+      print('$e,$st');
       return Left(ServerFailure(e.toString()));
     }
   }

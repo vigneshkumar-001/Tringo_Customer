@@ -84,7 +84,6 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
                 );
               }
 
-              // ✅ EMPTY / NO DATA UI
               if (!state.isLoading && (details == null || responses.isEmpty)) {
                 return _EmptyView(
                   title: "No replies yet",

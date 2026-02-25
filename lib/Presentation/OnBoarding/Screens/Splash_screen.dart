@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
+import 'package:tringo_app/Core/Utility/device_helper.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -34,7 +35,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   bool _batterySheetOpen = false;
 
   static const String _batteryDontAskKey = "battery_dont_ask_again";
-
+  bool _tokenSent = false;
   @override
   void initState() {
     super.initState();
@@ -81,6 +82,39 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   //     _batteryOptimizationFlow();
   //   }
   // }
+  Future<void> _sendDeviceTokenIfNeeded() async {
+    if (_tokenSent) return;
+    _tokenSent = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final fcmToken = prefs.getString('fcmToken') ?? '';
+
+      if (fcmToken.isEmpty) {
+        AppLogger.log.w("⚠️ No fcmToken in prefs yet");
+        return;
+      }
+
+      final deviceId = await DeviceIdHelper.getDeviceId();
+      final platform = Platform.isAndroid ? "android" : "ios";
+
+      await ref
+          .read(appVersionNotifierProvider.notifier)
+          .fcmTokenSend(
+            fcmToken: fcmToken,
+            platform: platform,
+            deviceId: deviceId,
+          );
+
+      final st = ref.read(appVersionNotifierProvider);
+      AppLogger.log.i(
+        "✅ device-token api response: ${st.deviceTokenResponse?.status}",
+      );
+    } catch (e, st) {
+      AppLogger.log.e("❌ sendDeviceToken failed: $e");
+      AppLogger.log.e(st);
+    }
+  }
 
   Future<void> checkNavigation() async {
     final prefs = await SharedPreferences.getInstance();
@@ -93,7 +127,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await ref
         .read(appVersionNotifierProvider.notifier)
         .getAppVersion(
-          appPlatForm: 'android',
+          appPlatForm: Platform.isAndroid ? 'android' : 'ios',
           appVersion: appVersion,
           appName: 'customer',
         );
@@ -106,14 +140,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       return;
     }
 
-    // 2) Battery flow (Android only)
+    // ✅ 2) Send FCM token to API here
+    await _sendDeviceTokenIfNeeded();
+
+    // 3) Battery flow (Android only)
     await _batteryOptimizationFlow();
 
-    // 3) Splash delay
+    // 4) Splash delay
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
 
-    // 4) Navigate once
+    // 5) Navigate once
     if (_navigated) return;
     _navigated = true;
 
@@ -125,6 +162,49 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       context.go(AppRoutes.homePath);
     }
   }
+  // Future<void> checkNavigation() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //
+  //   final token = prefs.getString('token');
+  //   final bool isProfileCompleted =
+  //       prefs.getBool("isProfileCompleted") ?? false;
+  //
+  //   // 1) Version check
+  //   await ref
+  //       .read(appVersionNotifierProvider.notifier)
+  //       .getAppVersion(
+  //         appPlatForm: 'android',
+  //         appVersion: appVersion,
+  //         appName: 'customer',
+  //       );
+  //
+  //   final versionState = ref.read(appVersionNotifierProvider);
+  //
+  //   if (versionState.appVersionResponse?.data?.forceUpdate == true) {
+  //     if (!mounted) return;
+  //     _showUpdateBottomSheet();
+  //     return;
+  //   }
+  //
+  //   // 2) Battery flow (Android only)
+  //   await _batteryOptimizationFlow();
+  //
+  //   // 3) Splash delay
+  //   await Future.delayed(const Duration(seconds: 3));
+  //   if (!mounted) return;
+  //
+  //   // 4) Navigate once
+  //   if (_navigated) return;
+  //   _navigated = true;
+  //
+  //   if (token == null) {
+  //     context.go(AppRoutes.loginPath);
+  //   } else if (!isProfileCompleted) {
+  //     context.go(AppRoutes.fillProfilePath);
+  //   } else {
+  //     context.go(AppRoutes.homePath);
+  //   }
+  // }
 
   // ---------------- ✅ Battery Flow (FIXED) ----------------
   Future<void> _batteryOptimizationFlow() async {
