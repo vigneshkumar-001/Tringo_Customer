@@ -2234,7 +2234,7 @@ class ApiDataSource extends BaseApiDataSource {
         url,
         {
           "fcmToken":
-              "cShOr4xvTWKtGnkTGH43QW:APA91bGGVyI4Hmb9pnJlar3PXYqOy31nTL1aL6kwdqcLsNn20SeWMN4jUBVQksXhxc99dQ7cMhjoiH_AvYKL_KxxZ_AtjyEethPd-bPgPyqIDSSSQxokimM",
+          fcmToken,
           "platform": "android",
           if (deviceId.trim().isNotEmpty) "deviceId": deviceId,
         },

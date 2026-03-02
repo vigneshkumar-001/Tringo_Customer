@@ -89,6 +89,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final fcmToken = prefs.getString('fcmToken') ?? '';
+      AppLogger.log.i(fcmToken);
 
       if (fcmToken.isEmpty) {
         AppLogger.log.w("⚠️ No fcmToken in prefs yet");
