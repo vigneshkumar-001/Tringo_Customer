@@ -183,18 +183,18 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
 
     // ✅ On screen open: force phone permission + overlay + roles
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // final ok = await forcePhonePermissionWithDialog();
-      // if (!ok) return;
-      //
-      // // optional (SIM list)
-      // await _ensureMobileNumberPermission();
-      //
-      // final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-      // if (!overlayOk) {
-      //   await CallerIdRoleHelper.requestOverlayPermission();
-      // }
-      //
-      // await CallerIdRoleHelper.maybeAskOnce(ref: ref);
+      final ok = await forcePhonePermissionWithDialog();
+      if (!ok) return;
+
+      // optional (SIM list)
+      await _ensureMobileNumberPermission();
+
+      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+      if (!overlayOk) {
+        await CallerIdRoleHelper.requestOverlayPermission();
+      }
+
+      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
     });
 
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (

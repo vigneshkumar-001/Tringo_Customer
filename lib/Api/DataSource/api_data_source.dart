@@ -2233,8 +2233,7 @@ class ApiDataSource extends BaseApiDataSource {
       dynamic response = await Request.sendRequest(
         url,
         {
-          "fcmToken":
-          fcmToken,
+          "fcmToken": fcmToken,
           "platform": "android",
           if (deviceId.trim().isNotEmpty) "deviceId": deviceId,
         },

@@ -587,7 +587,7 @@ class CommonContainer {
               child: Container(
                 padding:
                     callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColor.blue,
                   borderRadius: BorderRadius.circular(15),

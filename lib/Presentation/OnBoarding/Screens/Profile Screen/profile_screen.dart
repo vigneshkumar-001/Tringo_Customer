@@ -518,21 +518,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
 
                 SizedBox(height: 20),
-                CommonContainer.profileList(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SmartConnectHistory(),
-                      ),
-                    );
-                  },
-                  label: 'Smart Connect History',
-                  iconPath: AppImages.support,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
-                SizedBox(height: 20),
+                // CommonContainer.profileList(
+                //   onTap: () {
+                //     Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //         builder: (context) => SmartConnectHistory(),
+                //       ),
+                //     );
+                //   },
+                //   label: 'Smart Connect History',
+                //   iconPath: AppImages.ai,
+                //   iconHeight: 25,
+                //   iconWidth: 25  ,
+                // ),
+                // SizedBox(height: 20),
                 CommonContainer.horizonalDivider(),
                 SizedBox(height: 20),
                 CommonContainer.profileList(

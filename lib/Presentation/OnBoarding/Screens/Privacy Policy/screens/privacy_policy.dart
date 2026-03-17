@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
@@ -18,6 +19,7 @@ class PrivacyPolicy extends ConsumerStatefulWidget {
 }
 
 class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
+  bool isTermsAccepted = false;
   @override
   void initState() {
     super.initState();
@@ -225,11 +227,36 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                       ),
                     ),
 
-                    const SizedBox(height: 35),
 
-                    if (widget.showAcceptReject &&
+
+                    if (!widget.showAcceptReject &&
                         hasContent &&
-                        !state.isLoading)
+                        !state.isLoading) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 35),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: isTermsAccepted,
+                              onChanged: (value) {
+                                setState(() {
+                                  isTermsAccepted = value ?? false;
+                                });
+                              },
+                            ),
+                            Expanded(
+                              child: Text(
+                                'I agree to the Terms and Conditions',
+                                style: GoogleFont.Mulish(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColor.darkBlue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 35),
                         child: Row(
@@ -262,6 +289,13 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                             InkWell(
                               borderRadius: BorderRadius.circular(15),
                               onTap: () {
+                                if (!isTermsAccepted) {
+                                  AppSnackBar.info(
+                                    context,
+                                    'Please accept Terms and Conditions',
+                                  );
+                                  return;
+                                }
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -290,8 +324,8 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                             ),
                           ],
                         ),
-                      )
-                    else
+                      ),
+                    ] else
                       const SizedBox.shrink(),
                   ],
                 ),

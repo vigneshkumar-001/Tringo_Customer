@@ -153,4 +153,5 @@ class AppImages {
   static String qrCodeLogo = 'Assets/Images/qr_code_Logo.png';
   static String unfollow = 'Assets/Images/unFollow.png';
   static String follow = 'Assets/Images/follow.png';
+  static String ai = 'Assets/Images/ai.png';
 }

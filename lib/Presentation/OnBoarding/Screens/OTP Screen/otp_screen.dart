@@ -121,7 +121,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
       // Error case
       if (next.error != null) {
-        AppSnackBar.error(context, next.error?? '');
+        AppSnackBar.error(context, next.error ?? '');
         notifier.resetState();
       }
       // OTP verified
@@ -266,7 +266,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
                         // OTP fields
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 35),
+                          padding: const EdgeInsets.symmetric(horizontal: 25),
                           child: PinCodeTextField(
                             appContext: context,
                             length: 4,

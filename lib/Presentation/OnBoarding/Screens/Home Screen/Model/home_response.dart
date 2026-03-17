@@ -26,6 +26,7 @@ class HomeData {
   final AppUser user;
   final String? city;
   final GeoPoint coordinates;
+  final bool scFlag;
 
   final List<ShopCategory> shopCategories;
   final List<CategoryItem> categories;
@@ -44,6 +45,7 @@ class HomeData {
     required this.user,
     required this.city,
     required this.coordinates,
+    required this. scFlag ,
     required this.shopCategories,
     required this.categories,
     required this.banners,
@@ -60,7 +62,7 @@ class HomeData {
       user: AppUser.fromJson(_asMap(json['user'])),
       city: json['city'] as String?,
       coordinates: GeoPoint.fromJson(_asMap(json['coordinates'])),
-
+       scFlag : _parseBool(json['scFlag']) ?? false,
       shopCategories: (_asList(
         json['shopCategories'],
       )).map((e) => ShopCategory.fromJson(_asMap(e))).toList(),

@@ -378,152 +378,150 @@ class _FillProfileState extends ConsumerState<FillProfile> {
 
                     SizedBox(height: 35),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 35),
-                      child: Row(
-                        children: [
-                          // InkWell(
-                          //   borderRadius: BorderRadius.circular(15),
-                          //   onTap: () {
-                          //     if (_navigated) return;
-                          //     Navigator.pushReplacement(
-                          //       context,
-                          //       MaterialPageRoute(
-                          //         builder: (context) => HomeScreen(),
-                          //       ),
-                          //     );
-                          //   },
-                          //   child: Container(
-                          //     decoration: BoxDecoration(
-                          //       color: AppColor.textWhite,
-                          //       borderRadius: BorderRadius.circular(15),
-                          //     ),
-                          //     child: Padding(
-                          //       padding: const EdgeInsets.symmetric(
-                          //         horizontal: 34,
-                          //         vertical: 20,
-                          //       ),
-                          //       child: Text(
-                          //         'Skip',
-                          //         style: GoogleFont.Mulish(
-                          //           fontSize: 16,
-                          //           fontWeight: FontWeight.w800,
-                          //           color: AppColor.darkBlue,
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ),
-                          // ),
-                          InkWell(
-                            borderRadius: BorderRadius.circular(15),
-                            onTap: () {
-                              if (_navigated) return;
-                              _navigated = true;
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // InkWell(
+                        //   borderRadius: BorderRadius.circular(15),
+                        //   onTap: () {
+                        //     if (_navigated) return;
+                        //     Navigator.pushReplacement(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //         builder: (context) => HomeScreen(),
+                        //       ),
+                        //     );
+                        //   },
+                        //   child: Container(
+                        //     decoration: BoxDecoration(
+                        //       color: AppColor.textWhite,
+                        //       borderRadius: BorderRadius.circular(15),
+                        //     ),
+                        //     child: Padding(
+                        //       padding: const EdgeInsets.symmetric(
+                        //         horizontal: 34,
+                        //         vertical: 20,
+                        //       ),
+                        //       child: Text(
+                        //         'Skip',
+                        //         style: GoogleFont.Mulish(
+                        //           fontSize: 16,
+                        //           fontWeight: FontWeight.w800,
+                        //           color: AppColor.darkBlue,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(15),
+                          onTap: () {
+                            if (_navigated) return;
+                            _navigated = true;
+
+                            context.go(AppRoutes.homePath);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColor.textWhite,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 34,
+                              vertical: 20,
+                            ),
+                            child: Text(
+                              'Skip',
+                              style: GoogleFont.Mulish(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 15),
+
+                        InkWell(
+                          borderRadius: BorderRadius.circular(15),
+                          onTap: () async {
+                            if (nameController.text.isEmpty ||
+                                emailController.text.isEmpty ||
+                                genderController.text.isEmpty ||
+                                dateOfBirthController.text.isEmpty ||
+                                selectedPhoto == null) {
+                              AppSnackBar.info(
+                                context,
+                                'Please fill all fields',
+                              );
+
+                              return;
+                            }
+
+                            String dobForApi = '';
+                            try {
+                              final parsedDate = DateFormat('dd-MM-yyyy')
+                                  .parseStrict(
+                                    dateOfBirthController.text.trim(),
+                                  );
+                              dobForApi = DateFormat(
+                                'yyyy-MM-dd',
+                              ).format(parsedDate);
+                            } catch (e) {
+                              AppSnackBar.error(context, "Invalid DOB");
+                              return;
+                            }
+
+                            final response = await ref
+                                .read(profileNotifierProvider.notifier)
+                                .fetchProfile(
+                                  displayName: nameController.text.trim(),
+                                  email: emailController.text.trim(),
+                                  gender: genderController.text.trim(),
+                                  dateOfBirth: dobForApi,
+                                  ownerImageFile: File(selectedPhoto!.path),
+                                );
+                            final notifier = ref.read(
+                              profileNotifierProvider.notifier,
+                            );
+                            if (response != null) {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setBool("isProfileCompleted", true);
 
                               context.go(AppRoutes.homePath);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColor.textWhite,
-                                borderRadius: BorderRadius.circular(15),
-                              ),
+                              // final prefs =
+                              //     await SharedPreferences.getInstance();
+                              await prefs.setBool("isProfileCompleted", true);
+                            } else if (state.error != null) {
+                              AppSnackBar.error(context, state.error ?? '');
+                            }
+                          },
+
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColor.blue,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 34,
+                                horizontal: 65,
                                 vertical: 20,
                               ),
-                              child: Text(
-                                'Skip',
-                                style: GoogleFont.Mulish(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColor.darkBlue,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 15),
-
-                          InkWell(
-                            borderRadius: BorderRadius.circular(15),
-                            onTap: () async {
-                              if (nameController.text.isEmpty ||
-                                  emailController.text.isEmpty ||
-                                  genderController.text.isEmpty ||
-                                  dateOfBirthController.text.isEmpty ||
-                                  selectedPhoto == null) {
-                                AppSnackBar.info(
-                                  context,
-                                  'Please fill all fields',
-                                );
-
-                                return;
-                              }
-
-                              String dobForApi = '';
-                              try {
-                                final parsedDate = DateFormat('dd-MM-yyyy')
-                                    .parseStrict(
-                                      dateOfBirthController.text.trim(),
-                                    );
-                                dobForApi = DateFormat(
-                                  'yyyy-MM-dd',
-                                ).format(parsedDate);
-                              } catch (e) {
-                                AppSnackBar.error(context, "Invalid DOB");
-                                return;
-                              }
-
-                              final response = await ref
-                                  .read(profileNotifierProvider.notifier)
-                                  .fetchProfile(
-                                    displayName: nameController.text.trim(),
-                                    email: emailController.text.trim(),
-                                    gender: genderController.text.trim(),
-                                    dateOfBirth: dobForApi,
-                                    ownerImageFile: File(selectedPhoto!.path),
-                                  );
-                              final notifier = ref.read(
-                                profileNotifierProvider.notifier,
-                              );
-                              if (response != null) {
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.setBool("isProfileCompleted", true);
-
-                                context.go(AppRoutes.homePath);
-                                // final prefs =
-                                //     await SharedPreferences.getInstance();
-                                await prefs.setBool("isProfileCompleted", true);
-                              } else if (state.error != null) {
-                                AppSnackBar.error(context, state.error ?? '');
-                              }
-                            },
-
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColor.blue,
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 65,
-                                  vertical: 20,
-                                ),
-                                child: state.isLoading
-                                    ? ThreeDotsLoader()
-                                    : Text(
-                                        'Continue',
-                                        style: GoogleFont.Mulish(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColor.white,
-                                        ),
+                              child: state.isLoading
+                                  ? ThreeDotsLoader()
+                                  : Text(
+                                      'Continue',
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColor.white,
                                       ),
-                              ),
+                                    ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

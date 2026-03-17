@@ -136,7 +136,7 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
                         const SizedBox(height: 35),
 
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
                           child: PinCodeTextField(
                             appContext: context,
                             length: 6,
@@ -154,7 +154,7 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
                             pinTheme: PinTheme(
                               shape: PinCodeFieldShape.box,
                               borderRadius: BorderRadius.circular(17),
-                              fieldHeight: 70,
+                              fieldHeight: 65,
                               fieldWidth: 45,
                               selectedColor: AppColor.darkBlue,
                               activeColor: AppColor.darkBlue,
@@ -236,14 +236,14 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
                                       borderRadius: BorderRadius.circular(15),
                                     ),
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 34,
+
                                       vertical: 20,
                                     ),
                                     child: Center(
                                       child: Text(
                                         'Skip',
                                         style: GoogleFont.Mulish(
-                                          fontSize: 16,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w800,
                                           color: AppColor.darkBlue,
                                         ),

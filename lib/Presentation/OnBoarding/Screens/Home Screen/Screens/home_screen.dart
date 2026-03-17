@@ -23,6 +23,7 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_guide.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 
 import '../../../../../Core/Utility/app_snackbar.dart';
@@ -672,6 +673,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     final banners = home.data.banners;
+    final scFlag = home.data.scFlag;
     final surpriseOffers = home.data.surpriseOffers;
 
     final categories = home.data.shopCategories;
@@ -897,7 +899,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
+                              horizontal: 10,
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
@@ -936,6 +938,212 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         // Explore Near + QR
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            /// LEFT SECTION (Explore Near)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColor.lightBlueCont,
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 10,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  /// Title
+                                  Text(
+                                    'Explore Near',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 12,
+                                      color: AppColor.lightGray,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 7),
+
+                                  /// Shops
+                                  GestureDetector(
+                                    onTapDown: (_) =>
+                                        setState(() => _shopsPressed = true),
+                                    onTapUp: (_) =>
+                                        setState(() => _shopsPressed = false),
+                                    onTapCancel: () =>
+                                        setState(() => _shopsPressed = false),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ButtomNavigatebar(
+                                                initialIndex: 3,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: AnimatedScale(
+                                      scale: _shopsPressed ? 0.9 : 1,
+                                      duration: const Duration(
+                                        milliseconds: 100,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Image.asset(
+                                            AppImages.shopImage,
+                                            height: 20,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Shops',
+                                            style: GoogleFont.Mulish(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12,
+                                              color: AppColor.lightGray,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 7),
+
+                                  Container(
+                                    width: 1,
+                                    height: 16,
+                                    color: AppColor.lightBlueBorder,
+                                  ),
+
+                                  const SizedBox(width: 7),
+
+                                  /// Services
+                                  GestureDetector(
+                                    onTapDown: (_) =>
+                                        setState(() => _servicesPressed = true),
+                                    onTapUp: (_) => setState(
+                                      () => _servicesPressed = false,
+                                    ),
+                                    onTapCancel: () => setState(
+                                      () => _servicesPressed = false,
+                                    ),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ButtomNavigatebar(
+                                                initialIndex: 4,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: AnimatedScale(
+                                      scale: _servicesPressed ? 0.9 : 1,
+                                      duration: const Duration(
+                                        milliseconds: 100,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Image.asset(
+                                            AppImages.servicesImage,
+                                            height: 20,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Services',
+                                            style: GoogleFont.Mulish(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12,
+                                              color: AppColor.lightGray,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(width: 5),
+
+                            /// AI GUIDE BUTTON
+                            Expanded(
+                              child: InkWell(
+                                onTap: () async {
+                                  if (_homeScrollCtrl.hasClients) {
+                                    await _homeScrollCtrl.animateTo(
+                                      0,
+                                      duration: const Duration(milliseconds: 350),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+
+                                  if (!mounted) return;
+
+                                  final route = scFlag
+                                      ? slideUpRoute(SmartConnectHistory())
+                                      : slideUpRoute(SmartConnectGuide());
+
+                                  await Navigator.of(context).push(route);
+                                },
+                                // onTap: () async {
+                                //   if (_homeScrollCtrl.hasClients) {
+                                //     await _homeScrollCtrl.animateTo(
+                                //       0,
+                                //       duration: const Duration(
+                                //         milliseconds: 350,
+                                //       ),
+                                //       curve: Curves.easeOut,
+                                //     );
+                                //   }
+                                //
+                                //   if (!mounted) return;
+                                //   if (scFlag == true) {
+                                //     await Navigator.of(
+                                //       context,
+                                //     ).push(slideUpRoute(SmartConnectHistory()));
+                                //   } else {
+                                //     await Navigator.of(
+                                //       context,
+                                //     ).push(slideUpRoute(SmartConnectGuide()));
+                                //   }
+                                // },
+                                child: Image.asset(
+                                  AppImages.aiGuideImage,
+                                  height: 42,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 5),
+
+                            /// QR BUTTON
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => _openQrAndAskAction(context),
+                                borderRadius: BorderRadius.circular(40),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColor.white,
+                                  ),
+                                  child: Image.asset(
+                                    AppImages.qRColor,
+                                    height: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        /* Row(
+
+
                           children: [
                             Container(
                               decoration: BoxDecoration(
@@ -1049,7 +1257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 14),
+
                             InkWell(
                               onTap: () async {
                                 // 1) Scroll HomeScreen to top (nice quick animation)
@@ -1072,25 +1280,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 height: 45,
                               ),
                             ),
-                            // InkWell(
-                            //   onTap: () => _openQrAndAskAction(context),
-                            //   child: Container(
-                            //     padding: const EdgeInsets.symmetric(
-                            //       horizontal: 13,
-                            //       vertical: 15,
-                            //     ),
-                            //     decoration: BoxDecoration(
-                            //       shape: BoxShape.circle,
-                            //       color: AppColor.white,
-                            //     ),
-                            //     child: Image.asset(
-                            //       AppImages.qRColor,
-                            //       height: 23,
-                            //     ),
-                            //   ),
-                            // ),
+                           InkWell(
+                             onTap: () => _openQrAndAskAction(context),
+                             child: Container(
+                               padding: const EdgeInsets.symmetric(
+                                 horizontal: 13,
+                                 vertical: 15,
+                               ),
+                               decoration: BoxDecoration(
+                                 shape: BoxShape.circle,
+                                 color: AppColor.white,
+                               ),
+                               child: Image.asset(
+                                 AppImages.qRColor,
+                                 height: 23,
+                               ),
+                             ),
+                           ),
                           ],
-                        ),
+                        ),*/
                       ],
                     ),
                   ),

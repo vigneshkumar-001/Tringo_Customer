@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tringo_app/Api/DataSource/api_data_source.dart';
@@ -127,63 +129,85 @@ class SmartConnectNotifier extends Notifier<SmartConnectState> {
     );
   }
 
-
-  Future<void> fetchSmartConnectDetails({
-    required String requestId,
-
-  }) async {
+  Future<void> fetchSmartConnectDetails({required String requestId}) async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await api.getSmartConnectDetails( requestId: requestId );
+    final result = await api.getSmartConnectDetails(requestId: requestId);
 
     result.fold(
-          (failure) {
+      (failure) {
         state = state.copyWith(
           isLoading: false,
           error: failure.message, // ✅ home error only
         );
       },
-          (response) async {
-        state = state.copyWith(
-          isLoading: false,
-          error: null,
-           smartConnectDetailsResponse : response,
-        );
-      },
-    );
-  }
-
-  Future<String?> createSmartConnect({
-    required String listingId,
-    required String listingType,
-    required String shopId,
-    required String description,
-    required List<Map<String, String>> attachments,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    final result = await api.createSmartConnect(
-      listingId: listingId,
-      listingType: listingType,
-      shopId: shopId,
-      description: description,
-      attachments: attachments,
-    );
-
-    return result.fold(
-      (failure) {
-        state = state.copyWith(isLoading: false, error: failure.message);
-        return failure.message;
-      },
       (response) async {
         state = state.copyWith(
           isLoading: false,
           error: null,
-          smartConnectCreateResponse: response,
+          smartConnectDetailsResponse: response,
         );
-        return null;
       },
     );
+  }
+  Future<String?> createSmartConnect({
+    required String listingId,
+    required String listingType,
+    required String shopId,
+    File? ownerImageFile,
+    required String description,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    List<Map<String, String>> attachments = [];
+
+    try {
+      /// ✅ Upload image if exists
+      if (ownerImageFile != null && await ownerImageFile.exists()) {
+        final uploadResult = await api.userProfileUpload(
+          imageFile: ownerImageFile,
+        );
+
+        final imageUrl = uploadResult.fold(
+              (failure) => null,
+              (success) => success.message, // ⚠ adjust based on your model
+        );
+
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          attachments.add({
+
+            "url": imageUrl,
+          });
+        }
+      }
+
+      /// ✅ Now call create API
+      final result = await api.createSmartConnect(
+        listingId: listingId,
+        listingType: listingType,
+        shopId: shopId,
+        description: description,
+        attachments: attachments,
+      );
+
+      return result.fold(
+            (failure) {
+          state = state.copyWith(isLoading: false, error: failure.message);
+          return failure.message;
+        },
+            (response) {
+          state = state.copyWith(
+            isLoading: false,
+            error: null,
+            smartConnectCreateResponse: response,
+          );
+          return null;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
   }
 
   Future<void> fetchSmartConnectSearch({required String search}) async {

@@ -451,35 +451,37 @@ class _CreateSmartConnectState extends ConsumerState<CreateSmartConnect> {
                     onTap: state.isLoading
                         ? null
                         : () async {
-                            final attachments = <Map<String, String>>[];
+                      final err = await notifier.createSmartConnect(
 
-                            final err = await notifier.createSmartConnect(
-                              listingId: widget.listingId ?? '',
-                              listingType: widget.listingType ?? '',
-                              shopId: widget.shopId ?? '',
-                              description: _descriptionController.text.trim(),
-                              attachments: attachments,
-                            );
+                        listingId: widget.listingId ?? '',
+                        listingType: widget.listingType ?? '',
+                        shopId: widget.shopId ?? '',
+                        ownerImageFile: _selectedImage,   // ✅ PASS IMAGE
+                        description: _descriptionController.text.trim(),
+                      );
 
-                            if (!context.mounted) return;
+                      if (!context.mounted) return;
+                      if (err == null) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SmartConnectHistory(),
+                          ),
+                              (route) => route.isFirst, // 👈 keeps only Home
+                        );
 
-                            if (err == null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SmartConnectHistory(),
-                                ),
-                              );
-                              _productController.clear();
+                        _productController.clear();
+                        _descriptionController.clear();
 
-                              setState(() {
-                                _selectedImage = null;
-                                _view = const [];
-                              });
-                            } else {
-                              AppSnackBar.error(context, err);
-                            }
-                          },
+                        setState(() {
+                          _selectedImage = null;
+                          _view = const [];
+                        });
+                      }
+                   else {
+                        AppSnackBar.error(context, err);
+                      }
+                    },
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
