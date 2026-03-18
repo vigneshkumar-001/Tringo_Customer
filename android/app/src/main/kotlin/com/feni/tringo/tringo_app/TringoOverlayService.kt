@@ -177,20 +177,20 @@ class TringoOverlayService : Service() {
 
         Log.d(TAG, "onStartCommand phone=$pendingPhone showOnlyAfterEnd=$showOnlyAfterEnd")
 
-        // ✅ NEVER allow UNKNOWN / empty
+
         val prefs = getSharedPreferences(PREF, MODE_PRIVATE)
+        val last = (prefs.getString(KEY_LAST_NUMBER, "") ?: "").trim()
+
+        // Android may hide EXTRA_INCOMING_NUMBER on newer versions/devices.
+        // Still show overlay; use last known number if available.
         if (pendingPhone.isBlank() || pendingPhone.equals("UNKNOWN", true)) {
-            val last = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
-            if (last.isNotBlank() && !last.equals("UNKNOWN", true)) {
-                pendingPhone = last
-            } else {
-                stopSelf()
-                return START_NOT_STICKY
-            }
+            pendingPhone = if (last.isNotBlank() && !last.equals("UNKNOWN", true)) last else "UNKNOWN"
         }
 
-        // ✅ store final phone
-        prefs.edit().putString(KEY_LAST_NUMBER, pendingPhone).apply()
+        // Store only real numbers (avoid persisting UNKNOWN/blank).
+        if (pendingPhone.isNotBlank() && !pendingPhone.equals("UNKNOWN", true)) {
+            prefs.edit().putString(KEY_LAST_NUMBER, pendingPhone).apply()
+        }
 
         startForegroundDataSyncSafe()
 
@@ -249,10 +249,14 @@ class TringoOverlayService : Service() {
     // ==========================================================
     private fun markUserClosedDuringCall(phone: String) {
         try {
-            getSharedPreferences(PREF, MODE_PRIVATE).edit()
+            val edit = getSharedPreferences(PREF, MODE_PRIVATE).edit()
                 .putBoolean(KEY_USER_CLOSED, true)
-                .putString(KEY_LAST_NUMBER, phone)
-                .apply()
+
+            if (phone.isNotBlank() && !phone.equals("UNKNOWN", true)) {
+                edit.putString(KEY_LAST_NUMBER, phone)
+            }
+
+            edit.apply()
         } catch (e: Exception) {
             Log.e(TAG, "markUserClosedDuringCall failed: ${e.message}", e)
         }
@@ -434,12 +438,19 @@ class TringoOverlayService : Service() {
     // ==========================================================
     private fun openFlutterShopDetails(shopId: String, tabIndex: Int = 4) {
         try {
-            val uri = Uri.parse("tringo://app/shop/details?shopId=$shopId&tab=$tabIndex")
+            val i = Intent(this, MainActivity::class.java).apply {
+                putExtra("overlay_action", "open_shop_details")
+                putExtra("shopId", shopId)
+                putExtra("tab", tabIndex)
 
-            val i = Intent(Intent.ACTION_VIEW, uri).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                setPackage(packageName)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
             }
+
+
             startActivity(i)
             removeOverlay()
         } catch (e: Exception) {
@@ -469,7 +480,7 @@ class TringoOverlayService : Service() {
         headerBusiness?.visibility = View.GONE
         headerPerson?.visibility = View.VISIBLE
 
-        personTv?.text = if (contactName.isNotBlank()) contactName else phone
+        personTv?.text = if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone
         personMetaTv?.text = reason
 
         try {
@@ -573,7 +584,7 @@ class TringoOverlayService : Service() {
         } catch (e: Exception) {
             showCallerHeadsUp(
                 "Tringo Caller ID",
-                if (contactName.isNotBlank()) contactName else phone,
+                if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone,
                 "addView_failed"
             )
             stopSelf()
@@ -583,7 +594,7 @@ class TringoOverlayService : Service() {
         // ✅ default loading UI
         headerBusiness.visibility = View.GONE
         headerPerson.visibility = View.VISIBLE
-        personTv.text = if (contactName.isNotBlank()) contactName else phone
+        personTv.text = if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone
         personMetaTv.text = "Loading..."
 
         // ✅ ads default hidden (only show postCallPopupMode)
@@ -678,7 +689,7 @@ class TringoOverlayService : Service() {
                 saveCache(
                     phone = phone,
                     isShop = isShop,
-                    title = cardTitle.ifBlank { if (contactName.isNotBlank()) contactName else phone },
+                    title = cardTitle.ifBlank { if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone },
                     subtitleLine = subtitleLine,
                     imageUrl = cardImageUrl,
                     adsTitle = adsTitle,
@@ -1133,20 +1144,20 @@ class TringoOverlayService : Service() {
 //
 //        Log.d(TAG, "onStartCommand phone=$pendingPhone showOnlyAfterEnd=$showOnlyAfterEnd")
 //
-//        // ✅ NEVER allow UNKNOWN / empty
+
 //        val prefs = getSharedPreferences(PREF, MODE_PRIVATE)
+//        val last = (prefs.getString(KEY_LAST_NUMBER, "") ?: "").trim()
+
+        // Android may hide EXTRA_INCOMING_NUMBER on newer versions/devices.
+        // Still show overlay; use last known number if available.
 //        if (pendingPhone.isBlank() || pendingPhone.equals("UNKNOWN", true)) {
-//            val last = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
-//            if (last.isNotBlank() && !last.equals("UNKNOWN", true)) {
-//                pendingPhone = last
-//            } else {
-//                stopSelf()
-//                return START_NOT_STICKY
-//            }
+//            pendingPhone = if (last.isNotBlank() && !last.equals("UNKNOWN", true)) last else "UNKNOWN"
 //        }
-//
-//        // ✅ store final phone
-//        prefs.edit().putString(KEY_LAST_NUMBER, pendingPhone).apply()
+
+        // Store only real numbers (avoid persisting UNKNOWN/blank).
+//        if (pendingPhone.isNotBlank() && !pendingPhone.equals("UNKNOWN", true)) {
+//            prefs.edit().putString(KEY_LAST_NUMBER, pendingPhone).apply()
+//        }
 //
 //        startForegroundDataSyncSafe()
 //

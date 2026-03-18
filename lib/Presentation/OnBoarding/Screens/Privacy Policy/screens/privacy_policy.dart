@@ -227,9 +227,7 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                       ),
                     ),
 
-
-
-                    if (!widget.showAcceptReject &&
+                    if (widget.showAcceptReject &&
                         hasContent &&
                         !state.isLoading) ...[
                       Padding(
@@ -257,6 +255,7 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                           ],
                         ),
                       ),
+                      SizedBox(height: 20),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 35),
                         child: Row(

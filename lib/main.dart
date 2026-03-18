@@ -8,6 +8,7 @@ import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Firebase_service/firebase_service.dart';
 import 'Core/Utility/app_color.dart';
 import 'Core/app_go_routes.dart';
+import 'Core/overlay_nav_bridge.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -18,6 +19,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  OverlayNavBridge.init();
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);

@@ -95,7 +95,7 @@ final goRouter = GoRouter(
 
         return ServiceAndShopsDetails(
           shopId: shopId,
-          initialIndex: 4,
+          initialIndex: tab,
         );
       },
     ),

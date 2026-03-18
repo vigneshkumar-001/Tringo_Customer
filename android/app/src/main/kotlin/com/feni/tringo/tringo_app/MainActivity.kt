@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.telephony.SubscriptionInfo
@@ -26,6 +27,12 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "sim_info"
     private val TAG = "TRINGO_NATIVE"
 
+    private val OVERLAY_NAV_CHANNEL = "tringo_overlay_nav"
+    private var overlayNavChannel: MethodChannel? = null
+    private var pendingOverlayShopId: String? = null
+    private var pendingOverlayTab: Int = 4
+
+
     private val REQ_ROLE_CALL_SCREENING = 9001
     private var pendingRoleResult: MethodChannel.Result? = null
 
@@ -38,6 +45,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        overlayNavChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OVERLAY_NAV_CHANNEL)
+        deliverPendingOverlayNav()
+
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -390,6 +401,62 @@ class MainActivity : FlutterActivity() {
             )
         }
     }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        handleOverlayNavIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleOverlayNavIntent(intent)
+    }
+
+    private fun handleOverlayNavIntent(intent: Intent?) {
+        try {
+            if (intent == null) return
+            val action = intent.getStringExtra("overlay_action") ?: return
+            if (action != "open_shop_details") return
+
+            val shopId = intent.getStringExtra("shopId")?.trim().orEmpty()
+            val tab = intent.getIntExtra("tab", 4)
+            if (shopId.isBlank()) return
+
+            dispatchOverlayOpenShopDetails(shopId, tab)
+        } catch (e: Exception) {
+            Log.e(TAG, "handleOverlayNavIntent failed: ${e.message}", e)
+        }
+    }
+
+    private fun dispatchOverlayOpenShopDetails(shopId: String, tab: Int) {
+        val ch = overlayNavChannel
+        if (ch == null) {
+            pendingOverlayShopId = shopId
+            pendingOverlayTab = tab
+            return
+        }
+
+        try {
+            ch.invokeMethod(
+                "openShopDetails",
+                hashMapOf(
+                    "shopId" to shopId,
+                    "tab" to tab
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "dispatchOverlayOpenShopDetails failed: ${e.message}", e)
+        }
+    }
+
+    private fun deliverPendingOverlayNav() {
+        val id = pendingOverlayShopId ?: return
+        val tab = pendingOverlayTab
+        pendingOverlayShopId = null
+        dispatchOverlayOpenShopDetails(id, tab)
+    }
+
 }
 
 //package com.feni.tringo.tringo_app
@@ -403,6 +470,7 @@ class MainActivity : FlutterActivity() {
 //import android.content.pm.PackageManager
 //import android.net.Uri
 //import android.os.Build
+//import android.os.Bundle
 //import android.os.PowerManager
 //import android.provider.Settings
 //import android.telephony.SubscriptionInfo

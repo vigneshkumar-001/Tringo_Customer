@@ -21,11 +21,10 @@ class TringoCallScreeningService : CallScreeningService() {
             // Outgoing trigger-க்கு InCallService தான் reliable.
             // But compile error fix + optional incoming hook:
             if (number.isNotBlank()) {
-                // If you want immediate overlay on incoming:
-                // TringoOverlayService.start(this, number, "", showOnCallEnd = false)
-
-                // If you want after call ends for incoming:
-                TringoOverlayService.start(this, number, "", showOnCallEnd = true)
+                // Show overlay immediately on incoming call.
+                // TringoOverlayService itself watches call end and will show the post-call
+                // advertisement card overlay after the call is cut.
+                TringoOverlayService.start(this, number, "", showOnCallEnd = false)
             }
 
             // ✅ MUST respond, otherwise system treats as not handled

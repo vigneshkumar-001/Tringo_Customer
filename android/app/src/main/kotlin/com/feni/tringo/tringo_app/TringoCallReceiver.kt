@@ -23,7 +23,7 @@ class TringoCallReceiver : BroadcastReceiver() {
 
             // ✅ Only start overlay when ringing (incoming call)
             if (state == TelephonyManager.EXTRA_STATE_RINGING) {
-                val phone = incomingNumber.ifBlank { "UNKNOWN" }
+                val phone = incomingNumber.trim()
 
                 // showOnCallEnd=false => show immediately on incoming
                 TringoOverlayService.start(

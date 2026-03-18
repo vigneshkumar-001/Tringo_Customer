@@ -1195,10 +1195,9 @@ packages:
   sim_card_info:
     dependency: "direct main"
     description:
-      name: sim_card_info
-      sha256: d22c1fc597a962d1feed75e9b6415c8db8040d3eb78ed2f3a0e7832afb024488
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/sim_card_info"
+      relative: true
+    source: path
     version: "1.0.2"
   skeletonizer:
     dependency: "direct main"
