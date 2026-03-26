@@ -140,11 +140,15 @@ class MainActivity : FlutterActivity() {
                     "requestIgnoreBatteryOptimization" -> {
                         try {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                    data = Uri.parse("package:$packageName")
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                // Keep UX simple: don't show a permission-style prompt here.
+                                // Open settings so user can change it only if they want.
+                                if (isIgnoringBatteryOptimizations()) {
+                                    result.success(true)
+                                    return@setMethodCallHandler
                                 }
-                                startActivity(intent)
+
+                                val opened = tryStart(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                if (!opened) openBatteryUnrestrictedSettingsBestEffort()
                                 result.success(true)
                             } else {
                                 openAppDetails()
@@ -152,7 +156,7 @@ class MainActivity : FlutterActivity() {
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "requestIgnoreBatteryOptimization failed: ${e.message}", e)
-                            openAppDetails()
+                            openBatteryUnrestrictedSettingsBestEffort()
                             result.success(false)
                         }
                     }

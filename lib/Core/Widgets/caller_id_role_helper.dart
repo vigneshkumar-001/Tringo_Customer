@@ -82,6 +82,14 @@ class CallerIdRoleHelper {
   static Future<void> requestOverlayPermission() async {
     if (!Platform.isAndroid) return;
     try {
+      // Prefer permission_handler on OEM devices (Samsung/MIUI/etc.)
+      final st = await Permission.systemAlertWindow.status;
+      if (st.isGranted) return;
+
+      final req = await Permission.systemAlertWindow.request();
+      if (req.isGranted) return;
+
+      // Fallback to native (opens overlay settings page)
       await _native.invokeMethod('requestOverlayPermission');
     } catch (_) {}
   }

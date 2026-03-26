@@ -48,6 +48,7 @@
 
     <!-- Keep only base FGS permission if your service really runs in foreground -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Remove privileged permission if merged by dependency -->
     <uses-permission
@@ -95,7 +96,8 @@
 
         <service
             android:name="com.feni.tringo.tringo_app.TringoOverlayService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name="com.feni.tringo.tringo_app.TringoInCallService"

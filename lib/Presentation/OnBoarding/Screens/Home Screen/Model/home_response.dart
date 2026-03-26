@@ -45,7 +45,7 @@ class HomeData {
     required this.user,
     required this.city,
     required this.coordinates,
-    required this. scFlag ,
+    required this.scFlag,
     required this.shopCategories,
     required this.categories,
     required this.banners,
@@ -102,6 +102,7 @@ class HomeData {
     'user': user.toJson(),
     'city': city,
     'coordinates': coordinates.toJson(),
+    'scFlag': scFlag,
     'shopCategories': shopCategories.map((e) => e.toJson()).toList(),
     'categories': categories.map((e) => e.toJson()).toList(),
     'banners': banners.map((e) => e.toJson()).toList(),
@@ -410,6 +411,11 @@ class Offer {
   final String? distanceLabel;
   final String? closeTime;
 
+  final bool? isTrusted;
+  final bool? isClaimed;
+  final bool? claimed;
+  final String? claimStatus;
+
   const Offer({
     required this.id,
     required this.createdAt,
@@ -432,6 +438,10 @@ class Offer {
     this.distanceKm,
     this.distanceLabel,
     this.closeTime,
+    this.isTrusted,
+    this.isClaimed,
+    this.claimed,
+    this.claimStatus,
   });
 
   factory Offer.fromJson(Map<String, dynamic> json) {
@@ -478,6 +488,10 @@ class Offer {
       distanceKm: (json['distanceKm'] as num?)?.toDouble(),
       distanceLabel: json['distanceLabel']?.toString(),
       closeTime: json['closeTime']?.toString(),
+      isTrusted: _parseBool(json['isTrusted']),
+      isClaimed: _parseBool(json['isClaimed']),
+      claimed: _parseBool(json['claimed']),
+      claimStatus: json['claimStatus']?.toString(),
     );
   }
 
@@ -505,6 +519,10 @@ class Offer {
     'distanceKm': distanceKm,
     'distanceLabel': distanceLabel,
     'closeTime': closeTime,
+    'isTrusted': isTrusted,
+    'isClaimed': isClaimed,
+    'claimed': claimed,
+    'claimStatus': claimStatus,
   };
 }
 

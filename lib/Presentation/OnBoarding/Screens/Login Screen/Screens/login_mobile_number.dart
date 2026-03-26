@@ -181,21 +181,8 @@ class _LoginMobileNumberState extends ConsumerState<LoginMobileNumber>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // ✅ On screen open: force phone permission + overlay + roles
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final ok = await forcePhonePermissionWithDialog();
-      if (!ok) return;
-
-      // optional (SIM list)
-      await _ensureMobileNumberPermission();
-
-      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-      if (!overlayOk) {
-        await CallerIdRoleHelper.requestOverlayPermission();
-      }
-
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
-    });
+    // Don't ask Caller-ID/Overlay permissions on login open.
+    // Ask only when user explicitly enables Caller ID from settings/profile.
 
     _sub = ref.listenManual<LoginState>(loginNotifierProvider, (
       prev,

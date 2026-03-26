@@ -14,6 +14,7 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         private const val KEY_LAST_STATE = "last_state"
         private const val KEY_LAST_NUMBER = "last_number"
         private const val KEY_USER_CLOSED = "user_closed_during_call"
+        private const val KEY_USER_CLOSED_NUMBER = "user_closed_number"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -40,10 +41,19 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         Log.d(TAG, "state=$stateStr lastState=$lastState final=$finalNumber closed=$userClosed")
 
         val endedNow =
-            (lastState == TelephonyManager.EXTRA_STATE_RINGING || lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) &&
-                    stateStr == TelephonyManager.EXTRA_STATE_IDLE
+            stateStr == TelephonyManager.EXTRA_STATE_IDLE &&
+                lastState.isNotBlank() &&
+                lastState != TelephonyManager.EXTRA_STATE_IDLE
 
-        if (endedNow && userClosed) {
+        // Always trigger post-call overlay from receiver to improve reliability on OEM devices.
+        // The service will decide whether/what to show.
+        if (endedNow) {
+            // Clear "user closed" before starting, so the service doesn't read stale suppression flags.
+            prefs.edit()
+                .putBoolean(KEY_USER_CLOSED, false)
+                .remove(KEY_USER_CLOSED_NUMBER)
+                .apply()
+
             TringoOverlayService.start(
                 ctx = context.applicationContext,
                 phone = finalNumber,
@@ -51,7 +61,6 @@ class TringoCallEndReceiver : BroadcastReceiver() {
                 showOnCallEnd = true,
                 launchedByReceiver = true
             )
-            prefs.edit().putBoolean(KEY_USER_CLOSED, false).apply()
         }
 
         prefs.edit().putString(KEY_LAST_STATE, stateStr).apply()

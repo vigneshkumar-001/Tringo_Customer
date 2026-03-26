@@ -56,7 +56,9 @@
                 android:text="Sri Krishna"
                 android:textColor="#111111"
                 android:textSize="15sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/adSubtitle"
@@ -65,7 +67,9 @@
                 android:layout_marginTop="4dp"
                 android:text="12, Tirupparankunram... 5kms"
                 android:textColor="#777777"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
 
             <!-- bottom chips -->
             <LinearLayout
@@ -94,7 +98,9 @@
                     android:layout_marginStart="10dp"
                     android:text="Opens Upto 9pm"
                     android:textColor="#666666"
-                    android:textSize="11sp" />
+                    android:textSize="11sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
         </LinearLayout>

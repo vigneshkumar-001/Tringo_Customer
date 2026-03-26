@@ -22,7 +22,9 @@ import '../Privacy Policy/screens/privacy_policy.dart';
 import '../Support/Screens/support_screen.dart';
 import '../wallet/Screens/referral_screen.dart';
 import '../wallet/Screens/wallet_screens.dart';
+import 'caller_id_setup_screen.dart';
 import 'Controller/profile_notifier.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String? url;
@@ -48,6 +50,25 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  void _setupCallerId() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CallerIdSetupScreen()),
+    );
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    final Uri url = Uri.parse('https://bknd.tringobiz.com/privacy-policy.html');
+
+    final launched = await launchUrl(
+      url,
+      mode: LaunchMode.  inAppWebView,
+    );
+
+    if (!launched && mounted) {
+      AppSnackBar.error(context, 'Could not open privacy policy');
+    }
+  }
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -516,6 +537,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   iconHeight: 25,
                   iconWidth: 19,
                 ),
+                SizedBox(height: 15),
+                CommonContainer.profileList(
+                  onTap: _setupCallerId,
+                  label: 'Caller ID Setup',
+                  iconPath: AppImages.support,
+                  iconHeight: 25,
+                  iconWidth: 19,
+                ),
 
                 SizedBox(height: 20),
                 // CommonContainer.profileList(
@@ -552,14 +581,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            PrivacyPolicy(showAcceptReject: false),
-                      ),
-                    );
+                  onTap: ()async {
+                    await _openPrivacyPolicy();
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) =>
+                    //         PrivacyPolicy(showAcceptReject: false),
+                    //   ),
+                    // );
                   },
                   label: 'Privacy Policy',
                   iconPath: AppImages.privacyPolicy,

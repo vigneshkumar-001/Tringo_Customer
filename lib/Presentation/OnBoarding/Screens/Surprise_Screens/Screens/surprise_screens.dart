@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Controller/surprise_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Controller/login_notifier.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../Model/surprise_offer_response.dart';
 
@@ -48,6 +49,8 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   // location used for API
   double? _lat;
   double? _lng;
+  bool _statusCheckInFlight = false;
+  DateTime? _lastStatusCheckAt;
 
   // video
   VideoPlayerController? _videoCtrl;
@@ -55,6 +58,8 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   // navigation guard
   bool _navigated = false;
   bool _videoStarted = false;
+  int _unlockStartAttempts = 0;
+  static const int _maxUnlockStartAttempts = 6;
 
   // premium transition state
   final GlobalKey _giftKey = GlobalKey();
@@ -62,6 +67,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
 
   bool _giftHidden = false;
   bool _showTransitionVideo = false;
+  bool _claimRedirectInFlight = false;
 
   late final AnimationController _rectCtrl;
   late final AnimationController _bounceCtrl;
@@ -90,24 +96,25 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       prev,
       next,
     ) {
-      final prevUnlock =
-          prev?.surpriseStatusResponse?.data?.geo?.canUnlock ?? false;
+      final resp = next.surpriseStatusResponse;
+      if (resp != null) {
+        _maybeRedirectIfClaimed(resp);
+      }
+
       final nextUnlock =
           next.surpriseStatusResponse?.data.geo?.canUnlock ?? false;
 
-      // start only when: loading finished AND false->true
-      if (!next.isLoading && nextUnlock && !prevUnlock && !_videoStarted) {
-        _videoStarted = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _startPremiumGiftToVideoAndClaim();
-        });
+      // start when: loading finished AND canUnlock==true (guarded by _videoStarted)
+      if (!next.isLoading && nextUnlock && !_videoStarted && !_navigated) {
+        _triggerUnlockStart();
       }
 
       // if becomes false, stop everything (optional)
       if (!nextUnlock) {
         _stopAndResetVideoUI();
-        // allow again when near again (optional):
-        // _videoStarted = false;
+        // allow again when near again
+        _videoStarted = false;
+        _unlockStartAttempts = 0;
       }
     });
 
@@ -204,6 +211,10 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   }
 
   void _updateDistance(double userLat, double userLng) {
+    // keep latest position for claim/status checks
+    _lat = userLat;
+    _lng = userLng;
+
     final dist = Geolocator.distanceBetween(
       userLat,
       userLng,
@@ -213,6 +224,89 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
     final newMeters = dist < 0 ? 0.0 : dist;
     if (!mounted) return;
     setState(() => remainingMeters = newMeters);
+
+    // Auto-check unlock state when user is very near, so "0 meter" can open without manual refresh.
+    _maybeAutoStatusCheck(newMeters);
+  }
+
+  Future<void> _maybeAutoStatusCheck(double meters) async {
+    if (!mounted) return;
+    if (_statusCheckInFlight) return;
+    if (_lat == null || _lng == null) return;
+
+    final canUnlock =
+        ref.read(surpriseNotifierProvider).surpriseStatusResponse?.data?.geo?.canUnlock ?? false;
+    if (canUnlock) return;
+
+    // Only when near the shop, and not too frequently.
+    if (meters > 30) return;
+
+    final now = DateTime.now();
+    final last = _lastStatusCheckAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 5)) return;
+    _lastStatusCheckAt = now;
+
+    _statusCheckInFlight = true;
+    try {
+      await ref.read(surpriseNotifierProvider.notifier).surpriseStatusCheck(
+            lat: _lat!,
+            lng: _lng!,
+            shopId: widget.shopId,
+            offerId: widget.subOfferId,
+          );
+    } catch (_) {
+      // ignore auto-check errors
+    } finally {
+      _statusCheckInFlight = false;
+    }
+  }
+
+  Future<void> _maybeRedirectIfClaimed(SurpriseStatusResponse resp) async {
+    if (_navigated || _claimRedirectInFlight) return;
+
+    final stage = resp.data.stage.toString().toUpperCase();
+    final isClaimed = resp.data.state?.isClaimed == true || stage == 'CLAIMED';
+    if (!isClaimed) return;
+
+    _claimRedirectInFlight = true;
+    try {
+      final code = (resp.data.code ?? '').toString().trim();
+      final offerId = (widget.subOfferId ?? '').trim();
+      final shopId = widget.shopId.trim();
+
+      // If code is missing, fetch full claimed details from new GET API.
+      if (code.isEmpty && offerId.isNotEmpty && shopId.isNotEmpty) {
+        final api = ref.read(apiDataSourceProvider);
+        final result =
+            await api.surpriseOfferDetails(shopId: shopId, offerId: offerId);
+
+        result.fold(
+          (_) {},
+          (fresh) {
+            if (!mounted || _navigated) return;
+            _navigated = true;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OpenedSurpriseOfferScreen(response: fresh),
+              ),
+            );
+          },
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      _navigated = true;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OpenedSurpriseOfferScreen(response: resp),
+        ),
+      );
+    } finally {
+      _claimRedirectInFlight = false;
+    }
   }
 
   // ---------------- PREMIUM GIFT -> VIDEO + CLAIM ----------------
@@ -239,12 +333,19 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
     try {
       if (_navigated) return;
       if (_lat == null || _lng == null) {
-        _showMsg("Location not found");
-        return;
+        final ok = await _ensureLatLngForUnlock();
+        if (!ok) {
+          _showMsg("Getting location… try again");
+          _videoStarted = false;
+          return;
+        }
       }
 
       final rect = _getGiftRect();
-      if (rect == null) return;
+      if (rect == null) {
+        _videoStarted = false;
+        return;
+      }
 
       _giftRect = rect;
 
@@ -309,6 +410,59 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       _stopAndResetVideoUI();
       _videoStarted = false;
     }
+  }
+
+  Future<bool> _ensureLatLngForUnlock() async {
+    try {
+      // Fast path
+      if (_lat != null && _lng != null) return true;
+
+      // Try last known first (no GPS wait)
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        _lat = last.latitude;
+        _lng = last.longitude;
+        return true;
+      }
+
+      // Try current with a short timeout
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      ).timeout(const Duration(seconds: 3));
+
+      _lat = pos.latitude;
+      _lng = pos.longitude;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _triggerUnlockStart() {
+    if (_navigated) return;
+    if (_videoStarted) return;
+
+    if (_unlockStartAttempts >= _maxUnlockStartAttempts) return;
+    _unlockStartAttempts++;
+    _videoStarted = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _startPremiumGiftToVideoAndClaim();
+
+      // If start failed due to missing rect/location, retry a few times.
+      if (!_navigated && !_showTransitionVideo && !_videoStarted) {
+        await Future.delayed(const Duration(milliseconds: 120));
+        if (!mounted) return;
+        final canUnlockNow = ref
+                .read(surpriseNotifierProvider)
+                .surpriseStatusResponse
+                ?.data
+                ?.geo
+                ?.canUnlock ??
+            false;
+        if (canUnlockNow) _triggerUnlockStart();
+      }
+    });
   }
 
   void _stopAndResetVideoUI() {
@@ -391,9 +545,28 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   Widget build(BuildContext context) {
     final state = ref.watch(surpriseNotifierProvider);
     final data = state.surpriseStatusResponse?.data;
+    final canUnlock = data?.geo?.canUnlock ?? false;
+
+    // If canUnlock is already true on first response, ensure we auto-start at least once.
+    if (!state.isLoading && canUnlock && !_navigated && !_videoStarted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final stillCanUnlock = ref
+                .read(surpriseNotifierProvider)
+                .surpriseStatusResponse
+                ?.data
+                ?.geo
+                ?.canUnlock ??
+            false;
+        if (stillCanUnlock && !_videoStarted && !_navigated) _triggerUnlockStart();
+      });
+    }
 
     final apiMeters = data?.geo?.remainingMeters;
-    final metersText = "${(apiMeters ?? remainingMeters.toInt())} Mtrs";
+    final localMeters = remainingMeters.toInt();
+    final shownMeters =
+        apiMeters == null ? localMeters : (apiMeters < localMeters ? apiMeters : localMeters);
+    final metersText = "$shownMeters Mtrs";
 
     // final metersText = data?.geo?.remainingMeters != null
     //     ? "${data!.geo?.remainingMeters} Mtrs"
@@ -770,7 +943,16 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                               const SizedBox(width: 12),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: _fetchLocationAndCallApi,
+                                  onTap: () {
+                                    if (canUnlock && !_videoStarted) {
+                                      _videoStarted = true;
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        _startPremiumGiftToVideoAndClaim();
+                                      });
+                                      return;
+                                    }
+                                    _fetchLocationAndCallApi();
+                                  },
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: Colors.black,
@@ -779,18 +961,18 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 16,
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
                                         Icon(
-                                          Icons.refresh,
+                                          canUnlock ? Icons.lock_open : Icons.refresh,
                                           color: Colors.white,
                                           size: 18,
                                         ),
                                         SizedBox(width: 8),
                                         Text(
-                                          "Refresh",
+                                          canUnlock ? "Unlock" : "Refresh",
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w700,

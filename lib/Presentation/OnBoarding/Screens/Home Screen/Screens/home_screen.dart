@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -24,6 +25,8 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Control
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_guide.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Controller/login_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/Opened_surprise_offer_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 
 import '../../../../../Core/Utility/app_snackbar.dart';
@@ -85,6 +88,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Restore auto permission flow (like earlier builds) so overlay works out-of-box.
+      final phoneStatus = await ph.Permission.phone.status;
+      if (!phoneStatus.isGranted) {
+        await ph.Permission.phone.request();
+      }
+
       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
       if (!overlayOk) {
         await CallerIdRoleHelper.requestOverlayPermission();
@@ -921,11 +930,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     height: 17,
                                   ),
                                   const SizedBox(width: 10),
-                                  Text(
-                                    'Search product, shop, service, mobile no',
-                                    style: GoogleFont.Mulish(
-                                      color: AppColor.lightGray,
-                                      fontSize: 14,
+                                  Expanded(
+                                    child: Text(
+                                      'Search product, shop, service, mobile no',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                      style: GoogleFont.Mulish(
+                                        color: AppColor.lightGray,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1550,21 +1564,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                           children: [
                                             CommonContainer.shopImageContainer(
                                               heroTag: 'surprise-${data.id}',
-                                              onTap: () {
-                                                final offerId = data.id;
+                                              onTap: () async {
+                                                final offerId =
+                                                    data.id.toString().trim();
+                                                final shopId = (data.branchId ??
+                                                        data.shop?.id)
+                                                    ?.toString()
+                                                    .trim() ??
+                                                    '';
+                                                final shopLat =
+                                                    data.shop?.gpsLatitude ??
+                                                        0.0;
+                                                final shopLng =
+                                                    data.shop?.gpsLongitude ??
+                                                        0.0;
+
+                                                if (shopId.isEmpty ||
+                                                    offerId.isEmpty) {
+                                                  AppSnackBar.error(
+                                                    context,
+                                                    'Surprise offer not available',
+                                                  );
+                                                  return;
+                                                }
+
+                                                final claimStatus =
+                                                    (data.claimStatus ?? '')
+                                                        .toString()
+                                                        .toUpperCase();
+                                                final alreadyClaimed =
+                                                    data.isClaimed == true ||
+                                                        data.claimed == true ||
+                                                        claimStatus ==
+                                                            'CLAIMED';
+
+                                                if (alreadyClaimed) {
+                                                  showDialog(
+                                                    context: context,
+                                                    barrierDismissible: false,
+                                                    builder: (_) => const Center(
+                                                      child: CircularProgressIndicator(),
+                                                    ),
+                                                  );
+
+                                                  final api =
+                                                      ref.read(apiDataSourceProvider);
+                                                  final result =
+                                                      await api.surpriseOfferDetails(
+                                                    shopId: shopId,
+                                                    offerId: offerId,
+                                                  );
+
+                                                  if (!mounted) return;
+                                                  Navigator.of(
+                                                    context,
+                                                    rootNavigator: true,
+                                                  ).pop();
+
+                                                  result.fold(
+                                                    (failure) {
+                                                      AppSnackBar.error(
+                                                        context,
+                                                        failure.message,
+                                                      );
+                                                    },
+                                                    (response) {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) =>
+                                                              OpenedSurpriseOfferScreen(
+                                                            response: response,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  );
+                                                  return;
+                                                }
+
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
                                                     builder: (context) =>
                                                         SurpriseScreens(
-                                                          subOfferId: offerId,
-                                                          shopLat: 0.0,
-                                                          shopLng: 0.0,
-                                                          shopId:
-                                                              data.shop?.id
-                                                                  .toString() ??
-                                                              '',
-                                                        ),
+                                                      subOfferId: offerId,
+                                                      shopLat: shopLat,
+                                                      shopLng: shopLng,
+                                                      shopId: shopId,
+                                                    ),
                                                   ),
                                                 );
                                               },

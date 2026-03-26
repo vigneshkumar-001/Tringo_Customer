@@ -75,11 +75,22 @@ class ApiUrl {
     required double lat,
     String? offerId,
   }) {
-    return "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
+    final baseUrl =
+        "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
+
+    if (offerId == null || offerId.isEmpty) return baseUrl;
+    return "$baseUrl&offerId=$offerId";
   }
 
   static String surpriseClaimed({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/surprise/claim";
+  }
+
+  static String surpriseOfferDetails({
+    required String shopId,
+    required String offerId,
+  }) {
+    return "${base}api/v1/public/shops/$shopId/surprise/offers/$offerId";
   }
 
   static String walletHistory({required String type}) {

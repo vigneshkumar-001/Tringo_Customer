@@ -51,6 +51,7 @@ class TringoOverlayService : Service() {
 
     private val PREF = "tringo_call_state"
     private val KEY_USER_CLOSED = "user_closed_during_call"
+    private val KEY_USER_CLOSED_NUMBER = "user_closed_number"
     private val KEY_LAST_NUMBER = "last_number"
 
     private var adsAdapter: OverlayAdsAdapter? = null
@@ -180,11 +181,25 @@ class TringoOverlayService : Service() {
 
         val prefs = getSharedPreferences(PREF, MODE_PRIVATE)
         val last = (prefs.getString(KEY_LAST_NUMBER, "") ?: "").trim()
+        val userClosed = prefs.getBoolean(KEY_USER_CLOSED, false)
+        val closedNumber = (prefs.getString(KEY_USER_CLOSED_NUMBER, "") ?: "").trim()
 
         // Android may hide EXTRA_INCOMING_NUMBER on newer versions/devices.
         // Still show overlay; use last known number if available.
         if (pendingPhone.isBlank() || pendingPhone.equals("UNKNOWN", true)) {
             pendingPhone = if (last.isNotBlank() && !last.equals("UNKNOWN", true)) last else "UNKNOWN"
+        }
+
+        val suppressedForThisNumber =
+            userClosed &&
+                closedNumber.isNotBlank() &&
+                pendingPhone.isNotBlank() &&
+                !pendingPhone.equals("UNKNOWN", true) &&
+                pendingPhone.equals(closedNumber, ignoreCase = true)
+
+        if (userClosed && !suppressedForThisNumber) {
+            // User closed overlay for some previous call/number; don't block future calls.
+            clearUserClosedFlag()
         }
 
         // Store only real numbers (avoid persisting UNKNOWN/blank).
@@ -196,16 +211,36 @@ class TringoOverlayService : Service() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             showCallerHeadsUp("Tringo Caller ID", "Enable overlay permission to show popup", "overlay_permission_missing")
-            openAppSettings()
             stopSelf()
             return START_NOT_STICKY
         }
 
         postCallShownOnce = false
 
+        if (showOnlyAfterEnd) {
+            Log.d(TAG, "postCall immediate overlay path phone=$pendingPhone")
+            // Receiver may start us after the call is already IDLE, so don't wait for call-state callbacks.
+            postCallPopupMode = true
+            // Bypass debounce: post-call must show even if an incoming overlay was just shown.
+            lastOverlayShownAt = 0L
+            showOverlay(pendingPhone, pendingContact, preferCache = true)
+
+            serviceScope.launch {
+                delay(POST_CALL_SHOW_MS)
+                removeOverlay()
+                postCallPopupMode = false
+                clearUserClosedFlag()
+                stopSelf()
+            }
+
+            return START_STICKY
+        }
+
         if (!showOnlyAfterEnd) {
-            safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
-            scheduleIncomingAutoHide()
+            if (!suppressedForThisNumber) {
+                safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
+                scheduleIncomingAutoHide()
+            }
         }
 
         startWatchingForCallEnd()
@@ -253,6 +288,7 @@ class TringoOverlayService : Service() {
                 .putBoolean(KEY_USER_CLOSED, true)
 
             if (phone.isNotBlank() && !phone.equals("UNKNOWN", true)) {
+                edit.putString(KEY_USER_CLOSED_NUMBER, phone)
                 edit.putString(KEY_LAST_NUMBER, phone)
             }
 
@@ -266,8 +302,20 @@ class TringoOverlayService : Service() {
         try {
             getSharedPreferences(PREF, MODE_PRIVATE).edit()
                 .putBoolean(KEY_USER_CLOSED, false)
+                .remove(KEY_USER_CLOSED_NUMBER)
                 .apply()
         } catch (_: Exception) {}
+    }
+
+    private fun dismissOverlayFromUser() {
+        markUserClosedDuringCall(pendingPhone)
+        removeOverlay()
+
+        if (postCallPopupMode) {
+            postCallPopupMode = false
+            clearUserClosedFlag()
+            stopSelf()
+        }
     }
 
     // ==========================================================
@@ -523,12 +571,28 @@ class TringoOverlayService : Service() {
         val smallTop = v.findViewById<TextView>(R.id.smallTopText)
         smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
 
+        // Dismiss overlay on tap anywhere (outside/card) + close button
+        val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
+        val rootCard = v.findViewById<View>(R.id.rootCard)
+        outsideLayer?.setOnClickListener { dismissOverlayFromUser() }
+        rootCard?.setOnClickListener { dismissOverlayFromUser() }
+
+        // On some devices, the "end call" tap-up can land on the newly shown post-call overlay
+        // and instantly dismiss it. Guard dismiss for a short window after showing post-call UI.
+        if (postCallPopupMode) {
+            outsideLayer?.isClickable = false
+            rootCard?.isClickable = false
+            serviceScope.launch {
+                delay(700)
+                if (overlayView !== v) return@launch
+                outsideLayer?.isClickable = true
+                rootCard?.isClickable = true
+            }
+        }
+
         // Close
         val closeBtn = v.findViewById<View>(R.id.closeBtn)
-        closeBtn?.setOnClickListener {
-            markUserClosedDuringCall(pendingPhone)
-            removeOverlay()
-        }
+        closeBtn?.setOnClickListener { dismissOverlayFromUser() }
 
         setButtonIconDp(callBtnBusiness, R.drawable.ic_call_png, 16f)
         setButtonIconDp(chatBtnBusiness, R.drawable.ic_whatsapp_png, 16f)
@@ -555,6 +619,7 @@ class TringoOverlayService : Service() {
         val recycler = v.findViewById<RecyclerView>(R.id.adsRecycler)
 
         recycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        clampAdsRecyclerHeight(recycler)
 
         // ✅ click callback -> open flutter page
         adsAdapter = OverlayAdsAdapter { ad ->
@@ -581,6 +646,7 @@ class TringoOverlayService : Service() {
 
         try {
             windowManager?.addView(v, params)
+            Log.d(TAG, "addView ok postCall=$postCallPopupMode phone=$phone")
         } catch (e: Exception) {
             showCallerHeadsUp(
                 "Tringo Caller ID",
@@ -788,8 +854,23 @@ class TringoOverlayService : Service() {
     }
 
     private fun removeOverlay() {
-        overlayView?.let { try { windowManager?.removeView(it) } catch (_: Exception) {} }
+        overlayView?.let {
+            try { windowManager?.removeView(it) } catch (_: Exception) {}
+            Log.d(TAG, "removeOverlay()")
+        }
         overlayView = null
+    }
+
+    private fun clampAdsRecyclerHeight(recycler: RecyclerView?) {
+        if (recycler == null) return
+        try {
+            val density = resources.displayMetrics.density
+            val desiredPx = (270f * density).toInt()
+            val screenH = resources.displayMetrics.heightPixels
+            val maxPx = (screenH * 0.40f).toInt().coerceAtLeast((160f * density).toInt())
+            val h = desiredPx.coerceAtMost(maxPx).coerceAtLeast((140f * density).toInt())
+            recycler.layoutParams = recycler.layoutParams.apply { height = h }
+        } catch (_: Exception) {}
     }
 
     override fun onDestroy() {

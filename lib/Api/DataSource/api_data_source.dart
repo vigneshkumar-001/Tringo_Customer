@@ -1846,6 +1846,40 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
+  Future<Either<Failure, SurpriseStatusResponse>> surpriseOfferDetails({
+    required String shopId,
+    required String offerId,
+  }) async {
+    try {
+      final url = ApiUrl.surpriseOfferDetails(shopId: shopId, offerId: offerId);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SurpriseStatusResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Request failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e, st) {
+      AppLogger.log.e('$e\n$st');
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   Future<Either<Failure, WalletQrResponse>> walletQrCode() async {
     try {
       final url = ApiUrl.walletQrCode;
