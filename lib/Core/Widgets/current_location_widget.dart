@@ -132,39 +132,64 @@ class _CurrentLocationWidgetState extends State<CurrentLocationWidget> {
           ),
           borderRadius: BorderRadius.circular(30),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.locationIcon != null)
-              Image.asset(
-                widget.locationIcon!,
-                height: 18,
-                color: AppColor.blue,
-              ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                _loading
-                    ? 'Fetching location...'
-                    : (_currentAddress ?? 'Unknown location'),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style:
-                    widget.textStyle ??
-                    GoogleFonts.mulish(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            if (widget.dropDownIcon != null)
-              Image.asset(
-                widget.dropDownIcon!,
-                height: 11,
-                color: AppColor.darkBlue,
-              ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const locationIconW = 18.0;
+            const dropDownIconW = 11.0;
+            const gapW = 6.0;
+
+            final showLocationIcon = widget.locationIcon != null;
+            final showDropDownIcon = widget.dropDownIcon != null;
+            final available = constraints.maxWidth;
+
+            final showLocationGap =
+                showLocationIcon &&
+                (!available.isFinite || available >= (locationIconW + gapW + 4));
+
+            final fixedLeading = showLocationIcon
+                ? (locationIconW + (showLocationGap ? gapW : 0))
+                : 0.0;
+            final fixedTrailing = showDropDownIcon ? (gapW + dropDownIconW) : 0.0;
+
+            final canShowDropDown =
+                showDropDownIcon &&
+                (!available.isFinite || available >= (fixedLeading + fixedTrailing));
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showLocationIcon)
+                  Image.asset(
+                    widget.locationIcon!,
+                    height: locationIconW,
+                    color: widget.iconColor ?? AppColor.blue,
+                  ),
+                if (showLocationGap) const SizedBox(width: gapW),
+                Flexible(
+                  child: Text(
+                    _loading
+                        ? 'Fetching location...'
+                        : (_currentAddress ?? 'Unknown location'),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style:
+                        widget.textStyle ??
+                        GoogleFonts.mulish(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ),
+                if (canShowDropDown) const SizedBox(width: gapW),
+                if (canShowDropDown)
+                  Image.asset(
+                    widget.dropDownIcon!,
+                    height: dropDownIconW,
+                    color: AppColor.darkBlue,
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

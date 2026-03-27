@@ -322,6 +322,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                             ),
                             const SizedBox(height: 6),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Image.asset(
                                   AppImages.locationImage,
@@ -330,25 +331,32 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
+                                  flex: 7,
                                   child: Text(
                                     '${shopsData.city}, ${shopsData.state}, ${shopsData.country}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
                                     style: GoogleFont.Mulish(
                                       fontSize: 12,
                                       color: AppColor.lightGray2,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  shopsData.distanceLabel ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: AppColor.lightGray3,
+                                if ((shopsData.distanceLabel ?? '').trim().isNotEmpty) ...[
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      shopsData.distanceLabel ?? '',
+                                      textAlign: TextAlign.end,
+                                      softWrap: true,
+                                      style: GoogleFont.Mulish(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        color: AppColor.lightGray3,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -401,7 +409,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                 ),
               ),
 
-              const SizedBox(height: 60),
+     const SizedBox(height: 24),
               CommonContainer.horizonalDivider(),
               const SizedBox(height: 24),
 
@@ -467,9 +475,9 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       ),
                     ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               CommonContainer.horizonalDivider(),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
               // ---------------- HIGHLIGHTS ----------------
               Padding(
@@ -524,16 +532,24 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               vertical: 12,
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  data.label,
-                                  style: GoogleFont.Mulish(
-                                    color: AppColor.lightGray3,
+                                Flexible(
+                                  flex: 2,
+                                  child: Text(
+                                    data.label,
+                                    softWrap: true,
+                                    style: GoogleFont.Mulish(
+                                      color: AppColor.lightGray3,
+                                    ),
                                   ),
                                 ),
+                                const SizedBox(width: 11),
                                 Expanded(
+                                  flex: 3,
                                   child: Text(
                                     data.value,
+                                    softWrap: true,
                                     textAlign: TextAlign.center,
                                     style: GoogleFont.Mulish(
                                       fontWeight: FontWeight.w700,

@@ -9,6 +9,8 @@ final callerIdAskedProvider = StateProvider<bool>((ref) => false);
 const MethodChannel _native = MethodChannel('sim_info');
 
 class CallerIdRoleHelper {
+  static const String callerIdOverlayEnabledPrefKey = 'caller_id_overlay_enabled';
+
   static Future<bool> requestReadPhoneState() async {
     if (!Platform.isAndroid) return true;
     try {
@@ -91,6 +93,13 @@ class CallerIdRoleHelper {
 
       // Fallback to native (opens overlay settings page)
       await _native.invokeMethod('requestOverlayPermission');
+    } catch (_) {}
+  }
+
+  static Future<void> stopOverlayService() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _native.invokeMethod('stopOverlayService');
     } catch (_) {}
   }
 

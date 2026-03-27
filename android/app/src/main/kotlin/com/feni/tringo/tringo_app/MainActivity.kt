@@ -133,6 +133,16 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
 
+                    "stopOverlayService" -> {
+                        try {
+                            stopService(Intent(this, TringoOverlayService::class.java))
+                            result.success(true)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "stopOverlayService failed: ${e.message}", e)
+                            result.success(false)
+                        }
+                    }
+
                     "isIgnoringBatteryOptimizations" -> {
                         result.success(isIgnoringBatteryOptimizations())
                     }

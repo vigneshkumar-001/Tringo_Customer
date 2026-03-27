@@ -130,6 +130,23 @@ class TringoOverlayService : Service() {
     companion object {
         @Volatile var isRunning: Boolean = false
 
+        private const val FLUTTER_PREFS = "FlutterSharedPreferences"
+        private const val KEY_OVERLAY_ENABLED = "flutter.caller_id_overlay_enabled"
+
+        private fun isOverlayFeatureEnabled(ctx: Context): Boolean {
+            return try {
+                val sp = ctx.getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
+                val raw = sp.all[KEY_OVERLAY_ENABLED]
+                when (raw) {
+                    is Boolean -> raw
+                    is String -> raw.equals("true", ignoreCase = true)
+                    else -> false
+                }
+            } catch (_: Throwable) {
+                false
+            }
+        }
+
         fun start(
             ctx: Context,
             phone: String,
@@ -137,6 +154,11 @@ class TringoOverlayService : Service() {
             showOnCallEnd: Boolean = false,
             launchedByReceiver: Boolean = false
         ): Boolean {
+            if (!isOverlayFeatureEnabled(ctx)) {
+                Log.d("TRINGO_OVERLAY", "start() skipped (Caller ID Overlay disabled)")
+                return false
+            }
+
             val i = Intent(ctx, TringoOverlayService::class.java).apply {
                 putExtra("phone", phone)
                 putExtra("contactName", contactName)
@@ -170,6 +192,11 @@ class TringoOverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!isOverlayFeatureEnabled(this)) {
+            Log.d(TAG, "onStartCommand ignored (Caller ID Overlay disabled)")
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         pendingPhone = intent?.getStringExtra("phone") ?: ""
         pendingContact = intent?.getStringExtra("contactName") ?: ""

@@ -12,7 +12,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart' as ph;
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -35,7 +34,6 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigate
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/search_screen_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_shops_details.dart';
 import '../../../../../Core/Widgets/advetisements_screens.dart';
-import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../../wallet/Controller/wallet_notifier.dart';
@@ -88,18 +86,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Restore auto permission flow (like earlier builds) so overlay works out-of-box.
-      final phoneStatus = await ph.Permission.phone.status;
-      if (!phoneStatus.isGranted) {
-        await ph.Permission.phone.request();
-      }
-
-      final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-      if (!overlayOk) {
-        await CallerIdRoleHelper.requestOverlayPermission();
-      }
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref);
-      await _maybeShowSystemCallerIdPopupOnce();
+      // Don't ask overlay/caller-id permissions on app open.
+      // User enables it explicitly from Profile screen toggle.
       ref.read(smartConnectNotifierProvider.notifier).fetchSmartConnectGuide();
     });
 
@@ -111,9 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      await Future.delayed(const Duration(milliseconds: 400));
-      await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
-      await _maybeShowSystemCallerIdPopupOnce();
+      // No permission prompts on resume.
     }
   }
 

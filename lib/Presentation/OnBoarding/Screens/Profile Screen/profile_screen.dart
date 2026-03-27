@@ -1,13 +1,18 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
+import 'package:tringo_app/Core/Widgets/caller_id_role_helper.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
@@ -50,6 +55,66 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _callerIdOverlayEnabled = false;
+  bool _callerIdOverlayPrefLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCallerIdOverlayPref();
+  }
+
+  Future<void> _loadCallerIdOverlayPref() async {
+    final enabled = await AppPrefs.getCallerIdOverlayEnabled();
+    if (!mounted) return;
+    setState(() {
+      _callerIdOverlayEnabled = enabled;
+      _callerIdOverlayPrefLoaded = true;
+    });
+  }
+
+  Future<void> _setCallerIdOverlayEnabled(bool enabled) async {
+    if (!_callerIdOverlayPrefLoaded) return;
+
+    // If not Android, keep it disabled (feature is Android-only).
+    if (!Platform.isAndroid) {
+      if (mounted) {
+        setState(() {
+          _callerIdOverlayEnabled = false;
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      _callerIdOverlayEnabled = enabled;
+    });
+
+    await AppPrefs.setCallerIdOverlayEnabled(enabled);
+
+    if (!enabled) {
+      await CallerIdRoleHelper.stopOverlayService();
+      return;
+    }
+
+    final phoneStatus = await Permission.phone.status;
+    if (!phoneStatus.isGranted) {
+      final phoneReq = await Permission.phone.request();
+      if (!phoneReq.isGranted && mounted) {
+        AppSnackBar.error(context, 'Phone permission is needed for Caller ID overlay');
+        return;
+      }
+    }
+
+    await CallerIdRoleHelper.requestOverlayPermission();
+    await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
+
+    final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+    if (!overlayOk && mounted) {
+      AppSnackBar.error(context, 'Enable “Appear on top / Overlay” permission to show Caller ID popup');
+    }
+  }
+
   void _setupCallerId() {
     Navigator.push(
       context,
@@ -536,6 +601,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   iconPath: AppImages.support,
                   iconHeight: 25,
                   iconWidth: 19,
+                ),
+                SizedBox(height: 15),
+                InkWell(
+                  onTap: () => _setCallerIdOverlayEnabled(!_callerIdOverlayEnabled),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColor.brightGray,
+                            ),
+                            child: Center(
+                              child: Image.asset(
+                                AppImages.support,
+                                height: 25,
+                                width: 19,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Caller ID Overlay',
+                            style: GoogleFont.Mulish(
+                              fontSize: 16,
+                              color: AppColor.darkBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch.adaptive(
+                        value: _callerIdOverlayEnabled,
+                        onChanged: _callerIdOverlayPrefLoaded ? _setCallerIdOverlayEnabled : null,
+                        activeColor: AppColor.darkBlue,
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(

@@ -2710,7 +2710,7 @@ class CommonContainer {
                 children: [
                   Text(
                     productName,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFont.Mulish(
                       fontWeight: FontWeight.w700,

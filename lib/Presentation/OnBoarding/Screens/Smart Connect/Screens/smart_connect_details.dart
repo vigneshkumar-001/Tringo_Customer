@@ -31,6 +31,7 @@ import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
+import 'package:tringo_app/Core/Widgets/full_screen_image_gallery.dart';
 
 // Your provider
 import '../Controller/smart_connect_notifier.dart';
@@ -171,6 +172,10 @@ class _SuccessBody extends StatelessWidget {
               final data = item;
 
               final images = (data.images ?? const <String>[]) as List<dynamic>;
+              final imageUrls = images
+                  .map((e) => e?.toString() ?? '')
+                  .where((e) => e.trim().isNotEmpty)
+                  .toList();
               final shop = data.shop;
               
 
@@ -204,7 +209,8 @@ class _SuccessBody extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${data.productName ?? ''}',
+                                    data.productName ?? '',
+                                    softWrap: true,
                                     style: GoogleFont.Mulish(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 19,
@@ -214,8 +220,7 @@ class _SuccessBody extends StatelessWidget {
                                   const SizedBox(height: 7),
                                   Text(
                                     data.description?.toString() ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
                                     style: GoogleFont.Mulish(
                                       fontSize: 10,
                                       color: AppColor.lightGray3,
@@ -311,11 +316,12 @@ class _SuccessBody extends StatelessWidget {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 15),
-                            itemCount: images.length,
+                            itemCount: imageUrls.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(width: 10),
                             itemBuilder: (_, i) {
-                              final imageUrl = images[i]?.toString() ?? '';
+                              final imageUrl = imageUrls[i];
+                              final heroTagPrefix = 'smart_connect_${index}_img';
 
                               return Container(
                                 width: 250,
@@ -328,29 +334,41 @@ class _SuccessBody extends StatelessWidget {
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    imageUrl: imageUrl,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                                  child: InkWell(
+                                    onTap: () => FullScreenImageGallery.open(
+                                      context,
+                                      imageUrls: imageUrls,
+                                      initialIndex: i,
+                                      heroTagPrefix: heroTagPrefix,
+                                    ),
+                                    child: Hero(
+                                      tag: '${heroTagPrefix}_$i',
+                                      child: CachedNetworkImage(
+                                        imageUrl: imageUrl,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) =>
+                                            const Center(
+                                              child: SizedBox(
+                                                height: 18,
+                                                width: 18,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                ),
+                                              ),
+                                            ),
+                                        errorWidget: (context, url, error) =>
+                                            Container(
+                                              color: Colors.grey.shade300,
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: 28,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ),
                                       ),
                                     ),
-                                    errorWidget: (context, url, error) =>
-                                        Container(
-                                          color: Colors.grey.shade300,
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.broken_image,
-                                              size: 28,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
                                   ),
                                 ),
                               );
@@ -496,24 +514,39 @@ class _SuccessBody extends StatelessWidget {
                               const SizedBox(width: 40),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: CachedNetworkImage(
-                                  imageUrl: shop?.imageUrl?.toString() ?? '',
-                                  height: 111,
-                                  width: 99,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => const Center(
-                                    child: SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                                child: InkWell(
+                                  onTap: () {
+                                    final url = shop?.imageUrl?.toString() ?? '';
+                                    if (url.trim().isEmpty) return;
+                                    FullScreenImageGallery.open(
+                                      context,
+                                      imageUrls: [url],
+                                      initialIndex: 0,
+                                      heroTagPrefix: 'smart_connect_${index}_shop',
+                                    );
+                                  },
+                                  child: Hero(
+                                    tag: 'smart_connect_${index}_shop_0',
+                                    child: CachedNetworkImage(
+                                      imageUrl: shop?.imageUrl?.toString() ?? '',
+                                      height: 111,
+                                      width: 99,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => const Center(
+                                        child: SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
                                       ),
+                                      errorWidget: (context, url, error) =>
+                                          const Center(
+                                            child: Icon(Icons.error, size: 20),
+                                          ),
                                     ),
                                   ),
-                                  errorWidget: (context, url, error) =>
-                                      const Center(
-                                        child: Icon(Icons.error, size: 20),
-                                      ),
                                 ),
                               ),
                             ],
