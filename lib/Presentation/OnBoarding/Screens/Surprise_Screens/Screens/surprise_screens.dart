@@ -11,11 +11,11 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Scre
 import 'package:video_player/video_player.dart';
 
 import 'package:tringo_app/Core/Utility/app_Images.dart';
+import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Controller/surprise_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Controller/login_notifier.dart';
-import '../../../../../Core/Utility/app_color.dart';
-import '../Model/surprise_offer_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Model/surprise_offer_response.dart';
 
 class AppVideos {
   static const String surpriseOpenVideo = "Assets/Videos/surprise-opens.mp4";
@@ -45,12 +45,15 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   double remainingMeters = 0.0;
   bool _loadingDistance = true;
   StreamSubscription<Position>? _posSub;
+  bool _fetchApiInFlight = false;
 
   // location used for API
   double? _lat;
   double? _lng;
   bool _statusCheckInFlight = false;
   DateTime? _lastStatusCheckAt;
+  late final String _shopId;
+  late final String _offerId;
 
   // video
   VideoPlayerController? _videoCtrl;
@@ -79,6 +82,9 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   void initState() {
     super.initState();
 
+    _shopId = widget.shopId.trim();
+    _offerId = (widget.subOfferId ?? '').trim();
+
     _rectCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 520),
@@ -97,7 +103,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       next,
     ) {
       final resp = next.surpriseStatusResponse;
-      if (resp != null) {
+      if (resp != null && _isRespForThisOffer(resp)) {
         _maybeRedirectIfClaimed(resp);
       }
 
@@ -105,7 +111,12 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
           next.surpriseStatusResponse?.data.geo?.canUnlock ?? false;
 
       // start when: loading finished AND canUnlock==true (guarded by _videoStarted)
-      if (!next.isLoading && nextUnlock && !_videoStarted && !_navigated) {
+      if (!next.isLoading &&
+          nextUnlock &&
+          !_videoStarted &&
+          !_navigated &&
+          resp != null &&
+          _isRespForThisOffer(resp)) {
         _triggerUnlockStart();
       }
 
@@ -121,8 +132,24 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
     _initLocationAndStartTracking();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Delay provider modification until after first frame to satisfy Riverpod's
+      // "do not modify providers during build/lifecycle" assertion (especially with go_router).
+      ref.read(surpriseNotifierProvider.notifier).reset();
       _fetchLocationAndCallApi();
     });
+  }
+
+  bool _isRespForThisOffer(SurpriseStatusResponse resp) {
+    final respShopId = (resp.data.shopId).toString().trim();
+    if (respShopId.isNotEmpty && respShopId != _shopId) return false;
+
+    if (_offerId.isEmpty) return true;
+
+    final respOfferId =
+        (resp.data.offer?.id ?? resp.data.legacy?.offerId ?? '').toString().trim();
+    if (respOfferId.isEmpty) return true;
+    return respOfferId == _offerId;
   }
 
   @override
@@ -139,30 +166,47 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   // ---------------- LOCATION + API ----------------
 
   Future<void> _fetchLocationAndCallApi() async {
+    if (_fetchApiInFlight) return;
+    _fetchApiInFlight = true;
     try {
       setState(() => _loadingDistance = true);
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best,
-      );
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (_) {
+        pos = await Geolocator.getLastKnownPosition();
+      }
+
+      if (pos == null) {
+        throw Exception("Unable to fetch location");
+      }
 
       _lat = pos.latitude;
       _lng = pos.longitude;
 
       _updateDistance(_lat!, _lng!);
 
+      _statusCheckInFlight = true;
+      _lastStatusCheckAt = DateTime.now();
       await ref
           .read(surpriseNotifierProvider.notifier)
           .surpriseStatusCheck(
             lat: _lat!,
             lng: _lng!, // ✅ real lng
             shopId: widget.shopId,
+            offerId: widget.subOfferId,
           );
 
-      if (mounted) setState(() => _loadingDistance = false);
     } catch (e) {
-      if (mounted) setState(() => _loadingDistance = false);
       _showMsg("Error: $e");
+    } finally {
+      _statusCheckInFlight = false;
+      _fetchApiInFlight = false;
+      if (mounted) setState(() => _loadingDistance = false);
     }
   }
 
@@ -187,10 +231,18 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best,
-      );
-      _updateDistance(pos.latitude, pos.longitude);
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (_) {
+        pos = await Geolocator.getLastKnownPosition();
+      }
+      if (pos != null) {
+        _updateDistance(pos.latitude, pos.longitude);
+      }
 
       _posSub?.cancel();
       _posSub =
@@ -374,13 +426,19 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       await _waitVideoEnd(_videoCtrl!);
 
       // 5) call CLAIM API
+      final status = ref.read(surpriseNotifierProvider).surpriseStatusResponse;
+      final offerIdToClaim = _offerId.isNotEmpty
+          ? _offerId
+          : (status?.data.offer?.id ?? status?.data.legacy?.offerId ?? '')
+              .toString()
+              .trim();
       final claimRes = await ref
           .read(surpriseNotifierProvider.notifier)
           .surpriseClaimed(
             lat: _lat!,
             lng: _lng!,
             shopId: widget.shopId,
-            offerId: widget.subOfferId ?? '',
+            offerId: offerIdToClaim,
           );
 
       if (!mounted) return;
@@ -544,7 +602,8 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(surpriseNotifierProvider);
-    final data = state.surpriseStatusResponse?.data;
+    final resp = state.surpriseStatusResponse;
+    final data = (resp != null && _isRespForThisOffer(resp)) ? resp.data : null;
     final canUnlock = data?.geo?.canUnlock ?? false;
 
     // If canUnlock is already true on first response, ensure we auto-start at least once.
@@ -943,7 +1002,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                               const SizedBox(width: 12),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () {
+                                  onTap: () async {
                                     if (canUnlock && !_videoStarted) {
                                       _videoStarted = true;
                                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -951,7 +1010,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
                                       });
                                       return;
                                     }
-                                    _fetchLocationAndCallApi();
+                                    await _fetchLocationAndCallApi();
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(

@@ -84,14 +84,10 @@ class CallerIdRoleHelper {
   static Future<void> requestOverlayPermission() async {
     if (!Platform.isAndroid) return;
     try {
-      // Prefer permission_handler on OEM devices (Samsung/MIUI/etc.)
-      final st = await Permission.systemAlertWindow.status;
-      if (st.isGranted) return;
+      final ok = await isOverlayGranted();
+      if (ok) return;
 
-      final req = await Permission.systemAlertWindow.request();
-      if (req.isGranted) return;
-
-      // Fallback to native (opens overlay settings page)
+      // Open native overlay settings page directly.
       await _native.invokeMethod('requestOverlayPermission');
     } catch (_) {}
   }
@@ -119,6 +115,16 @@ class CallerIdRoleHelper {
     try {
       final ok = await _native.invokeMethod<bool>('isIgnoringBatteryOptimizations');
       return ok ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> isBackgroundRestricted() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final restricted = await _native.invokeMethod<bool>('isBackgroundRestricted');
+      return restricted ?? false;
     } catch (_) {
       return false;
     }

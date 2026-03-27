@@ -140,10 +140,10 @@ class TringoOverlayService : Service() {
                 when (raw) {
                     is Boolean -> raw
                     is String -> raw.equals("true", ignoreCase = true)
-                    else -> false
+                    else -> true // default ON; user can disable from Profile toggle
                 }
             } catch (_: Throwable) {
-                false
+                true
             }
         }
 

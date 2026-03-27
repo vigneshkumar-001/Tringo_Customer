@@ -12,7 +12,6 @@ import 'package:tringo_app/Core/Utility/device_helper.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../../Core/Widgets/common_container.dart';
 import '../../../Core/app_go_routes.dart';
 import '../../../Core/permissions/permission_service.dart';
@@ -29,12 +28,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     with WidgetsBindingObserver {
   String appVersion = '1.0.0';
 
-  bool _batteryFlowRunning = false;
   bool _navigated = false;
-  static const String _batteryLastOkKey = "battery_last_ok";
-  bool _batterySheetOpen = false;
-
-  static const String _batteryDontAskKey = "battery_dont_ask_again";
   bool _tokenSent = false;
   @override
   void initState() {
@@ -79,7 +73,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // ✅ Only check again if still on splash (not navigated)
     if (state == AppLifecycleState.resumed && !_navigated) {
-      _batteryOptimizationFlow();
+      // Don't ask battery optimization on app start/resume.
     }
   }
   Future<void> _sendDeviceTokenIfNeeded() async {
@@ -144,10 +138,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // ✅ 2) Send FCM token to API here
     await _sendDeviceTokenIfNeeded();
 
-    // 3) Battery flow (Android only)
-    await _batteryOptimizationFlow();
-
-    // 4) Splash delay
+    // 3) Splash delay
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
 
@@ -206,125 +197,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   //     context.go(AppRoutes.homePath);
   //   }
   // }
-
-  // ---------------- ✅ Battery Flow (FIXED) ----------------
-  Future<void> _batteryOptimizationFlow() async {
-    if (!Platform.isAndroid) return;
-    if (_batteryFlowRunning) return;
-    if (_navigated) return;
-    if (_batterySheetOpen) return;
-
-    _batteryFlowRunning = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      // ✅ true = battery optimization disabled (good)
-      final isUnrestricted =
-          await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
-
-      final batteryOk = isUnrestricted == true;
-
-      // last state saved in device
-      final lastOk = prefs.getBool(_batteryLastOkKey); // null on first install
-
-      // always update current state
-      await prefs.setBool(_batteryLastOkKey, batteryOk);
-
-      debugPrint("BatteryFlow => batteryOk=$batteryOk lastOk=$lastOk");
-
-      // ✅ if currently OK => never show
-      if (batteryOk) return;
-
-      // ❌ currently BAD:
-      // show only if:
-      // - first time install (lastOk == null)
-      // - OR user changed from OK -> BAD (lastOk == true)
-      final shouldShow = (lastOk == null) || (lastOk == true);
-      if (!shouldShow) return;
-
-      if (!mounted) return;
-
-      _batterySheetOpen = true;
-      final openSettings = await _showBatteryBottomSheet();
-      _batterySheetOpen = false;
-
-      if (openSettings == true) {
-        await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
-      }
-    } finally {
-      _batteryFlowRunning = false;
-    }
-  }
-
-  Future<bool?> _showBatteryBottomSheet() async {
-    return showModalBottomSheet<bool>(
-      backgroundColor: AppColor.white,
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Battery Permission Required",
-                style: GoogleFonts.ibmPlexSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "To show Caller ID popup reliably, please set Battery to Unrestricted.\n\n"
-                "Steps:\nSettings → Apps → Tringo → Battery → Unrestricted",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSans(fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: AppColor.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    "Open Settings",
-                    style: GoogleFonts.ibmPlexSans(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-
-              // const SizedBox(height: 10),
-              //
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: OutlinedButton(
-              //     onPressed: () => Navigator.pop(context, false),
-              //     child: const Text("Continue"),
-              //   ),
-              // ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showUpdateBottomSheet() {
     showModalBottomSheet(
@@ -408,14 +280,4 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
   }
-}
-
-// ✅ Result class
-class _BatterySheetResult {
-  final bool dontAskAgain;
-  final bool openSettings;
-  const _BatterySheetResult({
-    required this.dontAskAgain,
-    required this.openSettings,
-  });
 }

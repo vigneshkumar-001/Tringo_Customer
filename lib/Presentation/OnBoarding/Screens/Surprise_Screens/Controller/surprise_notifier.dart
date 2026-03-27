@@ -44,6 +44,10 @@ class SurpriseNotifier extends Notifier<SurpriseState> {
     return SurpriseState.initial();
   }
 
+  void reset() {
+    state = SurpriseState.initial();
+  }
+
   Future<void> surpriseStatusCheck({
     required double lng,
     required double lat,

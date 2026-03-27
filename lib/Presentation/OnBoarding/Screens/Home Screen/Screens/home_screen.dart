@@ -12,11 +12,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 
@@ -34,6 +36,7 @@ import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigate
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/search_screen_bottombar.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_and_shops_details.dart';
 import '../../../../../Core/Widgets/advetisements_screens.dart';
+import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
 import '../../wallet/Controller/wallet_notifier.dart';
@@ -63,6 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   bool _shopsPressed = false;
   bool _servicesPressed = false;
+  bool _surpriseTapBusy = false;
 
   StreamSubscription<ServiceStatus>? _serviceSub;
 
@@ -74,6 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const MethodChannel _native = MethodChannel('sim_info');
   bool _openingSystemRole = false;
   bool _askedOnce = false;
+  bool _awaitingOverlaySettings = false;
 
   String shopHeroTag(int index, String name, {String section = 'shops'}) {
     final safe = name.replaceAll(RegExp(r'\s+'), '_').toLowerCase();
@@ -86,6 +91,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _autoSetupCallerOverlayIfEnabled();
+
       // Don't ask overlay/caller-id permissions on app open.
       // User enables it explicitly from Profile screen toggle.
       ref.read(smartConnectNotifierProvider.notifier).fetchSmartConnectGuide();
@@ -99,8 +106,123 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      // No permission prompts on resume.
+      if (_awaitingOverlaySettings) {
+        _awaitingOverlaySettings = false;
+        await _afterOverlaySettingsReturn();
+      }
     }
+  }
+
+  Future<void> _afterOverlaySettingsReturn() async {
+    if (!Platform.isAndroid) return;
+
+    final enabled = await AppPrefs.getCallerIdOverlayEnabled();
+    if (!enabled) return;
+
+    final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+    if (!overlayOk) return;
+
+    // Prompt for system caller-id role (needed on some devices for call callbacks).
+    await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
+
+    final batteryOk = await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
+    if (batteryOk == true) return;
+
+    final restricted = await CallerIdRoleHelper.isBackgroundRestricted();
+    if (!restricted) return;
+    if (!mounted) return;
+
+    final openBattery = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColor.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Battery setting',
+                style: GoogleFont.Mulish(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColor.darkBlue,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Some phones restrict background services. To show Caller ID overlay reliably, set Battery to Unrestricted / Don’t optimize.\n\n'
+                'Settings → Apps → Tringo → Battery → Unrestricted',
+                style: GoogleFont.Mulish(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColor.lightGray2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Not now'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.darkBlue,
+                      ),
+                      child: const Text('Open settings'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (openBattery == true) {
+      final opened = await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
+      if (!opened) {
+        await CallerIdRoleHelper.requestIgnoreBatteryOptimization();
+      }
+    }
+  }
+
+  Future<void> _autoSetupCallerOverlayIfEnabled() async {
+    if (!Platform.isAndroid) return;
+
+    final enabled = await AppPrefs.getCallerIdOverlayEnabled();
+    if (!enabled) return;
+
+    // Runtime permission (fast)
+    final phoneStatus = await ph.Permission.phone.status;
+    if (!phoneStatus.isGranted) {
+      await ph.Permission.phone.request();
+    }
+
+    // Overlay is a settings toggle; auto-open once to make it easy.
+    final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+    if (overlayOk) {
+      await _afterOverlaySettingsReturn();
+      return;
+    }
+
+    final openedOnce = await AppPrefs.getOverlaySettingsAutoOpenedOnce();
+    if (openedOnce) return;
+
+    await AppPrefs.setOverlaySettingsAutoOpenedOnce(true);
+    _awaitingOverlaySettings = true;
+    await CallerIdRoleHelper.requestOverlayPermission();
   }
 
   @override
@@ -1538,6 +1660,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   scrollDirection: Axis.horizontal,
                                   itemBuilder: (context, index) {
                                     final data = surpriseOffers[index];
+                                    final claimStatus = (data.claimStatus ?? '')
+                                        .toString()
+                                        .toUpperCase();
+                                    final alreadyClaimed =
+                                        data.isClaimed == true ||
+                                            data.claimed == true ||
+                                            claimStatus == 'CLAIMED';
                                     return Container(
                                       decoration: BoxDecoration(
                                         color: AppColor.white,
@@ -1548,104 +1677,169 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         ),
                                         child: Row(
                                           children: [
-                                            CommonContainer.shopImageContainer(
-                                              heroTag: 'surprise-${data.id}',
-                                              onTap: () async {
-                                                final offerId =
-                                                    data.id.toString().trim();
-                                                final shopId = (data.branchId ??
-                                                        data.shop?.id)
-                                                    ?.toString()
-                                                    .trim() ??
-                                                    '';
-                                                final shopLat =
-                                                    data.shop?.gpsLatitude ??
-                                                        0.0;
-                                                final shopLng =
-                                                    data.shop?.gpsLongitude ??
-                                                        0.0;
+                                             CommonContainer.shopImageContainer(
+                                               heroTag: 'surprise-${data.id}',
+                                               onTap: () async {
+                                                 if (_surpriseTapBusy) return;
+                                                 _surpriseTapBusy = true;
 
-                                                if (shopId.isEmpty ||
-                                                    offerId.isEmpty) {
-                                                  AppSnackBar.error(
-                                                    context,
-                                                    'Surprise offer not available',
-                                                  );
-                                                  return;
-                                                }
+                                                 try {
+                                                   final offerId =
+                                                       data.id.toString().trim();
+                                                   final shopId = (data.branchId ??
+                                                           data.shop?.id)
+                                                       ?.toString()
+                                                       .trim() ??
+                                                       '';
+                                                   final shopLat =
+                                                       data.shop?.gpsLatitude ??
+                                                           0.0;
+                                                   final shopLng =
+                                                       data.shop?.gpsLongitude ??
+                                                           0.0;
 
-                                                final claimStatus =
-                                                    (data.claimStatus ?? '')
-                                                        .toString()
-                                                        .toUpperCase();
-                                                final alreadyClaimed =
-                                                    data.isClaimed == true ||
-                                                        data.claimed == true ||
-                                                        claimStatus ==
-                                                            'CLAIMED';
+                                                   if (shopId.isEmpty ||
+                                                       offerId.isEmpty) {
+                                                     AppSnackBar.error(
+                                                       context,
+                                                       'Surprise offer not available',
+                                                     );
+                                                     return;
+                                                   }
 
-                                                if (alreadyClaimed) {
-                                                  showDialog(
-                                                    context: context,
-                                                    barrierDismissible: false,
-                                                    builder: (_) => const Center(
-                                                      child: CircularProgressIndicator(),
-                                                    ),
-                                                  );
+                                                   // Use last known location (or refresh) and do a fresh status check
+                                                   // so we don't navigate based on stale Home list data.
+                                                   final loc =
+                                                       (_lastKnownLoc.lat == 0.0 &&
+                                                               _lastKnownLoc.lng ==
+                                                                   0.0)
+                                                           ? await _initLocationFlow()
+                                                           : _lastKnownLoc;
 
-                                                  final api =
-                                                      ref.read(apiDataSourceProvider);
-                                                  final result =
-                                                      await api.surpriseOfferDetails(
-                                                    shopId: shopId,
-                                                    offerId: offerId,
-                                                  );
+                                                   showDialog(
+                                                     context: context,
+                                                     barrierDismissible: false,
+                                                     builder: (_) => const Center(
+                                                       child: CircularProgressIndicator(),
+                                                     ),
+                                                   );
 
-                                                  if (!mounted) return;
-                                                  Navigator.of(
-                                                    context,
-                                                    rootNavigator: true,
-                                                  ).pop();
+                                                   final api =
+                                                       ref.read(apiDataSourceProvider);
+                                                   final statusRes =
+                                                       await api.surpriseStatusCheck(
+                                                     shopId: shopId,
+                                                     offerId: offerId,
+                                                     lat: loc.lat,
+                                                     lng: loc.lng,
+                                                   );
 
-                                                  result.fold(
-                                                    (failure) {
-                                                      AppSnackBar.error(
-                                                        context,
-                                                        failure.message,
-                                                      );
-                                                    },
-                                                    (response) {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (_) =>
-                                                              OpenedSurpriseOfferScreen(
-                                                            response: response,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  );
-                                                  return;
-                                                }
+                                                   if (!mounted) return;
+                                                   Navigator.of(
+                                                     context,
+                                                     rootNavigator: true,
+                                                   ).pop();
 
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        SurpriseScreens(
-                                                      subOfferId: offerId,
-                                                      shopLat: shopLat,
-                                                      shopLng: shopLng,
-                                                      shopId: shopId,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                              verify:
-                                                  data.shop?.isTrusted ?? false,
-                                              shopName:
-                                                  data.shop?.englishName
+                                                   await statusRes.fold(
+                                                     (failure) async {
+                                                       AppSnackBar.error(
+                                                         context,
+                                                         failure.message,
+                                                       );
+                                                       // Fallback: still allow user to proceed to Surprise screen.
+                                                       Navigator.push(
+                                                         context,
+                                                         MaterialPageRoute(
+                                                           builder: (context) =>
+                                                               SurpriseScreens(
+                                                             subOfferId: offerId,
+                                                             shopLat: shopLat,
+                                                             shopLng: shopLng,
+                                                             shopId: shopId,
+                                                           ),
+                                                         ),
+                                                       );
+                                                     },
+                                                     (status) async {
+                                                       final stage = status.data.stage
+                                                           .toString()
+                                                           .toUpperCase();
+                                                       final isClaimed =
+                                                           status.data.state
+                                                                       ?.isClaimed ==
+                                                                   true ||
+                                                               stage == 'CLAIMED';
+
+                                                       if (isClaimed) {
+                                                         // Fetch latest details for opened screen.
+                                                         showDialog(
+                                                           context: context,
+                                                           barrierDismissible:
+                                                               false,
+                                                           builder: (_) =>
+                                                               const Center(
+                                                             child:
+                                                                 CircularProgressIndicator(),
+                                                           ),
+                                                         );
+
+                                                         final detailsRes = await api
+                                                             .surpriseOfferDetails(
+                                                           shopId: shopId,
+                                                           offerId: offerId,
+                                                         );
+
+                                                         if (!mounted) return;
+                                                         Navigator.of(
+                                                           context,
+                                                           rootNavigator: true,
+                                                         ).pop();
+
+                                                         detailsRes.fold(
+                                                           (failure) {
+                                                             AppSnackBar.error(
+                                                               context,
+                                                               failure.message,
+                                                             );
+                                                           },
+                                                           (response) {
+                                                             Navigator.push(
+                                                               context,
+                                                               MaterialPageRoute(
+                                                                 builder: (_) =>
+                                                                     OpenedSurpriseOfferScreen(
+                                                                   response:
+                                                                       response,
+                                                                 ),
+                                                               ),
+                                                             );
+                                                           },
+                                                         );
+                                                         return;
+                                                       }
+
+                                                       Navigator.push(
+                                                         context,
+                                                         MaterialPageRoute(
+                                                           builder: (context) =>
+                                                               SurpriseScreens(
+                                                             subOfferId: offerId,
+                                                             shopLat: shopLat,
+                                                             shopLng: shopLng,
+                                                             shopId: shopId,
+                                                           ),
+                                                         ),
+                                                       );
+                                                     },
+                                                   );
+                                                 } finally {
+                                                   _surpriseTapBusy = false;
+                                                 }
+                                               },
+                                               verify:
+                                                   data.shop?.isTrusted ?? false,
+                                               shopName:
+                                                   data.shop?.englishName
                                                       .toString() ??
                                                   '',
                                               location:
@@ -1666,6 +1860,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                   data.closeTime?.toString() ??
                                                   '',
                                               Images: data.bannerUrl.toString(),
+                                              badgeText:
+                                                  alreadyClaimed ? 'Claimed' : null,
                                             ),
                                           ],
                                         ),

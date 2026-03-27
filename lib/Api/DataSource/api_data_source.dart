@@ -1814,9 +1814,14 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final url = ApiUrl.surpriseClaimed(shopId: shopId);
 
+      final trimmedOfferId = offerId.trim();
       final response = await Request.sendRequest(
         url,
-        {"lat": lat, "lng": lng, "offerId": offerId},
+        {
+          "lat": lat,
+          "lng": lng,
+          if (trimmedOfferId.isNotEmpty) "offerId": trimmedOfferId,
+        },
         'Post',
         true,
       );

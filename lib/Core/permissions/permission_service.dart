@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 
 class PermissionService {
   static Future<bool> ensureAllRequiredPermissions(BuildContext context) async {
@@ -18,6 +19,16 @@ class PermissionService {
       if (!context.mounted) return false;
       await _showLocationSettingsDialog(context);
       return false;
+    }
+
+    // Ask phone permission only if user keeps Caller ID Overlay enabled.
+    final callerOverlayEnabled = await AppPrefs.getCallerIdOverlayEnabled();
+    if (callerOverlayEnabled) {
+      final phoneOk = await Permission.phone.request().isGranted;
+      if (!phoneOk) {
+        // Don't block app flow; overlay simply won't work until user enables it.
+        // Keep UX minimal here (toggle flow will guide user).
+      }
     }
 
     return true;

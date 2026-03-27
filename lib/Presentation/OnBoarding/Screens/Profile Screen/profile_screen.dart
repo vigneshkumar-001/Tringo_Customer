@@ -54,14 +54,122 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with WidgetsBindingObserver {
   bool _callerIdOverlayEnabled = false;
   bool _callerIdOverlayPrefLoaded = false;
+  bool _awaitingOverlaySettings = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCallerIdOverlayPref();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state != AppLifecycleState.resumed) return;
+    if (!_awaitingOverlaySettings) return;
+    _awaitingOverlaySettings = false;
+    await _onReturnedFromOverlaySettings();
+  }
+
+  Future<void> _onReturnedFromOverlaySettings() async {
+    if (!_callerIdOverlayEnabled) return;
+    final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+    if (!overlayOk) {
+      if (mounted) {
+        AppSnackBar.error(
+          context,
+          'Overlay permission not enabled yet. Turn on “Appear on top / Overlay”.',
+        );
+      }
+      return;
+    }
+
+    // System caller-id role prompt (optional; opens Android role UI).
+    await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
+
+    final isUnrestricted =
+        await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
+    if (isUnrestricted == true) return;
+
+    // Ask battery optimization only on devices where background is restricted.
+    final restricted = await CallerIdRoleHelper.isBackgroundRestricted();
+    if (!restricted) return;
+    if (!mounted) return;
+
+    final openBattery = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColor.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Battery setting',
+                style: GoogleFont.Mulish(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColor.darkBlue,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Some phones restrict background services. To show Caller ID overlay reliably, set Battery to Unrestricted / Don’t optimize.\n\n'
+                'Settings → Apps → Tringo → Battery → Unrestricted',
+                style: GoogleFont.Mulish(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColor.lightGray2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Not now'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.darkBlue,
+                      ),
+                      child: const Text('Open settings'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (openBattery == true) {
+      final opened = await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
+      if (!opened) {
+        await CallerIdRoleHelper.requestIgnoreBatteryOptimization();
+      }
+    }
   }
 
   Future<void> _loadCallerIdOverlayPref() async {
@@ -93,6 +201,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await AppPrefs.setCallerIdOverlayEnabled(enabled);
 
     if (!enabled) {
+      await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
       await CallerIdRoleHelper.stopOverlayService();
       return;
     }
@@ -102,17 +211,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final phoneReq = await Permission.phone.request();
       if (!phoneReq.isGranted && mounted) {
         AppSnackBar.error(context, 'Phone permission is needed for Caller ID overlay');
+        setState(() => _callerIdOverlayEnabled = false);
+        await AppPrefs.setCallerIdOverlayEnabled(false);
         return;
       }
     }
 
-    await CallerIdRoleHelper.requestOverlayPermission();
-    await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
-
+    // Open overlay permission settings directly (easy UX).
     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-    if (!overlayOk && mounted) {
-      AppSnackBar.error(context, 'Enable “Appear on top / Overlay” permission to show Caller ID popup');
+    if (!overlayOk) {
+      _awaitingOverlaySettings = true;
+      await CallerIdRoleHelper.requestOverlayPermission();
+      return;
     }
+
+    await _onReturnedFromOverlaySettings();
   }
 
   void _setupCallerId() {
@@ -644,15 +757,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 SizedBox(height: 15),
-                CommonContainer.profileList(
-                  onTap: _setupCallerId,
-                  label: 'Caller ID Setup',
-                  iconPath: AppImages.support,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
+                // CommonContainer.profileList(
+                //   onTap: _setupCallerId,
+                //   label: 'Caller ID Setup',
+                //   iconPath: AppImages.support,
+                //   iconHeight: 25,
+                //   iconWidth: 19,
+                // ),
 
-                SizedBox(height: 20),
+                // SizedBox(height: 20),
                 // CommonContainer.profileList(
                 //   onTap: () {
                 //     Navigator.push(

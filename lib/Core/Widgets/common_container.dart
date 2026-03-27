@@ -231,6 +231,7 @@ class CommonContainer {
     bool verify = false,
     VoidCallback? onTap,
     String? heroTag,
+    String? badgeText,
   }) {
     return InkWell(
       onTap: onTap,
@@ -402,6 +403,29 @@ class CommonContainer {
               ),
             ),
           ),
+          if (badgeText != null && badgeText.trim().isNotEmpty)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColor.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Text(
+                  badgeText,
+                  style: GoogleFont.Mulish(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    color: AppColor.white,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

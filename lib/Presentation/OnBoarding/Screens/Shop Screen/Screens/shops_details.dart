@@ -864,6 +864,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                             shopsData.data?.id
                                                                 .toString() ??
                                                             '',
+                                                        subOfferId: (shopsData
+                                                                    .data
+                                                                    ?.surprise
+                                                                    ?.offerId ??
+                                                                '')
+                                                            .toString()
+                                                            .trim(),
                                                         shopLat: double.parse(
                                                           shopsData
                                                                   .data

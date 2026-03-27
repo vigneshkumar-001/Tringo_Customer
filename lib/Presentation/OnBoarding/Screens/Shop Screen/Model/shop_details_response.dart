@@ -568,22 +568,26 @@ class Review {
 class Surprise {
   final bool hasOffer;
   final bool isClaimed;
+  final String? offerId;
 
   Surprise({
     required this.hasOffer,
     required this.isClaimed,
+    this.offerId,
   });
 
   factory Surprise.fromJson(Map<String, dynamic> json) {
     return Surprise(
       hasOffer: json['hasOffer'] == true,
       isClaimed: json['isClaimed'] == true,
+      offerId: (json['offerId'] ?? json['id'] ?? json['offer_id'])?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     "hasOffer": hasOffer,
     "isClaimed": isClaimed,
+    "offerId": offerId,
   };
 }
 

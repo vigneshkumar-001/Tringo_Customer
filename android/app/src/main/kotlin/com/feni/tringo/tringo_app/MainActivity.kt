@@ -123,13 +123,7 @@ class MainActivity : FlutterActivity() {
                     }
 
                     "requestOverlayPermission" -> {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                            val intent = Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:$packageName")
-                            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                            startActivity(intent)
-                        }
+                        openOverlayPermissionSettingsBestEffort()
                         result.success(true)
                     }
 
@@ -340,6 +334,94 @@ class MainActivity : FlutterActivity() {
         }
 
         tryStart(Intent(Settings.ACTION_SETTINGS))
+    }
+
+    private fun openOverlayPermissionSettingsBestEffort() {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                openAppDetails()
+                return
+            }
+
+            if (Settings.canDrawOverlays(this)) return
+
+            // Standard Android overlay settings for this package
+            if (tryStart(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    data = Uri.parse("package:$packageName")
+                })) return
+
+            // MIUI / Xiaomi
+            if (isPackageInstalled("com.miui.securitycenter")) {
+                if (tryStart(Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                        setClassName(
+                            "com.miui.securitycenter",
+                            "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                        )
+                        putExtra("extra_pkgname", packageName)
+                    })) return
+
+                if (tryStart(Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                        setClassName(
+                            "com.miui.securitycenter",
+                            "com.miui.permcenter.permissions.AppPermissionsEditorActivity"
+                        )
+                        putExtra("extra_pkgname", packageName)
+                    })) return
+            }
+
+            // OPPO / Realme (ColorOS)
+            if (isPackageInstalled("com.coloros.safecenter")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.coloros.safecenter",
+                            "com.coloros.safecenter.permission.floatwindow.FloatWindowListActivity"
+                        )
+                    })) return
+            }
+            if (isPackageInstalled("com.oppo.safe")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.oppo.safe",
+                            "com.oppo.safe.permission.floatwindow.FloatWindowListActivity"
+                        )
+                    })) return
+            }
+
+            // Vivo / iQOO
+            if (isPackageInstalled("com.iqoo.secure")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.iqoo.secure",
+                            "com.iqoo.secure.ui.phoneoptimize.FloatWindowManager"
+                        )
+                    })) return
+            }
+            if (isPackageInstalled("com.vivo.permissionmanager")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.vivo.permissionmanager",
+                            "com.vivo.permissionmanager.activity.SoftPermissionDetailActivity"
+                        )
+                        putExtra("packagename", packageName)
+                    })) return
+            }
+
+            // Huawei
+            if (isPackageInstalled("com.huawei.systemmanager")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.huawei.systemmanager",
+                            "com.huawei.permissionmanager.ui.MainActivity"
+                        )
+                    })) return
+            }
+
+            // Fallback: app details page
+            openAppDetails()
+        } catch (e: Exception) {
+            Log.e(TAG, "openOverlayPermissionSettingsBestEffort failed: ${e.message}", e)
+            openAppDetails()
+        }
     }
 
     private fun openAppDetails(): Boolean {
