@@ -23,7 +23,14 @@ import '../Controller/wallet_notifier.dart';
 import '../Model/wallet_history_response.dart';
 
 class WalletScreens extends ConsumerStatefulWidget {
-  const WalletScreens({super.key});
+  final String? initialType; // ALL / REWARDS / SENT / RECEIVED / WITHDRAW
+  final String? initialToast; // optional info message (from push)
+
+  const WalletScreens({
+    super.key,
+    this.initialType,
+    this.initialToast,
+  });
 
   @override
   ConsumerState<WalletScreens> createState() => _WalletScreensState();
@@ -133,9 +140,20 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
     super.initState();
     _controller = AnimationController(vsync: this);
 
+    final initial = (widget.initialType ?? '').trim().toUpperCase();
+    final idx = _types.indexWhere((t) => t == initial);
+    if (idx >= 0) {
+      selectedIndex = idx;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ✅ initial load only (keep as ALL or your selectedIndex)
-      ref.read(walletNotifier.notifier).walletHistory(type: _types[0]);
+      // ✅ initial load only (honor initialType if provided)
+      ref.read(walletNotifier.notifier).walletHistory(type: _types[selectedIndex]);
+
+      final toast = (widget.initialToast ?? '').trim();
+      if (toast.isNotEmpty && mounted) {
+        AppSnackBar.info(context, toast);
+      }
     });
   }
 

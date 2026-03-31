@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
@@ -30,9 +31,11 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final serviceId = (widget.serviceId ?? '').trim();
+      if (serviceId.isEmpty || serviceId == 'null') return;
       ref
           .read(serviceDataNotifierProvider.notifier)
-          .viewDetailServices(serviceId: widget.serviceId ?? '');
+          .viewDetailServices(serviceId: serviceId);
     });
   }
 
@@ -284,132 +287,152 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
               // ---------------- SHOP CARD ----------------
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.textWhite,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            shopsData.isTrusted == true
-                                ? CommonContainer.verifyTick()
-                                : const SizedBox.shrink(),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  shopsData.englishName,
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColor.darkBlue,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Image.asset(
-                                  AppImages.rightArrow,
-                                  height: 8,
-                                  color: AppColor.lightBlueCont,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Image.asset(
-                                  AppImages.locationImage,
-                                  height: 10,
-                                  color: AppColor.lightGray2,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  flex: 7,
-                                  child: Text(
-                                    '${shopsData.city}, ${shopsData.state}, ${shopsData.country}',
-                                    softWrap: true,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    final shopId = shopsData.id.toString().trim();
+                    if (shopId.isEmpty || shopId == 'null') return;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ServiceAndShopsDetails(
+                          shopId: shopId,
+                          initialIndex: 4,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColor.textWhite,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              shopsData.isTrusted == true
+                                  ? CommonContainer.verifyTick()
+                                  : const SizedBox.shrink(),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    shopsData.englishName,
                                     style: GoogleFont.Mulish(
-                                      fontSize: 12,
-                                      color: AppColor.lightGray2,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColor.darkBlue,
                                     ),
                                   ),
-                                ),
-                                if ((shopsData.distanceLabel ?? '').trim().isNotEmpty) ...[
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 4),
+                                  Image.asset(
+                                    AppImages.rightArrow,
+                                    height: 8,
+                                    color: AppColor.lightBlueCont,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Image.asset(
+                                    AppImages.locationImage,
+                                    height: 10,
+                                    color: AppColor.lightGray2,
+                                  ),
+                                  const SizedBox(width: 4),
                                   Expanded(
-                                    flex: 3,
+                                    flex: 7,
                                     child: Text(
-                                      shopsData.distanceLabel ?? '',
-                                      textAlign: TextAlign.end,
+                                      '${shopsData.city}, ${shopsData.state}, ${shopsData.country}',
                                       softWrap: true,
                                       style: GoogleFont.Mulish(
-                                        fontWeight: FontWeight.w700,
                                         fontSize: 12,
-                                        color: AppColor.lightGray3,
+                                        color: AppColor.lightGray2,
                                       ),
                                     ),
                                   ),
+                                  if ((shopsData.distanceLabel ?? '')
+                                      .trim()
+                                      .isNotEmpty) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(
+                                        shopsData.distanceLabel ?? '',
+                                        textAlign: TextAlign.end,
+                                        softWrap: true,
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                          color: AppColor.lightGray3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                CommonContainer.greenStarRating(
-                                  ratingCount: shopsData.rating.toString(),
-                                  ratingStar: shopsData.ratingCount.toString(),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Opens upto ',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CommonContainer.greenStarRating(
+                                    ratingCount: shopsData.rating.toString(),
+                                    ratingStar: shopsData.ratingCount
+                                        .toString(),
                                   ),
-                                ),
-                                Text(
-                                  shopsData.closeTime ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                    fontWeight: FontWeight.w800,
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Opens upto ',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
+                                      color: AppColor.lightGray2,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                  Text(
+                                    shopsData.closeTime ?? '',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
+                                      color: AppColor.lightGray2,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: CachedNetworkImage(
-                          imageUrl: shopsData.primaryImageUrl,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
+                        const SizedBox(width: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: CachedNetworkImage(
+                            imageUrl: shopsData.primaryImageUrl,
                             height: 100,
                             width: 100,
-                            color: Colors.grey.withOpacity(0.2),
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              height: 100,
+                              width: 100,
+                              color: Colors.grey.withOpacity(0.2),
+                            ),
+                            errorWidget: (_, __, ___) =>
+                                const Icon(Icons.broken_image),
                           ),
-                          errorWidget: (_, __, ___) =>
-                              const Icon(Icons.broken_image),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
 
-     const SizedBox(height: 24),
+              const SizedBox(height: 24),
               CommonContainer.horizonalDivider(),
               const SizedBox(height: 24),
 
@@ -426,8 +449,8 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         color: AppColor.darkBlue,
                       ),
                     ),
-                    const Spacer(),
-                    CommonContainer.rightSideArrowButton(onTap: () {}),
+                    // const Spacer(),
+                    // CommonContainer.rightSideArrowButton(onTap: () {}),
                   ],
                 ),
               ),
@@ -444,18 +467,34 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                           final data = similarServices.items[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 5),
-                            child: CommonContainer.similarFoods(
-                              Verify: shopsData.isTrusted,
-                              image: data.primaryImageUrl,
-                              foodName: data.englishName,
-                              ratingStar: data.rating.toString(),
-                              ratingCount: data.ratingCount.toString(),
-                              offAmound: '₹${data.offerPrice}',
-                              oldAmound: '',
-                              km:
-                                  data.distanceLabel ??
-                                  (shopsData.distanceLabel ?? ''),
-                              location: data.shopName ?? shopsData.englishName,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                                 final serviceId = data.id.toString().trim();
+                                 if (serviceId.isEmpty || serviceId == 'null') return;
+ 
+                                 Navigator.pushReplacement(
+                                   context,
+                                   MaterialPageRoute(
+                                     builder: (_) =>
+                                         SearchServiceData(serviceId: serviceId),
+                                   ),
+                                 );
+                              },
+                              child: CommonContainer.similarFoods(
+                                Verify: shopsData.isTrusted,
+                                image: data.primaryImageUrl,
+                                foodName: data.englishName,
+                                ratingStar: data.rating.toString(),
+                                ratingCount: data.ratingCount.toString(),
+                                offAmound: '₹${data.offerPrice}',
+                                oldAmound: '',
+                                km:
+                                    data.distanceLabel ??
+                                    (shopsData.distanceLabel ?? ''),
+                                location:
+                                    data.shopName ?? shopsData.englishName,
+                              ),
                             ),
                           );
                         },

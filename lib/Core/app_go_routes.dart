@@ -4,14 +4,16 @@ import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/servi
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Screens/edit_profile.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Screens/referral_screens.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Screens/product_details.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Screens/search_service_data.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_details.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_offer_details_from_push.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/wallet_screens.dart';
 
 import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
-import '../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Screen/mobile_number_verify.dart'
-    hide LoginMobileNumber;
 import '../Presentation/OnBoarding/Screens/Privacy Policy/screens/privacy_policy.dart';
 import '../Presentation/OnBoarding/Screens/Splash_screen.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/Screens/login_mobile_number.dart';
-import '../Presentation/OnBoarding/Screens/Login Screen/Screens/mobile_number_verify.dart';
 import '../Presentation/OnBoarding/Screens/OTP Screen/otp_screen.dart';
 import '../Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
 
@@ -97,6 +99,60 @@ final goRouter = GoRouter(
           shopId: shopId,
           initialIndex: tab,
         );
+      },
+    ),
+
+    GoRoute(
+      path: '/smart-connect/details',
+      builder: (context, state) {
+        final requestId = state.uri.queryParameters['requestId'] ?? '';
+        return SmartConnectDetails(requestedId: requestId);
+      },
+    ),
+
+    GoRoute(
+      path: '/product/details',
+      builder: (context, state) {
+        final productId = state.uri.queryParameters['productId'] ?? '';
+        return ProductDetails(productId: productId);
+      },
+    ),
+
+    GoRoute(
+      path: '/service/details',
+      builder: (context, state) {
+        final serviceId = state.uri.queryParameters['serviceId'] ?? '';
+        return SearchServiceData(serviceId: serviceId);
+      },
+    ),
+
+    GoRoute(
+      path: '/surprise/offer',
+      builder: (context, state) {
+        final shopId = state.uri.queryParameters['shopId'] ?? '';
+        final offerId = state.uri.queryParameters['offerId'] ?? '';
+        return SurpriseOfferDetailsFromPush(shopId: shopId, offerId: offerId);
+      },
+    ),
+
+    GoRoute(
+      path: '/wallet',
+      builder: (context, state) {
+        final extra = state.extra;
+        String? type;
+        String? toast;
+        if (extra is Map) {
+          final t = extra['type'];
+          if (t != null) type = t.toString();
+          final msg = extra['toast'];
+          if (msg != null) toast = msg.toString();
+        }
+
+        // also allow query params, but prefer extra
+        type ??= state.uri.queryParameters['type'];
+        toast ??= state.uri.queryParameters['toast'];
+
+        return WalletScreens(initialType: type, initialToast: toast);
       },
     ),
 

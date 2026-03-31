@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart'; // needed by CommonContainer if used there
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
@@ -16,7 +18,6 @@ import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/owner_verify_feild.dart';
 
-import '../../Home Screen/Screens/home_screen.dart';
 import '../Controller/edit_profile_notifier.dart';
 
 class EditProfile extends ConsumerStatefulWidget {
@@ -27,6 +28,10 @@ class EditProfile extends ConsumerStatefulWidget {
   final String? url;
   final String? dob;
 
+  /// If true, pop with `true` on successful save (used by flows that need to
+  /// return back to the previous screen).
+  final bool popOnSuccess;
+
   const EditProfile({
     super.key,
     this.name,
@@ -35,6 +40,7 @@ class EditProfile extends ConsumerStatefulWidget {
     this.gender,
     this.dob,
     this.url,
+    this.popOnSuccess = false,
   });
 
   @override
@@ -524,13 +530,16 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                                 if (!context.mounted) return;
 
                                 if (err == null) {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => HomeScreen(),
-                                    ),
-                                  );
+                                  await AppPrefs.setIsProfileCompleted(true);
                                   AppPrefs.clearVerificationToken();
+
+                                  if (!context.mounted) return;
+
+                                  if (widget.popOnSuccess) {
+                                    Navigator.pop(context, true);
+                                  } else {
+                                    context.go(AppRoutes.homePath);
+                                  }
                                 } else {
                                   AppSnackBar.error(
                                     context,

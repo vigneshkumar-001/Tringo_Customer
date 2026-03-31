@@ -1823,10 +1823,11 @@ class CommonContainer {
             ],
           ),
           SizedBox(height: 20),
-          Row(
+          Wrap(
+            spacing: 5,
+            runSpacing: 4,
             children: [
               if (Verify) CommonContainer.verifyTick(),
-              SizedBox(width: 5),
               if (doorDelivery) CommonContainer.doorDelivery(),
             ],
           ),

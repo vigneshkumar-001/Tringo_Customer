@@ -1,8 +1,10 @@
 // firebase_service.dart
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Firebase_service/push_notification_handler.dart';
 
 class FirebaseService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -31,6 +33,19 @@ class FirebaseService {
       settings: initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         AppLogger.log.i('🔔 Notification tapped. payload: ${response.payload}');
+        final payload = (response.payload ?? '').trim();
+        if (payload.isEmpty) return;
+
+        try {
+          final decoded = jsonDecode(payload);
+          if (decoded is Map) {
+            PushNotificationHandler.handleData(
+              decoded.map((k, v) => MapEntry(k.toString(), v)),
+            );
+          }
+        } catch (e, st) {
+          AppLogger.log.w('Invalid notification payload: $e\n$st');
+        }
       },
     );
 
@@ -126,7 +141,7 @@ class FirebaseService {
       title: message.notification?.title ?? 'Notification',
       body: message.notification?.body ?? '',
       notificationDetails: details,
-      payload: message.data.isNotEmpty ? message.data.toString() : null,
+      payload: message.data.isNotEmpty ? jsonEncode(message.data) : null,
     );
   }
 

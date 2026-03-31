@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
@@ -238,6 +239,13 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                   },
                   mapBox: true,
                   mapOnTap: () {
+                    MapUrls.openMap(
+                      context: context,
+                      latitude: productDetailData.data.shop.gpsLatitude
+                          .toString(),
+                      longitude: productDetailData.data.shop.gpsLongitude
+                          .toString(),
+                    );
                     // TODO: Map open if you have lat/lng in product shop response
                   },
                   mapText: 'Map',
@@ -299,125 +307,141 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
               // --- your shop card (unchanged) ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.textWhite,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            productDetailData.data.shop.isTrusted == true
-                                ? CommonContainer.verifyTick()
-                                : const SizedBox.shrink(),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  shopsData?.englishName.toString() ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColor.darkBlue,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Image.asset(
-                                  AppImages.rightArrow,
-                                  height: 8,
-                                  color: AppColor.lightBlueCont,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Image.asset(
-                                  AppImages.locationImage,
-                                  height: 10,
-                                  color: AppColor.lightGray2,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    '${shopsData?.city}, ${shopsData?.state},${shopsData?.country}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    final shopId = productDetailData.data.shop.id
+                        .toString()
+                        .trim();
+                    if (shopId.isEmpty) return;
+
+                    final route = Uri(
+                      path: '/shop/details',
+                      queryParameters: {'shopId': shopId, 'tab': '4'},
+                    ).toString();
+
+                    context.push(route);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColor.textWhite,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              productDetailData.data.shop.isTrusted == true
+                                  ? CommonContainer.verifyTick()
+                                  : const SizedBox.shrink(),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    shopsData?.englishName.toString() ?? '',
                                     style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Image.asset(
+                                    AppImages.rightArrow,
+                                    height: 8,
+                                    color: AppColor.lightBlueCont,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Image.asset(
+                                    AppImages.locationImage,
+                                    height: 10,
+                                    color: AppColor.lightGray2,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${shopsData?.city}, ${shopsData?.state},${shopsData?.country}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 12,
+                                        color: AppColor.lightGray2,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    shopsData?.distanceLabel ?? '',
+                                    style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 12,
+                                      color: AppColor.lightGray3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CommonContainer.greenStarRating(
+                                    ratingCount:
+                                        shopsData?.rating.toString() ?? '',
+                                    ratingStar:
+                                        shopsData?.ratingCount.toString() ?? '',
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Opens Upto ',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
                                       color: AppColor.lightGray2,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  shopsData?.distanceLabel ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: AppColor.lightGray3,
+                                  Text(
+                                    shopsData?.closeTime ?? '',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
+                                      color: AppColor.lightGray2,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                CommonContainer.greenStarRating(
-                                  ratingCount:
-                                      shopsData?.rating.toString() ?? '',
-                                  ratingStar:
-                                      shopsData?.ratingCount.toString() ?? '',
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Opens Upto ',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                  ),
-                                ),
-                                Text(
-                                  shopsData?.closeTime ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: CachedNetworkImage(
-                            imageUrl:
-                                shopsData?.primaryImageUrl?.toString() ?? '',
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              height: 100,
-                              width: 100,
-                              color: Colors.grey.withOpacity(0.2),
-                            ),
-                            errorWidget: (_, __, ___) =>
-                                const Icon(Icons.broken_image),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: CachedNetworkImage(
+                              imageUrl:
+                                  shopsData?.primaryImageUrl?.toString() ?? '',
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                height: 100,
+                                width: 100,
+                                color: Colors.grey.withOpacity(0.2),
+                              ),
+                              errorWidget: (_, __, ___) =>
+                                  const Icon(Icons.broken_image),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -439,8 +463,8 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         color: AppColor.darkBlue,
                       ),
                     ),
-                    const Spacer(),
-                    CommonContainer.rightSideArrowButton(onTap: () {}),
+                    // const Spacer(),
+                    // CommonContainer.rightSideArrowButton(onTap: () {}),
                   ],
                 ),
               ),
@@ -456,20 +480,35 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                       final data = similarProducts!.items[index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CommonContainer.similarFoods(
-                          Verify: shopsData?.isTrusted ?? false,
-                          doorDelivery: data.doorDelivery ?? false,
-                          image: data.imageUrl?.toString() ?? '',
-                          foodName: data.englishName?.toString() ?? '',
-                          ratingStar: data.rating?.toString() ?? '',
-                          ratingCount: data.ratingCount?.toString() ?? '',
-                          offAmound: '₹${data.offerPrice?.toString() ?? ''}',
-                          oldAmound: '₹${data.price?.toString() ?? ''}',
-                          km:
-                              data.distanceLabel ??
-                              (shopsData?.distanceLabel ?? ''),
-                          location:
-                              data.shopName ?? (shopsData?.englishName ?? ''),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            final productId = data.id.toString().trim();
+                            if (productId.isEmpty || productId == 'null') return;
+
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductDetails(productId: productId),
+                              ),
+                            );
+                          },
+                          child: CommonContainer.similarFoods(
+                            Verify: shopsData?.isTrusted ?? false,
+                            doorDelivery: data.doorDelivery ?? false,
+                            image: data.imageUrl?.toString() ?? '',
+                            foodName: data.englishName?.toString() ?? '',
+                            ratingStar: data.rating?.toString() ?? '',
+                            ratingCount: data.ratingCount?.toString() ?? '',
+                            offAmound: '₹${data.offerPrice?.toString() ?? ''}',
+                            oldAmound: '₹${data.price?.toString() ?? ''}',
+                            km:
+                                data.distanceLabel ??
+                                (shopsData?.distanceLabel ?? ''),
+                            location:
+                                data.shopName ?? (shopsData?.englishName ?? ''),
+                          ),
                         ),
                       );
                     },
@@ -550,17 +589,25 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                               vertical: 12,
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  data?.label.toString() ?? '',
-                                  style: GoogleFont.Mulish(
-                                    color: AppColor.lightGray3,
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    data?.label.toString() ?? '',
+                                    softWrap: true,
+                                    style: GoogleFont.Mulish(
+                                      color: AppColor.lightGray3,
+                                    ),
                                   ),
                                 ),
+                                const SizedBox(width: 12),
                                 Expanded(
+                                  flex: 3,
                                   child: Text(
                                     data?.value.toString() ?? '',
                                     textAlign: TextAlign.center,
+                                    softWrap: true,
                                     style: GoogleFont.Mulish(
                                       fontWeight: FontWeight.w700,
                                       color: AppColor.darkBlue,

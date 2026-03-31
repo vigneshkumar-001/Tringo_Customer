@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Firebase_service/firebase_service.dart';
+import 'package:tringo_app/Core/Firebase_service/push_notification_handler.dart';
 import 'Core/Utility/app_color.dart';
 import 'Core/app_go_routes.dart';
 import 'Core/overlay_nav_bridge.dart';
@@ -45,7 +46,7 @@ Future<void> main() async {
     },
     onMessageOpenedApp: (msg) {
       AppLogger.log.i('📬 [OPENED] ${msg.messageId}');
-      // TODO: navigate based on msg.data if needed
+      PushNotificationHandler.handleData(msg.data);
     },
   );
 
@@ -53,7 +54,7 @@ Future<void> main() async {
   final initialMsg = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMsg != null) {
     AppLogger.log.i('🚀 [TERMINATED OPEN] ${initialMsg.messageId}');
-    // TODO: navigate based on initialMsg.data if needed
+    PushNotificationHandler.handleData(initialMsg.data);
   }
 
   runApp(const ProviderScope(child: MyApp()));

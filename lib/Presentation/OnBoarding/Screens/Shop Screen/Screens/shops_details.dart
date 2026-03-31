@@ -1797,70 +1797,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                     SizedBox(height: 30),
 
-                    // _staggerFromTop(
-                    //   aPeopleViewText,
-                    //   Padding(
-                    //     padding: const EdgeInsets.symmetric(horizontal: 15),
-                    //     child: Text(
-                    //       'People also viewed',
-                    //       style: GoogleFont.Mulish(
-                    //         fontWeight: FontWeight.bold,
-                    //         fontSize: 22,
-                    //         color: AppColor.darkBlue,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    // SizedBox(height: 20),
-                    // _staggerFromTop(
-                    //   aPeopleViewScroller,
-                    //   SingleChildScrollView(
-                    //     physics: BouncingScrollPhysics(),
-                    //     padding: EdgeInsets.symmetric(horizontal: 6),
-                    //     scrollDirection: Axis.horizontal,
-                    //     child: Row(
-                    //       children: [
-                    //         CommonContainer.shopPeopleView(
-                    //           onTap: () {},
-                    //           Images: AppImages.shopContainer3,
-                    //           shopName: 'Zam Zam Sweets',
-                    //           locationName: '12, 2, Tirupparankunram Rd, kunram ',
-                    //           km: '5Kms',
-                    //           ratingStar: '4.5',
-                    //           ratingCound: '16',
-                    //           time: '9Pm',
-                    //         ),
-                    //         CommonContainer.shopPeopleView(
-                    //           onTap: () {},
-                    //           Images: AppImages.shopContainer5,
-                    //           shopName: 'JMS Bhagavathi Amman Sweets',
-                    //           locationName: '12, 2, Tirupparankunram Rd, kunram ',
-                    //           km: '5Kms',
-                    //           ratingStar: '4.5',
-                    //           ratingCound: '16',
-                    //           time: '9Pm',
-                    //         ),
-                    //         CommonContainer.shopPeopleView(
-                    //           onTap: () {},
-                    //           Images: AppImages.shopContainer3,
-                    //           shopName: 'Zam Zam Sweets',
-                    //           locationName: '12, 2, Tirupparankunram Rd, kunram ',
-                    //           km: '5Kms',
-                    //           ratingStar: '4.5',
-                    //           ratingCound: '16',
-                    //           time: '9Pm',
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ),
-                    // SizedBox(height: 45),
-                    // _staggerFromTop(
-                    //   aHorizonalDivider,
-                    //   CommonContainer.horizonalDivider(),
-                    // ),
-                    // SizedBox(height: 45),
-                    Padding(
+                  Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 15),
                       child: Builder(
                         builder: (context) {
