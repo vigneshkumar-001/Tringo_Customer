@@ -11,16 +11,23 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Main card -->
-    <LinearLayout
+    <!-- Main card (scrollable so it never clips on small screens) -->
+    <ScrollView
         android:id="@+id/rootCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:layout_gravity="center"
-        android:orientation="vertical"
-        android:background="@drawable/bg_overlay_card"
-        android:padding="14dp">
+        android:layout_marginBottom="28dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:background="@drawable/bg_overlay_card_dark">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
 
         <!-- Top row -->
         <RelativeLayout
@@ -102,9 +109,9 @@
                     android:id="@+id/actionRowBusiness"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="12dp"
                     android:orientation="horizontal"
-                    android:gravity="end">
+                    android:gravity="center_vertical">
 
                     <TextView
                         android:id="@+id/callBtn"
@@ -159,13 +166,33 @@
             android:baselineAligned="false"
             android:visibility="gone">
 
-            <ImageView
-                android:id="@+id/logoImagePerson"
+            <FrameLayout
                 android:layout_width="92dp"
-                android:layout_height="92dp"
-                android:scaleType="centerCrop"
-                android:background="@drawable/bg_image_rounded"
-                android:clipToOutline="true" />
+                android:layout_height="92dp">
+
+                <ImageView
+                    android:id="@+id/logoImagePerson"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerInside"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:src="@android:drawable/ic_menu_myplaces"
+                    android:tint="#EAF7FF"
+                    android:clipToOutline="true" />
+
+                <TextView
+                    android:id="@+id/personAvatarBadge"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="6dp"
+                    android:gravity="center"
+                    android:text="?"
+                    android:textColor="#EAF7FF"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:background="@drawable/bg_badge_question" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -175,67 +202,200 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/personNameText"
-                    android:layout_width="match_parent"
+                    android:id="@+id/personBadgeText"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Person Name"
-                    android:textColor="#FFFFFF"
-                    android:textSize="22sp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingBottom="5dp"
+                    android:text="UNKNOWN CALLER"
+                    android:textColor="#EAF7FF"
                     android:textStyle="bold"
-                    android:maxLines="1" />
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_chip_header" />
 
                 <TextView
-                    android:id="@+id/personMetaText"
+                    android:id="@+id/personPhoneText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="+91 00000 00000"
+                    android:textColor="#FFFFFF"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="18sp"
+                    android:autoSizeMaxTextSize="28sp"
+                    android:autoSizeStepGranularity="1sp"
+                    />
+
+                <LinearLayout
+                    android:id="@+id/personMetaRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Contact (BUSINESS_OWNER)"
-                    android:textColor="#D9F1FF"
-                    android:textSize="13sp"
-                    android:maxLines="2" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/personMetaText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="India • Just now"
+                        android:textColor="#D9F1FF"
+                        android:textSize="13sp"
+                        android:maxLines="1" />
+
+                </LinearLayout>
+
+                <!-- Name (show only when available) -->
+                <TextView
+                    android:id="@+id/personNameText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Name"
+                    android:textColor="#EAF7FF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:visibility="gone"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="14sp"
+                    android:autoSizeMaxTextSize="18sp"
+                    android:autoSizeStepGranularity="1sp" />
+
+                <!-- Edit / Confirm row (Incoming: Confirm visible, After-call: Confirm hidden) -->
+                <LinearLayout
+                    android:id="@+id/editConfirmRowPerson"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="end">
+
+                    <TextView
+                        android:id="@+id/suggestedEditBtn"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Edit"
+                        android:textColor="#B37CFF"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:background="@drawable/bg_btn_edit"
+                        android:drawableStart="@drawable/ic_edit_outline"
+                        android:drawablePadding="6dp"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp" />
+
+                    <View
+                        android:id="@+id/editConfirmSpacer"
+                        android:layout_width="10dp"
+                        android:layout_height="1dp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/confirmSaveBtnPerson"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Confirm"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:background="@drawable/bg_btn_confirm"
+                        android:drawableStart="@drawable/ic_check_outline"
+                        android:drawablePadding="6dp"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:visibility="gone" />
+                </LinearLayout>
 
                 <!-- ✅ Call / Chat row (PERSON) -->
                 <LinearLayout
                     android:id="@+id/actionRowPerson"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="12dp"
                     android:orientation="horizontal"
-                    android:gravity="end">
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
 
-                    <TextView
-                        android:id="@+id/callBtnPerson"
-                        android:layout_width="wrap_content"
-                        android:layout_height="42dp"
-                        android:minWidth="120dp"
-                        android:gravity="center_vertical|center_horizontal"
-                        android:text="Call"
-                        android:textColor="#0C2A3A"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_btn_light"
-                        android:drawableStart="@drawable/ic_call_png"
-                        android:drawablePadding="8dp"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp" />
+                <TextView
+                    android:id="@+id/callBtnPerson"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:text="CALL"
+                    android:textColor="#39E38C"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_action_btn_green"
+                    android:drawableStart="@drawable/ic_call_outline"
+                    android:drawablePadding="8dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
 
                     <View
                         android:layout_width="10dp"
                         android:layout_height="1dp" />
 
-                    <TextView
-                        android:id="@+id/chatBtnPerson"
-                        android:layout_width="wrap_content"
-                        android:layout_height="42dp"
-                        android:minWidth="120dp"
-                        android:gravity="center_vertical|center_horizontal"
-                        android:text="Chat"
-                        android:textColor="#EAF7FF"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_btn_dark"
-                        android:drawableStart="@drawable/ic_whatsapp_png"
-                        android:drawablePadding="8dp"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp" />
+                <TextView
+                    android:id="@+id/saveContactBtnPerson"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:text="SAVE"
+                    android:textColor="#2A74FF"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_action_btn_blue"
+                    android:drawableStart="@drawable/ic_person_add_outline"
+                    android:drawablePadding="8dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+
+                    <View
+                        android:layout_width="10dp"
+                        android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/chatBtnPerson"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:text="MSG"
+                    android:textColor="#B37CFF"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_action_btn_purple"
+                    android:drawableStart="@drawable/ic_message_outline"
+                    android:drawablePadding="8dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -311,13 +471,19 @@
         <!-- Ads Title -->
         <TextView
             android:id="@+id/adsTitle"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Advertisements"
-            android:textAlignment="center"
-            android:textColor="#EAF7FF"
-            android:textSize="18sp"
+            android:layout_gravity="start"
+            android:layout_marginStart="4dp"
+            android:text="BUSINESS FOUND NEAR YOU!"
+            android:textColor="#151515"
+            android:textSize="13sp"
             android:textStyle="bold"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="7dp"
+            android:paddingBottom="7dp"
+            android:background="@drawable/bg_chip_yellow"
             android:visibility="gone" />
 
         <!-- Ads Recycler -->
@@ -327,12 +493,13 @@
             android:layout_height="270dp"
             android:layout_marginTop="14dp"
             android:clipToPadding="false"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:overScrollMode="never"
             android:visibility="gone" />
 
-    </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 </FrameLayout>
 
 

@@ -21,8 +21,8 @@ fun AdItem.toOverlayCard(preferTamil: Boolean = false): OverlayAdCard {
         id = id.clean(),
         title = finalTitle,
         subtitle = subtitle,
-        rating = rating,
-        ratingCount = ratingCount,
+        viewCountLabel = null,
+        offerText = null,
         openText = openLabel.clean(),
         isTrusted = isTrusted == true,
         imageUrl = primaryImageUrl.clean(),   // ✅ primaryImageUrl

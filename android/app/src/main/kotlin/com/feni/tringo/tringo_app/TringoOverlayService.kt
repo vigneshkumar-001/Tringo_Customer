@@ -1,6 +1,7 @@
 package com.feni.tringo.tringo_app
 
 import android.Manifest
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -8,18 +9,22 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.content.res.ColorStateList
 import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.provider.ContactsContract
 import android.provider.Settings
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import android.text.InputType
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
@@ -37,7 +42,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import retrofit2.HttpException
+import java.util.concurrent.TimeUnit
 
 class TringoOverlayService : Service() {
 
@@ -77,6 +89,19 @@ class TringoOverlayService : Service() {
 
     private var incomingAutoHideJob: Job? = null
 
+    // Call session guards (avoid false "Call Ended" on noisy devices)
+    private var callSessionStartedAt: Long = 0L
+    private var sawOffhookInSession: Boolean = false
+
+    private val contactSyncHttp by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .callTimeout(20, TimeUnit.SECONDS)
+            .build()
+    }
+
     // ✅ debounce
     private var lastOverlayShownAt: Long = 0L
     private val OVERLAY_DEBOUNCE_MS = 900L
@@ -97,6 +122,7 @@ class TringoOverlayService : Service() {
     private var cacheTitle: String = ""
     private var cacheSubtitleLine: String = ""
     private var cacheImageUrl: String = ""
+    private var cacheCanEditName: Boolean = true
 
     private var cacheAdsTitle: String = "Advertisements"
     private var cacheAdsCards: List<OverlayAdCard> = emptyList()
@@ -114,7 +140,8 @@ class TringoOverlayService : Service() {
         subtitleLine: String,
         imageUrl: String,
         adsTitle: String,
-        adsCards: List<OverlayAdCard>
+        adsCards: List<OverlayAdCard>,
+        canEditName: Boolean = true
     ) {
         cachePhone = phone
         cacheAt = System.currentTimeMillis()
@@ -124,6 +151,7 @@ class TringoOverlayService : Service() {
         cacheImageUrl = imageUrl
         cacheAdsTitle = adsTitle
         cacheAdsCards = adsCards
+        cacheCanEditName = canEditName
         Log.d(TAG, "CACHE SAVED phone=$phone isShop=$isShop ads=${adsCards.size}")
     }
 
@@ -243,16 +271,49 @@ class TringoOverlayService : Service() {
         }
 
         postCallShownOnce = false
+        callSessionStartedAt = 0L
+        sawOffhookInSession = false
 
         if (showOnlyAfterEnd) {
-            Log.d(TAG, "postCall immediate overlay path phone=$pendingPhone")
-            // Receiver may start us after the call is already IDLE, so don't wait for call-state callbacks.
-            postCallPopupMode = true
-            // Bypass debounce: post-call must show even if an incoming overlay was just shown.
-            lastOverlayShownAt = 0L
-            showOverlay(pendingPhone, pendingContact, preferCache = true)
+            val callStateNow = try {
+                telephonyManager?.callState ?: TelephonyManager.CALL_STATE_IDLE
+            } catch (_: Exception) {
+                TelephonyManager.CALL_STATE_IDLE
+            }
 
+            // Some devices send noisy PHONE_STATE broadcasts that can trigger the "call end" receiver
+            // even while the call is still RINGING/OFFHOOK. Guard against showing the post-call overlay
+            // unless the device is truly IDLE.
+            if (callStateNow != TelephonyManager.CALL_STATE_IDLE) {
+                Log.w(TAG, "showOnlyAfterEnd requested but callState=$callStateNow; treating as incoming")
+                showOnlyAfterEnd = false
+            }
+        }
+
+        if (showOnlyAfterEnd) {
+            // Some devices are noisy: PHONE_STATE broadcast can arrive while call is still ringing.
+            // Confirm IDLE after a short delay before showing "Call Ended".
+            Log.d(TAG, "postCall requested; confirming idle phone=$pendingPhone")
             serviceScope.launch {
+                delay(1500)
+                val stillIdle = safeCallState() == TelephonyManager.CALL_STATE_IDLE
+                if (!stillIdle) {
+                    Log.w(TAG, "postCall confirmation failed; treating as incoming")
+                    showOnlyAfterEnd = false
+                    postCallPopupMode = false
+
+                    if (!suppressedForThisNumber) {
+                        safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
+                        scheduleIncomingAutoHide()
+                    }
+                    startWatchingForCallEnd()
+                    return@launch
+                }
+
+                postCallPopupMode = true
+                lastOverlayShownAt = 0L
+                showOverlay(pendingPhone, pendingContact, preferCache = true)
+
                 delay(POST_CALL_SHOW_MS)
                 removeOverlay()
                 postCallPopupMode = false
@@ -428,6 +489,7 @@ class TringoOverlayService : Service() {
         val now = System.currentTimeMillis()
 
         if (state == TelephonyManager.CALL_STATE_RINGING) {
+            if (callSessionStartedAt == 0L) callSessionStartedAt = now
             lastNonIdleAt = now
             if (!showOnlyAfterEnd) {
                 if (overlayView == null) safeShowOverlay(pendingPhone, pendingContact, preferCache = true)
@@ -436,6 +498,8 @@ class TringoOverlayService : Service() {
         }
 
         if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
+            if (callSessionStartedAt == 0L) callSessionStartedAt = now
+            sawOffhookInSession = true
             lastNonIdleAt = now
             incomingAutoHideJob?.cancel()
             incomingAutoHideJob = null
@@ -449,10 +513,22 @@ class TringoOverlayService : Service() {
 
         endConfirmJob?.cancel()
         endConfirmJob = serviceScope.launch {
-            delay(1200)
+            // Longer + double-check to avoid false IDLE during ringing on some OEMs.
+            delay(2500)
             if (safeCallState() != TelephonyManager.CALL_STATE_IDLE) return@launch
+            delay(700)
+            if (safeCallState() != TelephonyManager.CALL_STATE_IDLE) return@launch
+
             val idleFor = System.currentTimeMillis() - lastNonIdleAt
-            if (idleFor < 900) return@launch
+            val sessionFor = if (callSessionStartedAt == 0L) 0L else (System.currentTimeMillis() - callSessionStartedAt)
+
+            // If call was never answered, require a longer session to treat it as ended (missed/rejected).
+            val minIdle = 2400L
+            val minSession = if (sawOffhookInSession) 1200L else 4500L
+
+            if (idleFor < minIdle) return@launch
+            if (sessionFor in 1 until minSession) return@launch
+
             onCallEndedConfirmed()
         }
 
@@ -499,13 +575,21 @@ class TringoOverlayService : Service() {
     // ==========================================================
     // ✅ Icon size like Figma (16dp)
     // ==========================================================
-    private fun setButtonIconDp(v: View?, drawableRes: Int, dp: Float = 16f) {
+    private fun setButtonIconDp(
+        v: View?,
+        drawableRes: Int,
+        dp: Float = 18f,
+        tintColor: Int? = null
+    ) {
         val tv = v as? TextView ?: return
         val d = ContextCompat.getDrawable(this, drawableRes) ?: return
+        if (tintColor != null) {
+            try { d.setTint(tintColor) } catch (_: Exception) {}
+        }
         val px = (dp * resources.displayMetrics.density).toInt().coerceAtLeast(1)
         d.setBounds(0, 0, px, px)
         tv.setCompoundDrawablesRelative(d, null, null, null)
-        tv.compoundDrawablePadding = (8f * resources.displayMetrics.density).toInt()
+        tv.compoundDrawablePadding = (6f * resources.displayMetrics.density).toInt()
     }
 
     // ==========================================================
@@ -543,6 +627,8 @@ class TringoOverlayService : Service() {
         businessMetaTv: TextView?,
         personTv: TextView?,
         personMetaTv: TextView?,
+        personPhoneTv: TextView?,
+        personBadgeTv: TextView?,
         logoBiz: ImageView?,
         logoPerson: ImageView?,
         phone: String,
@@ -555,11 +641,18 @@ class TringoOverlayService : Service() {
         headerBusiness?.visibility = View.GONE
         headerPerson?.visibility = View.VISIBLE
 
-        personTv?.text = if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone
-        personMetaTv?.text = reason
+        val displayName = contactName.trim()
+        personPhoneTv?.text = formatPhoneForDisplay(phone)
+        personPhoneTv?.visibility = if (displayName.isNotBlank()) View.GONE else View.VISIBLE
+        personTv?.text = displayName
+        personTv?.visibility = if (displayName.isNotBlank()) View.VISIBLE else View.GONE
+        personMetaTv?.text = "India • Just now"
+        personBadgeTv?.text = if (displayName.isNotBlank()) "CALLER" else "UNKNOWN CALLER"
 
         try {
-            logoPerson?.setImageResource(android.R.drawable.ic_menu_call)
+            logoPerson?.scaleType = ImageView.ScaleType.CENTER_INSIDE
+            logoPerson?.imageTintList = ColorStateList.valueOf(0xFFEAF7FF.toInt())
+            logoPerson?.setImageResource(android.R.drawable.ic_menu_myplaces)
         } catch (_: Exception) {}
     }
 
@@ -577,7 +670,7 @@ class TringoOverlayService : Service() {
         val headerBusiness = v.findViewById<View>(R.id.headerBusiness)
         val headerPerson = v.findViewById<View>(R.id.headerPerson)
 
-        // Business views
+        // Business views (kept for backward compatibility; we force person layout)
         val businessTv = v.findViewById<TextView>(R.id.businessNameText)
         val businessMetaTv = v.findViewById<TextView>(R.id.metaText)
         val logoBiz = v.findViewById<ImageView>(R.id.logoImageBusiness)
@@ -588,32 +681,37 @@ class TringoOverlayService : Service() {
         // Person views
         val personTv = v.findViewById<TextView>(R.id.personNameText)
         val personMetaTv = v.findViewById<TextView>(R.id.personMetaText)
+        val personPhoneTv = v.findViewById<TextView>(R.id.personPhoneText)
+        val personBadgeTv = v.findViewById<TextView>(R.id.personBadgeText)
+        val personAvatarBadge = v.findViewById<View>(R.id.personAvatarBadge)
+        val suggestedEditBtn = v.findViewById<View>(R.id.suggestedEditBtn)
+        val confirmSaveBtnPerson = v.findViewById<View>(R.id.confirmSaveBtnPerson)
         val logoPerson = v.findViewById<ImageView>(R.id.logoImagePerson)
+        val editConfirmSpacer = v.findViewById<View>(R.id.editConfirmSpacer)
 
         // Person buttons
+        val actionRowPerson = v.findViewById<View>(R.id.actionRowPerson)
         val callBtnPerson = v.findViewById<View>(R.id.callBtnPerson)
         val chatBtnPerson = v.findViewById<View>(R.id.chatBtnPerson)
+        val saveContactBtnPerson = v.findViewById<View>(R.id.saveContactBtnPerson)
 
         // Top title
         val smallTop = v.findViewById<TextView>(R.id.smallTopText)
         smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
 
-        // Dismiss overlay on tap anywhere (outside/card) + close button
+        // Dismiss overlay on outside tap + close button
         val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
         val rootCard = v.findViewById<View>(R.id.rootCard)
         outsideLayer?.setOnClickListener { dismissOverlayFromUser() }
-        rootCard?.setOnClickListener { dismissOverlayFromUser() }
 
         // On some devices, the "end call" tap-up can land on the newly shown post-call overlay
         // and instantly dismiss it. Guard dismiss for a short window after showing post-call UI.
         if (postCallPopupMode) {
             outsideLayer?.isClickable = false
-            rootCard?.isClickable = false
             serviceScope.launch {
                 delay(700)
                 if (overlayView !== v) return@launch
                 outsideLayer?.isClickable = true
-                rootCard?.isClickable = true
             }
         }
 
@@ -623,8 +721,31 @@ class TringoOverlayService : Service() {
 
         setButtonIconDp(callBtnBusiness, R.drawable.ic_call_png, 16f)
         setButtonIconDp(chatBtnBusiness, R.drawable.ic_whatsapp_png, 16f)
-        setButtonIconDp(callBtnPerson, R.drawable.ic_call_png, 16f)
-        setButtonIconDp(chatBtnPerson, R.drawable.ic_whatsapp_png, 16f)
+        setButtonIconDp(
+            callBtnPerson,
+            R.drawable.ic_call_outline,
+            16f,
+            tintColor = 0xFF39E38C.toInt()
+        )
+        setButtonIconDp(
+            saveContactBtnPerson,
+            R.drawable.ic_person_add_outline,
+            16f,
+            tintColor = 0xFF2A74FF.toInt()
+        )
+        setButtonIconDp(
+            chatBtnPerson,
+            R.drawable.ic_message_outline,
+            16f,
+            tintColor = 0xFFB37CFF.toInt()
+        )
+        setButtonIconDp(
+            suggestedEditBtn,
+            R.drawable.ic_edit_outline,
+            16f,
+            tintColor = 0xFFB37CFF.toInt()
+        )
+        setButtonIconDp(confirmSaveBtnPerson, R.drawable.ic_check_outline, 16f)
 
         val dialClick = View.OnClickListener {
             val num = (cachePhone ?: pendingPhone).trim()
@@ -634,18 +755,62 @@ class TringoOverlayService : Service() {
             val num = (cachePhone ?: pendingPhone).trim()
             if (num.isNotBlank() && !num.equals("UNKNOWN", true)) openWhatsAppChat(num)
         }
+        val smsClick = View.OnClickListener {
+            val num = (cachePhone ?: pendingPhone).trim()
+            if (num.isNotBlank() && !num.equals("UNKNOWN", true)) openSms(num)
+        }
+        val saveContactClick = View.OnClickListener {
+            val num = (cachePhone ?: pendingPhone).trim()
+            if (num.isBlank() || num.equals("UNKNOWN", true)) return@OnClickListener
+            val name = personTv?.text?.toString()?.trim().orEmpty()
+            openAddContact(name = name, phone = num)
+        }
 
-        callBtnBusiness?.setOnClickListener(dialClick)
-        chatBtnBusiness?.setOnClickListener(whatsappClick)
+        // Never show business call/whatsapp UI for this design
+        headerBusiness?.visibility = View.GONE
         callBtnPerson?.setOnClickListener(dialClick)
-        chatBtnPerson?.setOnClickListener(whatsappClick)
+        saveContactBtnPerson?.setOnClickListener(saveContactClick)
+        chatBtnPerson?.setOnClickListener(smsClick)
+
+        // UX: Incoming overlay -> only Edit. After-call overlay -> Call/Save/Msg + Ads.
+        actionRowPerson?.visibility = if (postCallPopupMode) View.VISIBLE else View.GONE
+        confirmSaveBtnPerson?.visibility = View.GONE
+        editConfirmSpacer?.visibility = View.GONE
+
+        suggestedEditBtn?.setOnClickListener {
+            val num = (cachePhone ?: pendingPhone).trim()
+            if (num.isBlank() || num.equals("UNKNOWN", true)) return@setOnClickListener
+            val current = personTv?.text?.toString()?.trim().orEmpty()
+            showEditNameDialog(initialName = current, phone = num) { newName ->
+                if (overlayView !== v) return@showEditNameDialog
+                personTv?.text = newName
+                personBadgeTv?.text = "CALLER"
+                personAvatarBadge?.visibility = View.GONE
+                personPhoneTv?.visibility = View.GONE
+                cachePhone = num
+                cacheTitle = newName
+                cacheAt = System.currentTimeMillis()
+
+                submitPublicPhoneInfoNameBestEffort(name = newName, phone = num)
+                syncSingleContactBestEffort(name = newName, phone = num)
+            }
+        }
+
+        confirmSaveBtnPerson?.setOnClickListener {
+            val num = (cachePhone ?: pendingPhone).trim()
+            if (num.isBlank() || num.equals("UNKNOWN", true)) return@setOnClickListener
+            val name = personTv?.text?.toString()?.trim().orEmpty()
+            openAddContact(name = name, phone = num)
+            if (name.isNotBlank()) syncSingleContactBestEffort(name = name, phone = num)
+            dismissOverlayFromUser()
+        }
 
         // Ads
         val divider = v.findViewById<View>(R.id.dividerLine)
         val adsTitleTv = v.findViewById<TextView>(R.id.adsTitle)
         val recycler = v.findViewById<RecyclerView>(R.id.adsRecycler)
 
-        recycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        recycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         clampAdsRecyclerHeight(recycler)
 
         // ✅ click callback -> open flutter page
@@ -657,8 +822,7 @@ class TringoOverlayService : Service() {
 
         val flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -687,8 +851,18 @@ class TringoOverlayService : Service() {
         // ✅ default loading UI
         headerBusiness.visibility = View.GONE
         headerPerson.visibility = View.VISIBLE
-        personTv.text = if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone
-        personMetaTv.text = "Loading..."
+        val displayName = contactName.trim()
+        personPhoneTv?.text = formatPhoneForDisplay(phone)
+        personTv.text = displayName
+        personTv.visibility = if (displayName.isNotBlank()) View.VISIBLE else View.GONE
+        personMetaTv.text = "India • Just now"
+        personBadgeTv?.text = if (displayName.isNotBlank()) "CALLER" else "UNKNOWN CALLER"
+        personAvatarBadge?.visibility = if (displayName.isNotBlank()) View.GONE else View.VISIBLE
+        try {
+            logoPerson?.scaleType = ImageView.ScaleType.CENTER_INSIDE
+            logoPerson?.imageTintList = ColorStateList.valueOf(0xFFEAF7FF.toInt())
+            logoPerson?.setImageResource(android.R.drawable.ic_menu_myplaces)
+        } catch (_: Exception) {}
 
         // ✅ ads default hidden (only show postCallPopupMode)
         divider.visibility = View.GONE
@@ -700,7 +874,6 @@ class TringoOverlayService : Service() {
             val hasAds = cacheAdsCards.isNotEmpty()
             if (allowAds && hasAds) {
                 divider.visibility = View.VISIBLE
-                adsTitleTv.text = cacheAdsTitle
                 adsTitleTv.visibility = View.VISIBLE
                 recycler.visibility = View.VISIBLE
             } else {
@@ -719,11 +892,15 @@ class TringoOverlayService : Service() {
                 businessMetaTv = businessMetaTv,
                 personTv = personTv,
                 personMetaTv = personMetaTv,
+                personPhoneTv = personPhoneTv,
+                personBadgeTv = personBadgeTv,
                 logoBiz = logoBiz,
-                logoPerson = logoPerson
+                logoPerson = logoPerson,
+                personAvatarBadge = personAvatarBadge
             )
             adsAdapter?.submitList(cacheAdsCards)
             applyAdsVisibilityNow()
+            suggestedEditBtn?.visibility = if (cacheCanEditName) View.VISIBLE else View.GONE
             return
         }
 
@@ -748,6 +925,11 @@ class TringoOverlayService : Service() {
 
                 val isShop = typeStr.equals("OWNER_SHOP", true)
 
+                val actionsAny = readAny(cardAny, "actions") ?: readAny(cardAny, "editable")
+                val canEditName =
+                    pickBool(actionsAny, "canEditName", "showEditIcon") ?:
+                        pickBool(cardAny, "editable") ?: true
+
                 val subtitleLine = listOfNotNull(
                     (if (cat.isNotBlank()) cat else null) ?: cardSubtitle.takeIf { it.isNotBlank() },
                     if (opensAt.isNotBlank() && closesAt.isNotBlank()) "$opensAt - $closesAt" else null,
@@ -770,8 +952,8 @@ class TringoOverlayService : Service() {
                         shopId = shopId,
                         title = pickString(item, "englishName", "title", "name") ?: "Ad ${idx + 1}",
                         subtitle = buildAdSubtitle(item),
-                        rating = pickDouble(item, "rating", "avgRating"),
-                        ratingCount = pickInt(item, "ratingCount", "totalRatings"),
+                        viewCountLabel = pickString(item, "viewCountLabel"),
+                        offerText = pickOfferText(item),
                         openText = pickString(item, "openLabel", "openText"),
                         isTrusted = pickBool(item, "isTrusted", "trusted") ?: false,
                         imageUrl = pickString(item, "primaryImageUrl", "imageUrl") ?: "",
@@ -782,11 +964,12 @@ class TringoOverlayService : Service() {
                 saveCache(
                     phone = phone,
                     isShop = isShop,
-                    title = cardTitle.ifBlank { if (contactName.isNotBlank()) contactName else if (phone.isBlank() || phone.equals("UNKNOWN", true)) "Incoming Call" else phone },
+                    title = cardTitle.ifBlank { contactName.trim() },
                     subtitleLine = subtitleLine,
                     imageUrl = cardImageUrl,
                     adsTitle = adsTitle,
-                    adsCards = cards
+                    adsCards = cards,
+                    canEditName = canEditName
                 )
 
                 applyCacheToUi(
@@ -796,12 +979,16 @@ class TringoOverlayService : Service() {
                     businessMetaTv = businessMetaTv,
                     personTv = personTv,
                     personMetaTv = personMetaTv,
+                    personPhoneTv = personPhoneTv,
+                    personBadgeTv = personBadgeTv,
                     logoBiz = logoBiz,
-                    logoPerson = logoPerson
+                    logoPerson = logoPerson,
+                    personAvatarBadge = personAvatarBadge
                 )
 
                 adsAdapter?.submitList(cacheAdsCards)
                 applyAdsVisibilityNow()
+                suggestedEditBtn?.visibility = if (cacheCanEditName) View.VISIBLE else View.GONE
 
             } catch (e: Exception) {
                 // ✅ Ignore cancellation (normal)
@@ -828,6 +1015,8 @@ class TringoOverlayService : Service() {
                     businessMetaTv = businessMetaTv,
                     personTv = personTv,
                     personMetaTv = personMetaTv,
+                    personPhoneTv = personPhoneTv,
+                    personBadgeTv = personBadgeTv,
                     logoBiz = logoBiz,
                     logoPerson = logoPerson,
                     phone = phone,
@@ -847,36 +1036,76 @@ class TringoOverlayService : Service() {
         return listOf(addr, place).filter { it.isNotBlank() }.joinToString(" • ")
     }
 
+    private fun pickOfferText(item: Any?): String? {
+        val offerAny = readAny(item, "appOffer") ?: return null
+        if (offerAny is String) return offerAny.trim().takeIf { it.isNotBlank() }
+
+        val direct =
+            pickString(offerAny, "offerText", "discountText", "text", "label", "title", "description")
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+        if (direct != null) return direct
+
+        val pct = pickString(offerAny, "percent", "percentage")?.trim()?.takeIf { it.isNotBlank() }
+        val min = pickString(offerAny, "minOrder", "minOrderAmount", "minAmount", "thresholdAmount")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+
+        if (pct != null && min != null) return "$pct DISCOUNT\non orders above ₹ $min"
+        if (pct != null) return "$pct DISCOUNT"
+
+        return null
+    }
+
     private fun applyCacheToUi(
-        headerBusiness: View?, headerPerson: View?,
-        businessTv: TextView?, businessMetaTv: TextView?,
-        personTv: TextView?, personMetaTv: TextView?,
-        logoBiz: ImageView?, logoPerson: ImageView?
+        headerBusiness: View?,
+        headerPerson: View?,
+        businessTv: TextView?,
+        businessMetaTv: TextView?,
+        personTv: TextView?,
+        personMetaTv: TextView?,
+        personPhoneTv: TextView?,
+        personBadgeTv: TextView?,
+        logoBiz: ImageView?,
+        logoPerson: ImageView?,
+        personAvatarBadge: View?
     ) {
-        if (cacheIsShop) {
-            headerBusiness?.visibility = View.VISIBLE
-            headerPerson?.visibility = View.GONE
+        // Always use the SAME overlay design (person layout) for both shop/person results.
+        headerBusiness?.visibility = View.GONE
+        headerPerson?.visibility = View.VISIBLE
 
-            businessTv?.text = cacheTitle
-            businessMetaTv?.text = cacheSubtitleLine
+        val phone = (cachePhone ?: pendingPhone).trim()
+        val displayName = cacheTitle.trim()
+        val hasName = displayName.isNotBlank()
 
-            logoBiz?.load(cacheImageUrl) {
-                crossfade(true)
-                placeholder(android.R.drawable.ic_menu_gallery)
-                error(android.R.drawable.ic_menu_gallery)
-            }
-        } else {
-            headerBusiness?.visibility = View.GONE
-            headerPerson?.visibility = View.VISIBLE
+        personPhoneTv?.text = formatPhoneForDisplay(phone)
+        personPhoneTv?.visibility = if (hasName) View.GONE else View.VISIBLE
+        personTv?.text = displayName
+        personTv?.visibility = if (hasName) View.VISIBLE else View.GONE
+        personMetaTv?.text = "India • Just now"
+        personBadgeTv?.text = if (hasName) "CALLER" else "UNKNOWN CALLER"
+        personAvatarBadge?.visibility = if (hasName) View.GONE else View.VISIBLE
 
-            personTv?.text = cacheTitle
-            personMetaTv?.text = cacheSubtitleLine
-
+        val hasPhoto = cacheImageUrl.isNotBlank()
+        if (hasPhoto) {
+            try {
+                logoPerson?.scaleType = ImageView.ScaleType.CENTER_CROP
+                logoPerson?.imageTintList = null
+            } catch (_: Exception) {}
             logoPerson?.load(cacheImageUrl) {
+                allowHardware(false)
                 crossfade(true)
-                placeholder(android.R.drawable.ic_menu_gallery)
-                error(android.R.drawable.ic_menu_gallery)
+                placeholder(android.R.drawable.ic_menu_myplaces)
+                error(android.R.drawable.ic_menu_myplaces)
             }
+            personAvatarBadge?.visibility = View.GONE
+        } else {
+            try {
+                logoPerson?.scaleType = ImageView.ScaleType.CENTER_INSIDE
+                logoPerson?.imageTintList = ColorStateList.valueOf(0xFFEAF7FF.toInt())
+                logoPerson?.setImageResource(android.R.drawable.ic_menu_myplaces)
+            } catch (_: Exception) {}
+            personAvatarBadge?.visibility = if (hasName) View.GONE else View.VISIBLE
         }
     }
 
@@ -944,6 +1173,187 @@ class TringoOverlayService : Service() {
             }
             startActivity(i)
         } catch (_: Exception) {}
+    }
+
+    private fun formatPhoneForDisplay(raw: String): String {
+        val digits = raw.filter { it.isDigit() }
+        if (digits.length == 10) {
+            return "+91 ${digits.substring(0, 5)} ${digits.substring(5)}"
+        }
+        if (digits.length == 12 && digits.startsWith("91")) {
+            val n = digits.substring(2)
+            return "+91 ${n.substring(0, 5)} ${n.substring(5)}"
+        }
+        return raw.ifBlank { "UNKNOWN" }
+    }
+
+    private fun openSms(phone: String) {
+        try {
+            val p = normalizePhoneForDial(phone)
+            if (p.isBlank()) return
+            val i = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("smsto:$p")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(i)
+        } catch (e: Exception) {
+            Log.e(TAG, "openSms failed: ${e.message}", e)
+        }
+    }
+
+    private fun openAddContact(name: String, phone: String) {
+        try {
+            val p = normalizePhoneForDial(phone)
+            if (p.isBlank()) return
+            val i = Intent(ContactsContract.Intents.Insert.ACTION).apply {
+                type = ContactsContract.RawContacts.CONTENT_TYPE
+                putExtra(ContactsContract.Intents.Insert.NAME, name)
+                putExtra(ContactsContract.Intents.Insert.PHONE, p)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(i)
+        } catch (e: Exception) {
+            Log.e(TAG, "openAddContact failed: ${e.message}", e)
+        }
+    }
+
+    private fun showEditNameDialog(
+        initialName: String,
+        phone: String,
+        onSaved: (String) -> Unit
+    ) {
+        try {
+            val input = EditText(this).apply {
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+                setText(initialName)
+                setSelection(text?.length ?: 0)
+                hint = "Enter name"
+            }
+
+            val d = AlertDialog.Builder(this)
+                .setTitle("Edit name")
+                .setMessage(formatPhoneForDisplay(phone))
+                .setView(input)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Save") { _, _ ->
+                    val v = input.text?.toString()?.trim().orEmpty()
+                    if (v.isNotBlank()) onSaved(v)
+                }
+                .create()
+
+            try {
+                val t = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                else
+                    @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
+                d.window?.setType(t)
+            } catch (_: Exception) {}
+
+            d.show()
+        } catch (e: Exception) {
+            Log.e(TAG, "showEditNameDialog failed: ${e.message}", e)
+        }
+    }
+
+    private fun getFlutterPref(key: String): String? {
+        return try {
+            val p = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            p.getString("flutter.$key", null)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun normalizePhoneForSync(raw: String): String {
+        val digits = raw.filter { it.isDigit() }
+        if (digits.length == 10) return "+91$digits"
+        if (digits.length == 12 && digits.startsWith("91")) return "+$digits"
+        return raw.trim()
+    }
+
+    private fun normalizePhoneForPublicPhoneInfo(raw: String): String {
+        val digits = raw.filter { it.isDigit() }
+        if (digits.length == 12 && digits.startsWith("91")) return digits.substring(2)
+        if (digits.length == 10) return digits
+        return digits.ifBlank { raw.trim() }
+    }
+
+    private fun submitPublicPhoneInfoNameBestEffort(name: String, phone: String) {
+        serviceScope.launch {
+            try {
+                val token = getFlutterPref("token")?.trim().orEmpty()
+                val sessionToken = getFlutterPref("sessionToken")?.trim().orEmpty()
+
+                val payload = JSONObject().apply {
+                    put("phone", normalizePhoneForPublicPhoneInfo(phone))
+                    put("name", name)
+                }
+
+                val body = payload.toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                val req = Request.Builder()
+                    .url("https://bknd.tringobiz.com/api/v1/public/phone-info/name")
+                    .post(body)
+                    .apply {
+                        if (token.isNotBlank()) addHeader("Authorization", "Bearer $token")
+                        if (sessionToken.isNotBlank()) addHeader("x-session-token", sessionToken)
+                    }
+                    .build()
+
+                withContext(Dispatchers.IO) {
+                    contactSyncHttp.newCall(req).execute().use { res ->
+                        Log.d(TAG, "phone-info/name http=${res.code}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "phone-info/name failed: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun syncSingleContactBestEffort(name: String, phone: String) {
+        serviceScope.launch {
+            try {
+                val token = getFlutterPref("token")?.trim().orEmpty()
+                val sessionToken = getFlutterPref("sessionToken")?.trim().orEmpty()
+                if (token.isBlank()) {
+                    Log.w(TAG, "syncSingleContact skipped: no auth token")
+                    return@launch
+                }
+
+                val payload = JSONObject().apply {
+                    put(
+                        "items",
+                        JSONArray().put(
+                            JSONObject()
+                                .put("name", name)
+                                .put("phone", normalizePhoneForSync(phone))
+                        )
+                    )
+                }
+
+                val body = payload.toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                val req = Request.Builder()
+                    .url("https://bknd.tringobiz.com/api/v1/contacts/sync")
+                    .post(body)
+                    .addHeader("Authorization", "Bearer $token")
+                    .apply {
+                        if (sessionToken.isNotBlank()) addHeader("x-session-token", sessionToken)
+                    }
+                    .build()
+
+                withContext(Dispatchers.IO) {
+                    contactSyncHttp.newCall(req).execute().use { res ->
+                        Log.d(TAG, "syncSingleContact http=${res.code}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "syncSingleContact failed: ${e.message}", e)
+            }
+        }
     }
 
     private fun normalizePhoneForDial(raw: String): String {
