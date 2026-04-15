@@ -1,4 +1,6 @@
 /// ================= ROOT RESPONSE =================
+import 'package:tringo_app/Core/Models/share_info.dart';
+
 class ShopDetailsResponse {
   final bool status;
   final ShopData? data;
@@ -87,6 +89,7 @@ class ShopData {
 
   final bool isFollowing;
   final int followerCount;
+  final ShareInfo? share;
 
   ShopData({
     required this.id,
@@ -132,6 +135,7 @@ class ShopData {
     required this.surprise,
     required this.isFollowing,
     required this.followerCount,
+    this.share,
   });
 
   factory ShopData.fromJson(Map<String, dynamic> json) {
@@ -233,6 +237,8 @@ class ShopData {
 
       isFollowing: json['isFollowing'] == true,
       followerCount: (json['followerCount'] as num?)?.toInt() ?? 0,
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -282,6 +288,7 @@ class ShopData {
     "surprise": surprise?.toJson(),
     "isFollowing": isFollowing,
     "followerCount": followerCount,
+    "share": share?.toJson(),
   };
 }
 

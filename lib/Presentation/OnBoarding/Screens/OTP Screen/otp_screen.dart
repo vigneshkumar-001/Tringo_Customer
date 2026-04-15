@@ -17,6 +17,7 @@ import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../../../../Core/contacts/contacts_service.dart';
+import '../Contacts Sync/contacts_consent_gate.dart';
 import '../Login Screen/Controller/login_notifier.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -150,11 +151,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         //     AppLogger.log.e("❌ Contact sync failed: $e");
         //   }
         // }
-        if (next.otpResponse?.data?.isReferralApplied == true) {
-          context.goNamed(AppRoutes.privacyPolicy);
-        } else {
-          context.goNamed(AppRoutes.referralScreen);
-        }
+        final nextRoute =
+            next.otpResponse?.data?.isReferralApplied == true
+                ? AppRoutes.privacyPolicy
+                : AppRoutes.referralScreen;
+
+        context.goNamed(
+          AppRoutes.contactsConsentGate,
+          extra: ContactsConsentGateArgs(nextRouteName: nextRoute),
+        );
 
         notifier.resetState();
       }

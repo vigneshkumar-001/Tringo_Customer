@@ -1,3 +1,5 @@
+import 'package:tringo_app/Core/Models/share_info.dart';
+
 class ProductDetailResponse {
   final bool status;
   final ProductDetailsData data;
@@ -22,6 +24,7 @@ class ProductDetailsData {
   final PagedProducts similarProducts;
   final List<Shop> peopleAlsoViewed; // 👈 changed to Shop
   final Reviews reviews;
+  final ShareInfo? share;
 
   ProductDetailsData({
     required this.product,
@@ -29,6 +32,7 @@ class ProductDetailsData {
     required this.similarProducts,
     required this.peopleAlsoViewed,
     required this.reviews,
+    this.share,
   });
 
   factory ProductDetailsData.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,8 @@ class ProductDetailsData {
           .map((e) => Shop.fromJson(e ?? {}))
           .toList(),
       reviews: Reviews.fromJson(json['reviews'] ?? {}),
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -50,6 +56,7 @@ class ProductDetailsData {
       'similarProducts': similarProducts.toJson(),
       'peopleAlsoViewed': peopleAlsoViewed.map((e) => e.toJson()).toList(),
       'reviews': reviews.toJson(),
+      'share': share?.toJson(),
     };
   }
 }
@@ -84,6 +91,7 @@ class Product {
   final List<Feature> highlights;
   final List<Sku> skus;
   final int reviewCount;
+  final ShareInfo? share;
 
   Product({
     required this.kind,
@@ -115,6 +123,7 @@ class Product {
     required this.highlights,
     required this.skus,
     required this.reviewCount,
+    this.share,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -158,6 +167,8 @@ class Product {
           .map((e) => Sku.fromJson(e ?? {}))
           .toList(),
       reviewCount: json['reviewCount'] ?? 0,
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -192,6 +203,7 @@ class Product {
       'highlights': highlights.map((e) => e.toJson()).toList(),
       'skus': skus.map((e) => e.toJson()).toList(),
       'reviewCount': reviewCount,
+      'share': share?.toJson(),
     };
   }
 }
@@ -323,6 +335,7 @@ class Shop {
   final bool isOpen;
   final String primaryImageUrl;
   final String? closeTime;
+  final ShareInfo? share;
 
   Shop({
     required this.id,
@@ -349,6 +362,7 @@ class Shop {
     required this.isOpen,
     required this.primaryImageUrl,
     this.closeTime,
+    this.share,
   });
 
   factory Shop.fromJson(Map<String, dynamic> json) {
@@ -381,6 +395,8 @@ class Shop {
       isOpen: json['isOpen'] ?? false,
       primaryImageUrl: json['primaryImageUrl'] ?? '',
       closeTime: json['closeTime'],
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -411,6 +427,7 @@ class Shop {
       'isOpen': isOpen,
       'primaryImageUrl': primaryImageUrl,
       'closeTime': closeTime,
+      'share': share?.toJson(),
     };
   }
 }

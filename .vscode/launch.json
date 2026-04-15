@@ -1,0 +1,45 @@
+ {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Tringo_Customer",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Tringo_Customer (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Tringo_Customer (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "sim_card_info",
+            "cwd": "packages\\sim_card_info",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "sim_card_info (profile mode)",
+            "cwd": "packages\\sim_card_info",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "sim_card_info (release mode)",
+            "cwd": "packages\\sim_card_info",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

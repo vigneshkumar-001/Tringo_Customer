@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tringo_app/Api/api_providers.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 
 import '../../../../../Api/DataSource/api_data_source.dart';
-import '../../../../../Core/contacts/contacts_service.dart'; // ✅ ADD THIS
 
 import '../Model/sim_verify_response.dart';
 import 'mobile_verify_notifier.dart';
@@ -73,57 +73,6 @@ class MobileVerifyNotifier extends Notifier<mobileVerifyState> {
         await prefs.setString('role', response.data.role ?? '');
 
         AppLogger.log.i('✅ SIM login token stored');
-
-        //  HERE: contacts sync for SIM-direct login
-        final alreadySynced = prefs.getBool('contacts_synced') ?? false;
-
-        // Optional: only sync when SIM verified true
-        final simVerified = response.data.simVerified == true;
-
-        if (!alreadySynced && simVerified) {
-          try {
-            AppLogger.log.i("✅ Contact sync started (SIM login)");
-
-            final contacts = await ContactsService.getAllContacts();
-            AppLogger.log.i("📞 contacts fetched = ${contacts.length}");
-
-            if (contacts.isEmpty) {
-              AppLogger.log.w(
-                "⚠️ Contacts empty / permission denied. Will retry later.",
-              );
-              return;
-            }
-
-            final limited = contacts.take(500).toList();
-
-            final items = limited
-                .map((c) => {"name": c.name, "phone": "+91${c.phone}"})
-                .toList();
-
-            // ✅ chunk to reduce payload size (recommended)
-            const chunkSize = 200;
-            for (var i = 0; i < items.length; i += chunkSize) {
-              final chunk = items.sublist(
-                i,
-                (i + chunkSize > items.length) ? items.length : i + chunkSize,
-              );
-
-              final res = await api.syncContacts(items: chunk);
-
-              res.fold(
-                (l) => AppLogger.log.e("❌ batch sync fail: ${l.message}"),
-                (r) => AppLogger.log.i(
-                  "✅ batch ok total=${r.data.total} inserted=${r.data.inserted} touched=${r.data.touched} skipped=${r.data.skipped}",
-                ),
-              );
-            }
-
-            await prefs.setBool('contacts_synced', true);
-            AppLogger.log.i("✅ Contacts synced (SIM login): ${limited.length}");
-          } catch (e) {
-            AppLogger.log.e("❌ Contact sync failed (SIM login): $e");
-          }
-        }
       },
     );
   }
@@ -133,10 +82,6 @@ final mobileVerifyProvider =
     NotifierProvider<MobileVerifyNotifier, mobileVerifyState>(
       MobileVerifyNotifier.new,
     );
-
-final apiDataSourceProvider = Provider<ApiDataSource>((ref) {
-  return ApiDataSource();
-});
 
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:shared_preferences/shared_preferences.dart';

@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/shops_product.dart';
@@ -53,6 +55,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   int selectedWeight = 0; // default
 
   bool _enquiryDisabled = false;
+
+  Future<void> _shareShopLink({required String shopId, String? shareText}) async {
+    final text =
+        (shareText != null && shareText.trim().isNotEmpty)
+            ? shareText
+            : DeepLinks.shopShareText(shopId: shopId);
+    await Share.share(text);
+  }
 
   late final AnimationController _ac;
 
@@ -367,6 +377,37 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     onTap: () => Navigator.pop(context),
                                   ),
                                   Spacer(),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(30),
+                                    onTap: () {
+                                      final shopId =
+                                          (widget.shopId?.isNotEmpty ?? false)
+                                              ? widget.shopId!
+                                              : (shopsData.data?.id ?? '');
+                                      if (shopId.isEmpty) return;
+                                      _shareShopLink(
+                                        shopId: shopId,
+                                        shareText:
+                                            shopsData.data?.share?.shareText,
+                                      );
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColor.white,
+                                        border: Border.all(
+                                          color: AppColor.white4,
+                                        ),
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      padding: const EdgeInsets.all(11.5),
+                                      child: const Icon(
+                                        Icons.share,
+                                        size: 18,
+                                        color: AppColor.darkBlue,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
                                   CommonContainer.gradientContainer(
                                     text:
                                         shopsData.data?.category.toString() ??

@@ -13,12 +13,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
+import 'package:share_plus/share_plus.dart';
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 
@@ -1199,7 +1201,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   if (_homeScrollCtrl.hasClients) {
                                     await _homeScrollCtrl.animateTo(
                                       0,
-                                      duration: const Duration(milliseconds: 350),
+                                      duration: const Duration(
+                                        milliseconds: 350,
+                                      ),
                                       curve: Curves.easeOut,
                                     );
                                   }
@@ -1541,19 +1545,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                                 .trim()
                                                                 .toUpperCase();
                                                         String? passType;
+                                                        int? initialIndex;
 
                                                         if (bannerType.contains(
-                                                          'RETAIL',
+                                                          'SERVICE',
                                                         )) {
-                                                          passType = 'products';
-                                                        } else if (bannerType
-                                                            .contains(
-                                                              'SERVICE',
-                                                            )) {
                                                           passType = 'services';
+                                                          initialIndex = 3;
+                                                        } else if (bannerType
+                                                                .contains(
+                                                                  'RETAIL',
+                                                                ) ||
+                                                            bannerType.contains(
+                                                              'PRODUCT',
+                                                            )) {
+                                                          passType = 'products';
+                                                          initialIndex = 4;
                                                         }
 
                                                         if (passType == null ||
+                                                            initialIndex ==
+                                                                null ||
                                                             banner.shopId ==
                                                                 null) {
                                                           return;
@@ -1569,10 +1581,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                                   shopId: banner
                                                                       .shopId!,
                                                                   initialIndex:
-                                                                      passType ==
-                                                                          'products'
-                                                                      ? 3
-                                                                      : 0,
+                                                                      initialIndex!,
                                                                 ),
                                                           ),
                                                         );
@@ -1665,8 +1674,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         .toUpperCase();
                                     final alreadyClaimed =
                                         data.isClaimed == true ||
-                                            data.claimed == true ||
-                                            claimStatus == 'CLAIMED';
+                                        data.claimed == true ||
+                                        claimStatus == 'CLAIMED';
                                     return Container(
                                       decoration: BoxDecoration(
                                         color: AppColor.white,
@@ -1675,171 +1684,186 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 10.0,
                                         ),
-                                        child: Row(
+                                        child: Stack(
                                           children: [
-                                             CommonContainer.shopImageContainer(
-                                               heroTag: 'surprise-${data.id}',
-                                               onTap: () async {
-                                                 if (_surpriseTapBusy) return;
-                                                 _surpriseTapBusy = true;
+                                            CommonContainer.shopImageContainer(
+                                              heroTag: 'surprise-${data.id}',
+                                              onTap: () async {
+                                                if (_surpriseTapBusy) return;
+                                                _surpriseTapBusy = true;
 
-                                                 try {
-                                                   final offerId =
-                                                       data.id.toString().trim();
-                                                   final shopId = (data.branchId ??
-                                                           data.shop?.id)
-                                                       ?.toString()
-                                                       .trim() ??
-                                                       '';
-                                                   final shopLat =
-                                                       data.shop?.gpsLatitude ??
-                                                           0.0;
-                                                   final shopLng =
-                                                       data.shop?.gpsLongitude ??
-                                                           0.0;
+                                                try {
+                                                  final offerId = data.id
+                                                      .toString()
+                                                      .trim();
+                                                  final shopId =
+                                                      (data.branchId ??
+                                                              data.shop?.id)
+                                                          ?.toString()
+                                                          .trim() ??
+                                                      '';
+                                                  final shopLat =
+                                                      data.shop?.gpsLatitude ??
+                                                      0.0;
+                                                  final shopLng =
+                                                      data.shop?.gpsLongitude ??
+                                                      0.0;
 
-                                                   if (shopId.isEmpty ||
-                                                       offerId.isEmpty) {
-                                                     AppSnackBar.error(
-                                                       context,
-                                                       'Surprise offer not available',
-                                                     );
-                                                     return;
-                                                   }
+                                                  if (shopId.isEmpty ||
+                                                      offerId.isEmpty) {
+                                                    AppSnackBar.error(
+                                                      context,
+                                                      'Surprise offer not available',
+                                                    );
+                                                    return;
+                                                  }
 
-                                                   // Use last known location (or refresh) and do a fresh status check
-                                                   // so we don't navigate based on stale Home list data.
-                                                   final loc =
-                                                       (_lastKnownLoc.lat == 0.0 &&
-                                                               _lastKnownLoc.lng ==
-                                                                   0.0)
-                                                           ? await _initLocationFlow()
-                                                           : _lastKnownLoc;
+                                                  // Use last known location (or refresh) and do a fresh status check
+                                                  // so we don't navigate based on stale Home list data.
+                                                  final loc =
+                                                      (_lastKnownLoc.lat ==
+                                                              0.0 &&
+                                                          _lastKnownLoc.lng ==
+                                                              0.0)
+                                                      ? await _initLocationFlow()
+                                                      : _lastKnownLoc;
 
-                                                   showDialog(
-                                                     context: context,
-                                                     barrierDismissible: false,
-                                                     builder: (_) => const Center(
-                                                       child: CircularProgressIndicator(),
-                                                     ),
-                                                   );
+                                                  showDialog(
+                                                    context: context,
+                                                    barrierDismissible: false,
+                                                    builder: (_) => const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                  );
 
-                                                   final api =
-                                                       ref.read(apiDataSourceProvider);
-                                                   final statusRes =
-                                                       await api.surpriseStatusCheck(
-                                                     shopId: shopId,
-                                                     offerId: offerId,
-                                                     lat: loc.lat,
-                                                     lng: loc.lng,
-                                                   );
+                                                  final api = ref.read(
+                                                    apiDataSourceProvider,
+                                                  );
+                                                  final statusRes = await api
+                                                      .surpriseStatusCheck(
+                                                        shopId: shopId,
+                                                        offerId: offerId,
+                                                        lat: loc.lat,
+                                                        lng: loc.lng,
+                                                      );
 
-                                                   if (!mounted) return;
-                                                   Navigator.of(
-                                                     context,
-                                                     rootNavigator: true,
-                                                   ).pop();
+                                                  if (!mounted) return;
+                                                  Navigator.of(
+                                                    context,
+                                                    rootNavigator: true,
+                                                  ).pop();
 
-                                                   await statusRes.fold(
-                                                     (failure) async {
-                                                       AppSnackBar.error(
-                                                         context,
-                                                         failure.message,
-                                                       );
-                                                       // Fallback: still allow user to proceed to Surprise screen.
-                                                       Navigator.push(
-                                                         context,
-                                                         MaterialPageRoute(
-                                                           builder: (context) =>
-                                                               SurpriseScreens(
-                                                             subOfferId: offerId,
-                                                             shopLat: shopLat,
-                                                             shopLng: shopLng,
-                                                             shopId: shopId,
-                                                           ),
-                                                         ),
-                                                       );
-                                                     },
-                                                     (status) async {
-                                                       final stage = status.data.stage
-                                                           .toString()
-                                                           .toUpperCase();
-                                                       final isClaimed =
-                                                           status.data.state
-                                                                       ?.isClaimed ==
-                                                                   true ||
-                                                               stage == 'CLAIMED';
+                                                  await statusRes.fold(
+                                                    (failure) async {
+                                                      AppSnackBar.error(
+                                                        context,
+                                                        failure.message,
+                                                      );
+                                                      // Fallback: still allow user to proceed to Surprise screen.
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              SurpriseScreens(
+                                                                subOfferId:
+                                                                    offerId,
+                                                                shopLat:
+                                                                    shopLat,
+                                                                shopLng:
+                                                                    shopLng,
+                                                                shopId: shopId,
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    (status) async {
+                                                      final stage = status
+                                                          .data
+                                                          .stage
+                                                          .toString()
+                                                          .toUpperCase();
+                                                      final isClaimed =
+                                                          status
+                                                                  .data
+                                                                  .state
+                                                                  ?.isClaimed ==
+                                                              true ||
+                                                          stage == 'CLAIMED';
 
-                                                       if (isClaimed) {
-                                                         // Fetch latest details for opened screen.
-                                                         showDialog(
-                                                           context: context,
-                                                           barrierDismissible:
-                                                               false,
-                                                           builder: (_) =>
-                                                               const Center(
-                                                             child:
-                                                                 CircularProgressIndicator(),
-                                                           ),
-                                                         );
+                                                      if (isClaimed) {
+                                                        // Fetch latest details for opened screen.
+                                                        showDialog(
+                                                          context: context,
+                                                          barrierDismissible:
+                                                              false,
+                                                          builder: (_) =>
+                                                              const Center(
+                                                                child:
+                                                                    CircularProgressIndicator(),
+                                                              ),
+                                                        );
 
-                                                         final detailsRes = await api
-                                                             .surpriseOfferDetails(
-                                                           shopId: shopId,
-                                                           offerId: offerId,
-                                                         );
+                                                        final detailsRes = await api
+                                                            .surpriseOfferDetails(
+                                                              shopId: shopId,
+                                                              offerId: offerId,
+                                                            );
 
-                                                         if (!mounted) return;
-                                                         Navigator.of(
-                                                           context,
-                                                           rootNavigator: true,
-                                                         ).pop();
+                                                        if (!mounted) return;
+                                                        Navigator.of(
+                                                          context,
+                                                          rootNavigator: true,
+                                                        ).pop();
 
-                                                         detailsRes.fold(
-                                                           (failure) {
-                                                             AppSnackBar.error(
-                                                               context,
-                                                               failure.message,
-                                                             );
-                                                           },
-                                                           (response) {
-                                                             Navigator.push(
-                                                               context,
-                                                               MaterialPageRoute(
-                                                                 builder: (_) =>
-                                                                     OpenedSurpriseOfferScreen(
-                                                                   response:
-                                                                       response,
-                                                                 ),
-                                                               ),
-                                                             );
-                                                           },
-                                                         );
-                                                         return;
-                                                       }
+                                                        detailsRes.fold(
+                                                          (failure) {
+                                                            AppSnackBar.error(
+                                                              context,
+                                                              failure.message,
+                                                            );
+                                                          },
+                                                          (response) {
+                                                            Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                builder: (_) =>
+                                                                    OpenedSurpriseOfferScreen(
+                                                                      response:
+                                                                          response,
+                                                                    ),
+                                                              ),
+                                                            );
+                                                          },
+                                                        );
+                                                        return;
+                                                      }
 
-                                                       Navigator.push(
-                                                         context,
-                                                         MaterialPageRoute(
-                                                           builder: (context) =>
-                                                               SurpriseScreens(
-                                                             subOfferId: offerId,
-                                                             shopLat: shopLat,
-                                                             shopLng: shopLng,
-                                                             shopId: shopId,
-                                                           ),
-                                                         ),
-                                                       );
-                                                     },
-                                                   );
-                                                 } finally {
-                                                   _surpriseTapBusy = false;
-                                                 }
-                                               },
-                                               verify:
-                                                   data.shop?.isTrusted ?? false,
-                                               shopName:
-                                                   data.shop?.englishName
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              SurpriseScreens(
+                                                                subOfferId:
+                                                                    offerId,
+                                                                shopLat:
+                                                                    shopLat,
+                                                                shopLng:
+                                                                    shopLng,
+                                                                shopId: shopId,
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  );
+                                                } finally {
+                                                  _surpriseTapBusy = false;
+                                                }
+                                              },
+                                              verify:
+                                                  data.shop?.isTrusted ?? false,
+                                              shopName:
+                                                  data.shop?.englishName
                                                       .toString() ??
                                                   '',
                                               location:
@@ -1860,8 +1884,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                   data.closeTime?.toString() ??
                                                   '',
                                               Images: data.bannerUrl.toString(),
-                                              badgeText:
-                                                  alreadyClaimed ? 'Claimed' : null,
+                                              badgeText: alreadyClaimed
+                                                  ? 'Claimed'
+                                                  : null,
+                                            ),
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(30),
+                                                onTap: () {
+                                                  final shopId =
+                                                      (data.branchId ??
+                                                              data.shop?.id)
+                                                          ?.toString()
+                                                          .trim() ??
+                                                      '';
+                                                  final offerId = data.id
+                                                      .toString()
+                                                      .trim();
+
+                                                  // Share Home link so receiver lands on Home screen.
+                                                  Share.share(
+                                                    DeepLinks.homeShareText(
+                                                      title: data.title,
+                                                    ),
+                                                  );
+                                                },
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withOpacity(0.35),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          30,
+                                                        ),
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  child: const Icon(
+                                                    Icons.share,
+                                                    size: 18,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),

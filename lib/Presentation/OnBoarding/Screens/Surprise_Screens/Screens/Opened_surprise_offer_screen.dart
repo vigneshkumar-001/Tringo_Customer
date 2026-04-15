@@ -3,10 +3,12 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
@@ -155,16 +157,42 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const Spacer(),
-                      Text(
-                        screenTitle,
-                        style: GoogleFont.Mulish(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColor.black,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          screenTitle,
+                          textAlign: TextAlign.center,
+                          style: GoogleFont.Mulish(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColor.black,
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(30),
+                        onTap: () {
+                          final shopId =
+                              (shop?.id.isNotEmpty ?? false)
+                                  ? shop!.id
+                                  : data.shopId;
+                          if (shopId.trim().isEmpty) return;
+                          Share.share(DeepLinks.shopShareText(shopId: shopId));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColor.white,
+                            border: Border.all(color: AppColor.white4),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: const EdgeInsets.all(11.5),
+                          child: const Icon(
+                            Icons.share,
+                            size: 18,
+                            color: AppColor.darkBlue,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

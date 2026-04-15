@@ -16,12 +16,14 @@ import '../Presentation/OnBoarding/Screens/Splash_screen.dart';
 import '../Presentation/OnBoarding/Screens/Login Screen/Screens/login_mobile_number.dart';
 import '../Presentation/OnBoarding/Screens/OTP Screen/otp_screen.dart';
 import '../Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
+import '../Presentation/OnBoarding/Screens/Contacts Sync/contacts_consent_gate.dart';
 
 class AppRoutes {
   static const String splashScreen = 'splashScreen';
   static const String login = 'login';
   static const String mobileNumberVerify = 'mobileNumberVerify';
   static const String otp = 'otp';
+  static const String contactsConsentGate = 'contactsConsentGate';
   static const String home = 'home';
   static const String homeShell = 'homeShell';
   static const String fillProfile = 'fillProfile';
@@ -33,6 +35,7 @@ class AppRoutes {
   static const String loginPath = '/login';
   static const String mobileNumberVerifyPath = '/mobileNumberVerify';
   static const String otpPath = '/otp';
+  static const String contactsConsentGatePath = '/contactsConsentGate';
   static const String homePath = '/home';
   static const String homeShellPath = '/homeShell';
   static const String fillProfilePath = '/fillProfile';
@@ -90,6 +93,16 @@ final goRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: AppRoutes.contactsConsentGatePath,
+      name: AppRoutes.contactsConsentGate,
+      builder: (context, state) {
+        final args =
+            ContactsConsentGateArgs.tryParse(state.extra) ??
+            const ContactsConsentGateArgs(nextRouteName: AppRoutes.home);
+        return ContactsConsentGate(args: args);
+      },
+    ),
+    GoRoute(
       path: '/shop/details',
       builder: (context, state) {
         final shopId = state.uri.queryParameters['shopId'] ?? '';
@@ -128,6 +141,16 @@ final goRouter = GoRouter(
 
     GoRoute(
       path: '/surprise/offer',
+      builder: (context, state) {
+        final shopId = state.uri.queryParameters['shopId'] ?? '';
+        final offerId = state.uri.queryParameters['offerId'] ?? '';
+        return SurpriseOfferDetailsFromPush(shopId: shopId, offerId: offerId);
+      },
+    ),
+
+    // Support backend share links: https://bknd.tringobiz.com/surprise/details?shopId=...&offerId=...
+    GoRoute(
+      path: '/surprise/details',
       builder: (context, state) {
         final shopId = state.uri.queryParameters['shopId'] ?? '';
         final offerId = state.uri.queryParameters['offerId'] ?? '';

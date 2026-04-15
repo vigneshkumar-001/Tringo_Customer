@@ -18,9 +18,9 @@ import '../Model/search_suggestion_response.dart';
 class AlphaNumericPhoneFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue,
-      TextEditingValue newValue,
-      ) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final text = newValue.text;
 
     // If text contains ONLY digits → limit to 10
@@ -65,9 +65,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final apiItems =
         state.searchSuggestionResponse?.data?.items ?? <SearchItem>[];
     final recentItems = state.recentItems;
-
-    final bool isPhoneTyping = _isDigitsOnly(queryText);
-    final bool isPhoneReady = isPhoneTyping && queryText.length == 10;
 
     return Scaffold(
       body: SafeArea(
@@ -139,9 +136,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             autofocus: true,
                             controller: _controller,
                             keyboardType: TextInputType.text,
-                            inputFormatters: [
-                              AlphaNumericPhoneFormatter(),
-                            ],
+                            inputFormatters: [AlphaNumericPhoneFormatter()],
                             onChanged: (value) {
                               setState(() {});
                               notifier.onQueryChanged(value);
@@ -161,7 +156,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 horizontal: 10,
                               ),
                               hintText:
-                              'Search product, shop, service, mobile no',
+                                  'Search product, shop, service, mobile no',
                               border: InputBorder.none,
                               hintStyle: GoogleFont.Mulish(
                                 color: AppColor.lightGray,
@@ -169,13 +164,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               ),
                               suffixIcon: _controller.text.isNotEmpty
                                   ? IconButton(
-                                icon: const Icon(Icons.clear, size: 18),
-                                onPressed: () {
-                                  _controller.clear();
-                                  setState(() {});
-                                  notifier.clearResults();
-                                },
-                              )
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        _controller.clear();
+                                        setState(() {});
+                                        notifier.clearResults();
+                                      },
+                                    )
                                   : null,
                             ),
                             style: GoogleFont.Mulish(
@@ -203,7 +198,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 //       ),
                 //     ),
                 //   ),
-
                 const SizedBox(height: 14),
 
                 // ==== CONTENT AREA ====
@@ -259,9 +253,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        (isPhoneTyping && !isPhoneReady)
-                            ? ''
-                            :
                         'No results',
                         style: GoogleFont.Mulish(color: AppColor.lightGray2),
                       ),
@@ -312,7 +303,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
       );
     } else if (item.type == 'PRODUCT' || item.type == 'SERVICE') {
-     
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -324,7 +314,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       );
-       AppLogger.log.i('Navigating to product/service detail screen');
+      AppLogger.log.i('Navigating to product/service detail screen');
     } else if (item.type == 'SERVICE_SHOP') {
       Navigator.push(
         context,
@@ -336,5 +326,3 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 }
-
-

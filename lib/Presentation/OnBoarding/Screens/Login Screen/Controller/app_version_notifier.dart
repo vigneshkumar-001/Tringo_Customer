@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tringo_app/Api/api_providers.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/device_token_response.dart';
 
 import '../../../../../Api/DataSource/api_data_source.dart';
-import '../../Mobile Nomber Verify/Controller/mobile_verify_notifier.dart';
 import '../Model/app_version_response.dart';
 
 class AppVersionState {

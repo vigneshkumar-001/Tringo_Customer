@@ -208,6 +208,7 @@ class Request {
       throw e;
     } catch (e) {
       print(e);
+      AppLogger.log.e("$e");
       // Throw clean exception
       throw Exception(e.toString());
     }

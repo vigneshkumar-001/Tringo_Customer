@@ -1,3 +1,5 @@
+import 'package:tringo_app/Core/Models/share_info.dart';
+
 class    ServiceDetailsResponse    {
   final bool status;
   final ServiceData? data;
@@ -55,6 +57,7 @@ class ServiceData {
   final List<ProductCategory>? productCategories;
   final ServiceSummary? serviceSummary;
   final int? rating;
+  final ShareInfo? share;
 
   ServiceData({
     this.id,
@@ -96,6 +99,7 @@ class ServiceData {
     this.productCategories,
     this.serviceSummary,
     this.rating,
+    this.share,
   });
 
   factory ServiceData.fromJson(Map<String, dynamic> json) => ServiceData(
@@ -155,6 +159,8 @@ class ServiceData {
         ? ServiceSummary.fromJson(json['serviceSummary'])
         : null,
     rating: json['rating'],
+    share:
+        json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -197,6 +203,7 @@ class ServiceData {
     'productCategories': productCategories?.map((x) => x.toJson()).toList(),
     'serviceSummary': serviceSummary?.toJson(),
     'rating': rating,
+    'share': share?.toJson(),
   };
 }
 

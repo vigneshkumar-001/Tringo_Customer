@@ -2,7 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/product_notifier.dart';
@@ -27,6 +29,17 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
 
   // ✅ Disable only after SUCCESS
   bool _messageDisabled = false;
+
+  Future<void> _shareProductLink({
+    required String productId,
+    String? shareText,
+  }) async {
+    final text =
+        (shareText != null && shareText.trim().isNotEmpty)
+            ? shareText
+            : DeepLinks.productShareText(productId: productId);
+    await Share.share(text);
+  }
 
   @override
   void initState() {
@@ -109,8 +122,44 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         horizontal: 15,
                         vertical: 16,
                       ),
-                      child: CommonContainer.leftSideArrow(
-                        onTap: () => Navigator.pop(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CommonContainer.leftSideArrow(
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(30),
+                            onTap: () {
+                              final productId =
+                                  (widget.productId?.isNotEmpty ?? false)
+                                      ? widget.productId!
+                                      : productDetailData.data.product.id
+                                          .toString();
+                              final apiShareText =
+                                  productDetailData.data.share?.shareText ??
+                                  productDetailData.data.product.share
+                                      ?.shareText;
+                              _shareProductLink(
+                                productId: productId,
+                                shareText: apiShareText,
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColor.white,
+                                border: Border.all(color: AppColor.white4),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.all(11.5),
+                              child: const Icon(
+                                Icons.share,
+                                size: 18,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(

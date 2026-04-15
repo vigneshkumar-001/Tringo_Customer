@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_data_notifier.dart';
@@ -26,6 +28,17 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
 
   // ✅ Disable only after SUCCESS
   bool _enquiryDisabled = false;
+
+  Future<void> _shareServiceLink({
+    required String serviceId,
+    String? shareText,
+  }) async {
+    final text =
+        (shareText != null && shareText.trim().isNotEmpty)
+            ? shareText
+            : DeepLinks.serviceShareText(serviceId: serviceId);
+    await Share.share(text);
+  }
 
   @override
   void initState() {
@@ -111,12 +124,47 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         horizontal: 15,
                         vertical: 16,
                       ),
-                      child: CommonContainer.leftSideArrow(
-                        onTap: () => Navigator.pop(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CommonContainer.leftSideArrow(
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(30),
+                            onTap: () {
+                              final serviceId =
+                                  (widget.serviceId?.isNotEmpty ?? false)
+                                      ? widget.serviceId!
+                                      : serviceDetailData.data.service.id;
+                              final apiShareText =
+                                  serviceDetailData.data.share?.shareText ??
+                                  serviceDetailData.data.service.share
+                                      ?.shareText;
+                              _shareServiceLink(
+                                serviceId: serviceId,
+                                shareText: apiShareText,
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColor.white,
+                                border: Border.all(color: AppColor.white4),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.all(11.5),
+                              child: const Icon(
+                                Icons.share,
+                                size: 18,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(
-                      height: 215,
+                      height: 230,
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 15,

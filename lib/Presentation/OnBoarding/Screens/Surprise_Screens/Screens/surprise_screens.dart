@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/Opened_surprise_offer_screen.dart';
 import 'package:video_player/video_player.dart';
@@ -57,6 +58,8 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
 
   // video
   VideoPlayerController? _videoCtrl;
+  bool _skipSurpriseOpenVideo = false;
+  static const String _kSkipSurpriseOpenVideoPref = 'skip_surprise_open_video';
 
   // navigation guard
   bool _navigated = false;
@@ -130,6 +133,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
     });
 
     _initLocationAndStartTracking();
+    _loadSkipVideoPref();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -138,6 +142,26 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       ref.read(surpriseNotifierProvider.notifier).reset();
       _fetchLocationAndCallApi();
     });
+  }
+
+  Future<void> _loadSkipVideoPref() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final v = sp.getBool(_kSkipSurpriseOpenVideoPref) ?? false;
+      if (!mounted) return;
+      setState(() => _skipSurpriseOpenVideo = v);
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  Future<void> _persistSkipVideoPref(bool value) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setBool(_kSkipSurpriseOpenVideoPref, value);
+    } catch (_) {
+      // ignore
+    }
   }
 
   bool _isRespForThisOffer(SurpriseStatusResponse resp) {
@@ -405,25 +429,44 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
       if (mounted) setState(() {});
       await _bounceCtrl.forward(from: 0);
 
-      // 2) prepare video
-      _videoCtrl?.dispose();
-      _videoCtrl = VideoPlayerController.asset(AppVideos.surpriseOpenVideo);
+      // 2) prepare video (fallback to "no video" for devices that can't decode)
+      var playedVideo = false;
+      if (!_skipSurpriseOpenVideo) {
+        try {
+          _videoCtrl?.dispose();
+          _videoCtrl = VideoPlayerController.asset(AppVideos.surpriseOpenVideo);
 
-      await _videoCtrl!.initialize();
-      await _videoCtrl!.setVolume(0.0);
-      await _videoCtrl!.play();
+          await _videoCtrl!.initialize();
+          await _videoCtrl!.setVolume(0.0);
+          await _videoCtrl!.play();
+          playedVideo = true;
+        } on PlatformException catch (_) {
+          _skipSurpriseOpenVideo = true;
+          await _persistSkipVideoPref(true);
+          _videoCtrl?.dispose();
+          _videoCtrl = null;
+        } catch (_) {
+          _skipSurpriseOpenVideo = true;
+          await _persistSkipVideoPref(true);
+          _videoCtrl?.dispose();
+          _videoCtrl = null;
+        }
+      }
 
-      // 3) show overlay + expand rect
+      // 3) show transition (with or without video)
       if (!mounted) return;
       setState(() {
         _giftHidden = true;
-        _showTransitionVideo = true;
+        _showTransitionVideo = playedVideo;
       });
 
-      await _rectCtrl.forward(from: 0);
-
-      // 4) wait video end
-      await _waitVideoEnd(_videoCtrl!);
+      if (playedVideo) {
+        await _rectCtrl.forward(from: 0);
+        await _waitVideoEnd(_videoCtrl!);
+      } else {
+        // No video: keep a tiny delay so UI doesn't feel abrupt.
+        await Future.delayed(const Duration(milliseconds: 220));
+      }
 
       // 5) call CLAIM API
       final status = ref.read(surpriseNotifierProvider).surpriseStatusResponse;
@@ -464,7 +507,7 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
         ),
       );
     } catch (e) {
-      _showMsg("Video/Claim error: $e");
+      _showMsg("Something went wrong. Try again");
       _stopAndResetVideoUI();
       _videoStarted = false;
     }
@@ -589,6 +632,23 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
           ),
         );
       },
+    );
+  }
+
+  Widget _claimLoaderOverlay() {
+    // When video is skipped (unsupported devices), show a lightweight loader
+    // while claim API runs, instead of showing a technical error.
+    if (_showTransitionVideo) return const SizedBox.shrink();
+    if (!_giftHidden) return const SizedBox.shrink();
+    if (_navigated) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.25),
+        child: Center(
+          child: ThreeDotsLoader(dotColor: Colors.white),
+        ),
+      ),
     );
   }
 
@@ -1057,6 +1117,9 @@ class _SurpriseScreensState extends ConsumerState<SurpriseScreens>
 
         // overlay video transition
         _premiumTransitionVideoOverlay(),
+
+        // overlay loader (fallback when video can't play)
+        _claimLoaderOverlay(),
       ],
     );
   }
