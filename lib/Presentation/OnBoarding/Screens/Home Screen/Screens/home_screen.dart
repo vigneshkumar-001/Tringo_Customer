@@ -708,16 +708,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             }
           },
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ServiceAndShopsDetails(
-                  type: 'services',
-                  shopId: services.id,
-                  initialIndex: 3,
-                ),
-              ),
-            );
+           Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          ServiceAndShopsDetails(
+                                                            type: 'services',
+                                                            shopId: services.id,
+                                                            initialIndex: 3,
+                                                          ),
+                                                    ),
+                                                  );
           },
           whatsAppOnTap: () async {
             await MapUrls.openWhatsapp(
@@ -1895,22 +1896,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                 borderRadius:
                                                     BorderRadius.circular(30),
                                                 onTap: () {
-                                                  final shopId =
-                                                      (data.branchId ??
-                                                              data.shop?.id)
-                                                          ?.toString()
-                                                          .trim() ??
-                                                      '';
-                                                  final offerId = data.id
-                                                      .toString()
-                                                      .trim();
-
                                                   // Share Home link so receiver lands on Home screen.
-                                                  Share.share(
-                                                    DeepLinks.homeShareText(
-                                                      title: data.title,
-                                                    ),
-                                                  );
+                                                  final msg =
+                                                      data.share?.shareMessage(
+                                                        fallbackTitle: data.title,
+                                                      ) ??
+                                                      DeepLinks.homeShareText(
+                                                        title: data.title,
+                                                      );
+                                                  if (msg.trim().isNotEmpty) {
+                                                    Share.share(msg);
+                                                  }
                                                 },
                                                 child: Container(
                                                   decoration: BoxDecoration(

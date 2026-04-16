@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
@@ -12,7 +13,6 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/p
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
-import '../../../../../Core/Widgets/Common Bottom Navigation bar/payment_successful_bottombar.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../Home Screen/Controller/home_notifier.dart';
 
@@ -126,7 +126,13 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           CommonContainer.leftSideArrow(
-                            onTap: () => Navigator.pop(context),
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(AppRoutes.homePath);
+                              }
+                            },
                           ),
                           InkWell(
                             borderRadius: BorderRadius.circular(30),

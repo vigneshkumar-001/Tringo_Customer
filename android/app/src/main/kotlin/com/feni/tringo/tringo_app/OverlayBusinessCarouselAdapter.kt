@@ -12,9 +12,9 @@ import coil.load
 import java.text.DecimalFormat
 import java.util.Locale
 
-class OverlayAdsAdapter(
+class OverlayBusinessCarouselAdapter(
     private val onClick: ((OverlayAdCard) -> Unit)? = null
-) : ListAdapter<OverlayAdCard, OverlayAdsAdapter.VH>(DIFF) {
+) : ListAdapter<OverlayAdCard, OverlayBusinessCarouselAdapter.VH>(DIFF) {
 
     companion object {
         private val VIEWS_FMT = DecimalFormat("#,###")
@@ -43,12 +43,11 @@ class OverlayAdsAdapter(
         private val adOfferTitle: TextView? = v.findViewById(R.id.adOfferTitle)
         private val adOfferSubtitle: TextView? = v.findViewById(R.id.adOfferSubtitle)
 
-        private val adStatusText: TextView? = v.findViewById(R.id.adStatusText)
         private val adViewBtn: View? = v.findViewById(R.id.adViewBtn)
-        private val adViewBtnText: TextView? = v.findViewById(R.id.adViewBtnText)
 
         fun bind(item: OverlayAdCard) {
             nearLabel?.visibility = if (bindingAdapterPosition == 0) View.VISIBLE else View.GONE
+
             adTitle.text = item.title
 
             // Subtitle rendering:
@@ -115,11 +114,8 @@ class OverlayAdsAdapter(
                 }
             }
 
-            // kept for future API fields
-            adStatusText?.visibility = View.GONE
-
             val apiCta = item.ctaLabel?.trim().orEmpty()
-            adViewBtnText?.text = when {
+            (adViewBtn as? TextView)?.text = when {
                 apiCta.isBlank() -> "View Details"
                 apiCta.contains("offer", ignoreCase = true) -> "View Details"
                 else -> apiCta
@@ -127,11 +123,13 @@ class OverlayAdsAdapter(
 
             adViewBtn?.setOnClickListener { onClick?.invoke(item) }
             itemView.setOnClickListener { onClick?.invoke(item) }
+
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_overlay_ad, parent, false)
+        val v = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_overlay_ad_carousel, parent, false)
         return VH(v)
     }
 
@@ -147,8 +145,6 @@ class OverlayAdsAdapter(
                 return lines.first() to lines.drop(1).joinToString("\n")
             }
 
-            val upper = raw.uppercase(Locale.getDefault())
-
             Regex("""\b\d{1,2}%\s*DISCOUNT\b""", setOf(RegexOption.IGNORE_CASE))
                 .find(raw)
                 ?.let { match ->
@@ -160,6 +156,7 @@ class OverlayAdsAdapter(
                     return title to subtitle
                 }
 
+            val upper = raw.uppercase(Locale.getDefault())
             val idx = upper.indexOf(" ON ")
             if (idx > 0) {
                 val title = raw.substring(0, idx).trim()

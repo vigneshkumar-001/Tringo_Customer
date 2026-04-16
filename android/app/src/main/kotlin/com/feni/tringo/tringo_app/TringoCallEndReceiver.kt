@@ -1,10 +1,16 @@
 package com.feni.tringo.tringo_app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 class TringoCallEndReceiver : BroadcastReceiver() {
 
@@ -19,8 +25,27 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         private const val KEY_SAW_OFFHOOK = "saw_offhook"
         private const val KEY_LAST_POSTCALL_AT = "last_postcall_at"
 
-        private const val MIN_RING_MS_FOR_MISSED = 10_000L
+        // Keep small but non-zero to avoid noisy/false IDLE bursts on some OEMs.
+        // Allow post-call overlay even for quick reject/missed calls.
+        private const val MIN_RING_MS_FOR_MISSED = 200L
         private const val POSTCALL_DEDUP_MS = 20_000L
+        private const val POSTCALL_NOTIF_CH = "tringo_postcall_overlay"
+        private const val POSTCALL_NOTIF_ID = 302
+        private const val OUTGOING_NOTIF_CH = "tringo_outgoing_overlay"
+        private const val OUTGOING_NOTIF_ID = 303
+
+        private fun normalizePhoneForPhoneInfo(raw: String): String {
+            val t = raw.trim()
+            if (t.isBlank() || t.equals("UNKNOWN", true)) return ""
+            val digits = t.filter { it.isDigit() }
+            return when {
+                t.startsWith("+") && digits.length >= 10 -> "+$digits"
+                digits.length == 10 -> "+91$digits"
+                digits.length == 12 && digits.startsWith("91") -> "+$digits"
+                digits.isNotBlank() -> digits
+                else -> t
+            }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -29,7 +54,7 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         ) return
 
         val stateStr = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
-        val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: ""
+        val numberRaw = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: ""
         val now = System.currentTimeMillis()
 
         val prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -40,11 +65,12 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         val sawOffhook = prefs.getBoolean(KEY_SAW_OFFHOOK, false)
         val lastPostAt = prefs.getLong(KEY_LAST_POSTCALL_AT, 0L)
 
+        val number = normalizePhoneForPhoneInfo(numberRaw)
         if (number.isNotBlank()) prefs.edit().putString(KEY_LAST_NUMBER, number).apply()
 
         val finalNumber = when {
             number.isNotBlank() -> number
-            savedNumber.isNotBlank() -> savedNumber
+            savedNumber.isNotBlank() -> normalizePhoneForPhoneInfo(savedNumber).ifBlank { savedNumber.trim() }
             else -> "UNKNOWN"
         }
 
@@ -59,8 +85,17 @@ class TringoCallEndReceiver : BroadcastReceiver() {
                 .apply()
         } else if (stateStr == TelephonyManager.EXTRA_STATE_OFFHOOK) {
             prefs.edit()
+                // Outgoing calls often won't emit RINGING; treat OFFHOOK as session start.
+                .putLong(KEY_RINGING_AT, now)
                 .putBoolean(KEY_SAW_OFFHOOK, true)
                 .apply()
+
+            // Outgoing overlay: show when an outgoing call starts (IDLE -> OFFHOOK).
+            // Incoming calls already handled by TringoCallReceiver (RINGING -> trampoline).
+            if (lastState == TelephonyManager.EXTRA_STATE_IDLE) {
+                val outgoingPhone = if (number.isNotBlank()) number else "UNKNOWN"
+                launchOutgoingTrampoline(context, outgoingPhone)
+            }
         }
 
         val endedNow =
@@ -93,16 +128,133 @@ class TringoCallEndReceiver : BroadcastReceiver() {
                 .putLong(KEY_LAST_POSTCALL_AT, now)
                 .apply()
 
-            TringoOverlayService.start(
-                ctx = context.applicationContext,
-                phone = finalNumber,
-                contactName = "",
-                showOnCallEnd = true,
-                launchedByReceiver = true
+            // Use the same trampoline as incoming calls; directly starting a service from a
+            // background receiver is blocked on many Android 12+ devices/OEMs.
+            launchPostCallTrampoline(context, finalNumber)
+        }
+
+        // Update last state and clear session markers on idle to avoid stale ring duration.
+        val edit = prefs.edit().putString(KEY_LAST_STATE, stateStr)
+        if (stateStr == TelephonyManager.EXTRA_STATE_IDLE) {
+            edit.putLong(KEY_RINGING_AT, 0L).putBoolean(KEY_SAW_OFFHOOK, false)
+        }
+        edit.apply()
+    }
+
+    private fun launchPostCallTrampoline(context: Context, phone: String) {
+        val i = Intent(context, TringoIncomingPopupActivity::class.java).apply {
+            putExtra("phone", phone)
+            putExtra("contactName", "")
+            putExtra("showOnCallEnd", true)
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             )
         }
 
-        prefs.edit().putString(KEY_LAST_STATE, stateStr).apply()
+        try {
+            context.startActivity(i)
+            return
+        } catch (t: Throwable) {
+            Log.e(TAG, "startActivity post-call trampoline failed: ${t.message}", t)
+        }
+
+        // Fallback: heads-up / full-screen notification that can launch the trampoline.
+        try {
+            if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+
+            val nm = context.getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                nm.createNotificationChannel(
+                    NotificationChannel(
+                        POSTCALL_NOTIF_CH,
+                        "Tringo Post-call Overlay",
+                        NotificationManager.IMPORTANCE_HIGH
+                    )
+                )
+            }
+
+            val pi = PendingIntent.getActivity(
+                context,
+                0,
+                i,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val n = NotificationCompat.Builder(context, POSTCALL_NOTIF_CH)
+                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setContentTitle("Call ended")
+                .setContentText("Tap to view Tringo details")
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setAutoCancel(true)
+                .setFullScreenIntent(pi, true)
+                .setContentIntent(pi)
+                .build()
+
+            NotificationManagerCompat.from(context).notify(POSTCALL_NOTIF_ID, n)
+        } catch (t: Throwable) {
+            Log.e(TAG, "post-call notification fallback failed: ${t.message}", t)
+        }
+    }
+
+    private fun launchOutgoingTrampoline(context: Context, phone: String) {
+        val i = Intent(context, TringoIncomingPopupActivity::class.java).apply {
+            putExtra("phone", phone)
+            putExtra("contactName", "")
+            putExtra("showOnCallEnd", false)
+            putExtra("outgoingOverlay", true)
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            )
+        }
+
+        try {
+            context.startActivity(i)
+            return
+        } catch (t: Throwable) {
+            Log.e(TAG, "startActivity outgoing trampoline failed: ${t.message}", t)
+        }
+
+        try {
+            if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+
+            val nm = context.getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                nm.createNotificationChannel(
+                    NotificationChannel(
+                        OUTGOING_NOTIF_CH,
+                        "Tringo Outgoing Overlay",
+                        NotificationManager.IMPORTANCE_HIGH
+                    )
+                )
+            }
+
+            val pi = PendingIntent.getActivity(
+                context,
+                0,
+                i,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val n = NotificationCompat.Builder(context, OUTGOING_NOTIF_CH)
+                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setContentTitle("Calling…")
+                .setContentText("Tringo Caller ID")
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setAutoCancel(true)
+                .setFullScreenIntent(pi, true)
+                .setContentIntent(pi)
+                .build()
+
+            NotificationManagerCompat.from(context).notify(OUTGOING_NOTIF_ID, n)
+        } catch (t: Throwable) {
+            Log.e(TAG, "outgoing notification fallback failed: ${t.message}", t)
+        }
     }
 }
 

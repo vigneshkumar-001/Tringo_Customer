@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft neon glow behind avatar -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="999dp" />
+    <gradient
+        android:type="radial"
+        android:gradientRadius="72dp"
+        android:centerX="0.50"
+        android:centerY="0.45"
+        android:startColor="#553B82F6"
+        android:centerColor="#334F46E5"
+        android:endColor="#00000000" />
+</shape>
+

@@ -1,93 +1,73 @@
 package com.feni.tringo.tringo_app
 
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
+import android.content.Context
 import android.telecom.Call
 import android.telecom.InCallService
 import android.util.Log
 
 class TringoInCallService : InCallService() {
 
-    private val TAG = "TRINGO_INCALL"
-
-    private var lastNumber: String = ""
-    private var shownForThisCall = false
-    private var cb: Call.Callback? = null
+    companion object {
+        private const val TAG = "TRINGO_INCALL"
+        private const val PREF = "tringo_call_state"
+        private const val KEY_LAST_NUMBER = "last_number"
+    }
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
-
-        shownForThisCall = false
-        lastNumber = extractNumber(call)
-
-        Log.d(TAG, "✅ onCallAdded state=${call.state} number=$lastNumber")
-
-        val callback = object : Call.Callback() {
-            override fun onStateChanged(call: Call, state: Int) {
-                super.onStateChanged(call, state)
-
-                val n = extractNumber(call)
-                if (n.isNotBlank()) lastNumber = n
-
-                Log.d(TAG, "onStateChanged state=$state number=$lastNumber shown=$shownForThisCall")
-
-                if (!shownForThisCall && state == Call.STATE_DISCONNECTED) {
-                    shownForThisCall = true
-                    startOverlayAfterDelay(lastNumber, "DISCONNECTED")
-                }
-            }
+        val phoneRaw = try {
+            call.details?.handle?.schemeSpecificPart?.trim().orEmpty()
+        } catch (_: Throwable) {
+            ""
         }
 
-        cb = callback
-        try {
-            // ✅ More stable
-            call.registerCallback(callback, Handler(Looper.getMainLooper()))
-        } catch (e: Exception) {
-            Log.e(TAG, "registerCallback failed: ${e.message}", e)
+        val phone = normalizePhoneForPhoneInfo(phoneRaw)
+        if (phone.isNotBlank()) {
+            try {
+                applicationContext
+                    .getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_LAST_NUMBER, phone)
+                    .apply()
+            } catch (_: Throwable) {}
+        }
+
+        Log.d(TAG, "onCallAdded state=${call.state} phone=$phone")
+
+        // Outgoing calls often won't emit PHONE_STATE=RINGING. Show the overlay when the call is
+        // added in a non-ringing state (dialing/connecting/active).
+        if (call.state != Call.STATE_RINGING) {
+            TringoOverlayService.start(
+                ctx = applicationContext,
+                phone = if (phone.isNotBlank()) phone else "UNKNOWN",
+                contactName = "",
+                showOnCallEnd = false,
+                launchedByReceiver = false,
+                outgoingOverlay = true
+            )
         }
     }
 
     override fun onCallRemoved(call: Call) {
-        Log.d(TAG, "✅ onCallRemoved number=$lastNumber shown=$shownForThisCall")
-
-        if (!shownForThisCall && lastNumber.isNotBlank()) {
-            shownForThisCall = true
-            startOverlayAfterDelay(lastNumber, "onCallRemoved")
-        }
-
-        try {
-            cb?.let { call.unregisterCallback(it) }
-        } catch (_: Exception) {}
-        cb = null
-
         super.onCallRemoved(call)
-    }
-
-    private fun startOverlayAfterDelay(number: String, from: String) {
-        if (number.isBlank()) {
-            Log.w(TAG, "startOverlayAfterDelay skipped (empty number) from=$from")
-            return
-        }
-
-        Handler(Looper.getMainLooper()).postDelayed({
-            Log.d(TAG, "🚀 Starting overlay AFTER call end ($from) for: $number")
-            TringoOverlayService.start(
-                ctx = applicationContext,
-                phone = number,
-                contactName = "",
-                showOnCallEnd = false
-            )
-        }, 900)
-    }
-
-    private fun extractNumber(call: Call): String {
-        return try {
-            val handle: Uri? = call.details?.handle
-            (handle?.schemeSpecificPart ?: "").trim()
-        } catch (e: Exception) {
-            Log.e(TAG, "extractNumber failed: ${e.message}", e)
+        val phone = try {
+            call.details?.handle?.schemeSpecificPart?.trim().orEmpty()
+        } catch (_: Throwable) {
             ""
+        }
+        Log.d(TAG, "onCallRemoved state=${call.state} phone=$phone")
+    }
+
+    private fun normalizePhoneForPhoneInfo(raw: String): String {
+        val t = raw.trim()
+        if (t.isBlank() || t.equals("UNKNOWN", true)) return ""
+        val digits = t.filter { it.isDigit() }
+        return when {
+            t.startsWith("+") && digits.length >= 10 -> "+$digits"
+            digits.length == 10 -> "+91$digits"
+            digits.length == 12 && digits.startsWith("91") -> "+$digits"
+            digits.isNotBlank() -> digits
+            else -> t
         }
     }
 }

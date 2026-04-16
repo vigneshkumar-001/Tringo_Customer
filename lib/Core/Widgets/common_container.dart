@@ -567,81 +567,82 @@ class CommonContainer {
     final safeMapImage = mapImage ?? AppImages.locationImage;
     final safeMapText = mapText ?? "Map";
 
-    return Row(
-      children: [
-        if (order)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: InkWell(
-              onTap: orderOnTap,
-              child: Container(
-                padding:
-                    callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColor.blueGradient1,
-                  borderRadius: BorderRadius.circular(15),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bounded =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
+
+        final callBtn = InkWell(
+          onTap: callOnTap,
+          child: Container(
+            padding:
+                callNowPadding ??
+                const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColor.blue,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  safeCallImage,
+                  height: callIconSize ?? 16,
+                  color: callImageColor,
                 ),
-                child: Row(
-                  children: [
-                    Image.asset(safeOrderImage, height: callIconSize ?? 16),
-                    const SizedBox(width: 7),
-                    Text(
-                      safeOrderText,
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.bold,
-                        fontSize: callTextSize ?? 16,
-                        color: AppColor.white,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 7),
+                Text(
+                  safeCallText,
+                  style: GoogleFont.Mulish(
+                    fontWeight: FontWeight.bold,
+                    fontSize: callTextSize ?? 14,
+                    color: AppColor.white,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
+        );
 
-        // CALL BUTTON
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final bounded =
-                constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
-
-            final callBtn = InkWell(
-              onTap: callOnTap,
-              child: Container(
-                padding:
-                    callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColor.blue,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      safeCallImage,
-                      height: callIconSize ?? 16,
-                      color: callImageColor,
+        return Row(
+          // When used inside a horizontal scroll view, keep size minimal so
+          // additional actions (Map / Follow / icons) are reachable.
+          mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            if (order)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: InkWell(
+                  onTap: orderOnTap,
+                  child: Container(
+                    padding:
+                        callNowPadding ??
+                        const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColor.blueGradient1,
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    const SizedBox(width: 7),
-                    Text(
-                      safeCallText,
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.bold,
-                        fontSize: callTextSize ?? 14,
-                        color: AppColor.white,
-                      ),
+                    child: Row(
+                      children: [
+                        Image.asset(safeOrderImage, height: callIconSize ?? 16),
+                        const SizedBox(width: 7),
+                        Text(
+                          safeOrderText,
+                          style: GoogleFont.Mulish(
+                            fontWeight: FontWeight.bold,
+                            fontSize: callTextSize ?? 16,
+                            color: AppColor.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            );
 
-            return bounded ? Expanded(child: callBtn) : callBtn;
-          },
-        ),
+            // CALL BUTTON
+            if (bounded) Expanded(child: callBtn) else callBtn,
 
         if (fullEnquiry)
           Padding(
@@ -670,7 +671,7 @@ class CommonContainer {
                             ),
                           )
                         : Row(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisSize: MainAxisSize.max,
                             children: [
                               Image.asset(
                                 safeMapImage,
@@ -678,12 +679,16 @@ class CommonContainer {
                                 color: AppColor.blue,
                               ),
                               const SizedBox(width: 5),
-                              Text(
-                                safeMapText,
-                                style: GoogleFont.Mulish(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: mapTextSize ?? 16,
-                                  color: AppColor.blue,
+                              Expanded(
+                                child: Text(
+                                  safeMapText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFont.Mulish(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: mapTextSize ?? 16,
+                                    color: AppColor.blue,
+                                  ),
                                 ),
                               ),
                             ],
@@ -821,6 +826,8 @@ class CommonContainer {
             ),
           ),
       ],
+        );
+      },
     );
   }
 

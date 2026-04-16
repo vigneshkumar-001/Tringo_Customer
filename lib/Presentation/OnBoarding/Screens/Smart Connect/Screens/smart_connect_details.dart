@@ -23,8 +23,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
@@ -70,6 +72,14 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
           .fetchSmartConnectDetails(requestId: widget.requestedId);
     }
 
+    void safeBack() {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(AppRoutes.homePath);
+      }
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Skeletonizer(
@@ -82,7 +92,7 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
                 return _ErrorView(
                   message: state.error ?? '',
                   onRetry: retry,
-                  onBack: () => Navigator.pop(context),
+                  onBack: safeBack,
                 );
               }
 
@@ -91,7 +101,7 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
                   title: "No replies yet",
                   subtitle: "When shops respond, you’ll see the replies here.",
                   onRetry: retry,
-                  onBack: () => Navigator.pop(context),
+                  onBack: safeBack,
                 );
               }
 
@@ -104,7 +114,7 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
               return _SuccessBody(
                 replyCountLabel: details?.replyCountLabel ?? "Replies",
                 responses: uiResponses,
-                onBack: () => Navigator.pop(context),
+                onBack: safeBack,
               );
             },
           ),

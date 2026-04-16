@@ -1,37 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Premium neon card: subtle glow + border like reference -->
+<!-- Premium neon ad card like reference -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Outer glow border -->
     <item>
         <shape>
             <corners android:radius="28dp" />
             <solid android:color="#00000000" />
             <stroke
                 android:width="3dp"
-                android:color="#332A74FF" />
+                android:color="#2E5B32FF" />
         </shape>
     </item>
 
-    <!-- Main gradient -->
     <item android:insetLeft="1dp" android:insetTop="1dp" android:insetRight="1dp" android:insetBottom="1dp">
         <shape>
             <corners android:radius="26dp" />
             <gradient
                 android:angle="90"
                 android:startColor="#070A2A"
-                android:centerColor="#14125A"
-                android:endColor="#050619" />
+                android:centerColor="#0D0E35"
+                android:endColor="#17105A" />
         </shape>
     </item>
 
-    <!-- Inner hairline -->
     <item android:insetLeft="1dp" android:insetTop="1dp" android:insetRight="1dp" android:insetBottom="1dp">
         <shape>
             <corners android:radius="26dp" />
             <solid android:color="#00000000" />
             <stroke
                 android:width="1dp"
-                android:color="#22FFFFFF" />
+                android:color="#1FFFFFFF" />
         </shape>
     </item>
 </layer-list>

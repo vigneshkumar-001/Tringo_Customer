@@ -1,9 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
@@ -17,11 +18,9 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Screens/shops_product_list.dart';
 
 import '../../Products/Screens/product_details.dart';
 import '../../Services Screen/Controller/service_notifier.dart';
-import '../../Services Screen/Screens/Service_details.dart';
 import '../../Services Screen/Screens/search_service_data.dart';
 import '../../Surprise_Screens/Screens/surprise_screens.dart';
 import '../../wallet/Screens/enter_review.dart';
@@ -374,7 +373,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               child: Row(
                                 children: [
                                   CommonContainer.leftSideArrow(
-                                    onTap: () => Navigator.pop(context),
+                                    onTap: () {
+                                      if (context.canPop()) {
+                                        context.pop();
+                                      } else {
+                                        context.go(AppRoutes.homePath);
+                                      }
+                                    },
                                   ),
                                   Spacer(),
                                   InkWell(

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Soft yellow/green glow edge like reference -->
+    <item>
+        <shape>
+            <corners android:radius="12dp" />
+            <solid android:color="#10000000" />
+            <stroke
+                android:width="2dp"
+                android:color="#66FACC15" />
+        </shape>
+    </item>
+
+    <item android:insetLeft="1dp" android:insetTop="1dp" android:insetRight="1dp" android:insetBottom="1dp">
+        <shape>
+            <corners android:radius="10dp" />
+            <solid android:color="#0E000000" />
+            <stroke
+                android:width="1dp"
+                android:color="#22FFFFFF" />
+        </shape>
+    </item>
+</layer-list>

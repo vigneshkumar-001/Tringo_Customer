@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
@@ -128,7 +130,13 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           CommonContainer.leftSideArrow(
-                            onTap: () => Navigator.pop(context),
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(AppRoutes.homePath);
+                              }
+                            },
                           ),
                           InkWell(
                             borderRadius: BorderRadius.circular(30),

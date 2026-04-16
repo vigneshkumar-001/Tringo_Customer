@@ -1,15 +1,18 @@
 import 'package:tringo_app/Core/Models/share_info.dart';
 
-class    ServiceDetailsResponse    {
+class ServiceDetailsResponse {
   final bool status;
   final ServiceData? data;
 
   ServiceDetailsResponse({required this.status, this.data});
 
-  factory ServiceDetailsResponse.fromJson(Map<String, dynamic> json) => ServiceDetailsResponse(
-    status: json['status'] ?? false,
-    data: json['data'] != null ? ServiceData.fromJson(json['data']) : null,
-  );
+  factory ServiceDetailsResponse.fromJson(Map<String, dynamic> json) =>
+      ServiceDetailsResponse(
+        status: json['status'] == true,
+        data: json['data'] is Map<String, dynamic>
+            ? ServiceData.fromJson(json['data'] as Map<String, dynamic>)
+            : null,
+      );
 
   Map<String, dynamic> toJson() => {
     'status': status,
@@ -43,7 +46,7 @@ class ServiceData {
   final String? country;
   final String? postalCode;
   final List<String>? serviceTags;
-  final Map<String, dynamic>? weeklyHours;
+  final List<dynamic>? weeklyHours;
   final String? averageRating;
   final int? reviewCount;
   final String? status;
@@ -102,66 +105,88 @@ class ServiceData {
     this.share,
   });
 
-  factory ServiceData.fromJson(Map<String, dynamic> json) => ServiceData(
-    id: json['id'],
-    createdAt: json['createdAt'],
-    updatedAt: json['updatedAt'],
-    category: json['category'],
-    subCategory: json['subCategory'],
-    shopKind: json['shopKind'],
-    englishName: json['englishName'],
-    tamilName: json['tamilName'],
-    descriptionEn: json['descriptionEn'],
-    descriptionTa: json['descriptionTa'],
-    addressEn: json['addressEn'],
-    addressTa: json['addressTa'],
-    gpsLatitude: json['gpsLatitude'],
-    gpsLongitude: json['gpsLongitude'],
-    primaryPhone: json['primaryPhone'],
-    alternatePhone: json['alternatePhone'],
-    contactEmail: json['contactEmail'],
-    ownerImageUrl: json['ownerImageUrl'],
-    doorDelivery: json['doorDelivery'],
-    isTrusted: json['isTrusted'],
-    city: json['city'],
-    state: json['state'],
-    country: json['country'],
-    postalCode: json['postalCode'],
-    serviceTags: json['serviceTags'] != null
-        ? List<String>.from(json['serviceTags'])
-        : null,
-    weeklyHours: json['weeklyHours'],
-    averageRating: json['averageRating'],
-    reviewCount: json['reviewCount'],
-    status: json['status'],
-    media: json['media'] != null
-        ? List<Media>.from(json['media'].map((x) => Media.fromJson(x)))
-        : null,
-    keywords: json['keywords'] != null
-        ? List<Keyword>.from(json['keywords'].map((x) => Keyword.fromJson(x)))
-        : null,
-    products: json['products'] != null
-        ? List<Product>.from(json['products'].map((x) => Product.fromJson(x)))
-        : null, // updated
-    services: json['services'] != null
-        ? List<Service>.from(json['services'].map((x) => Service.fromJson(x)))
-        : null,
-    reviews: json['reviews'] != null ? List<dynamic>.from(json['reviews']) : null,
-    offers: json['offers'] != null ? List<dynamic>.from(json['offers']) : null,
-    productSummary: json['productSummary'] != null
-        ? ProductSummary.fromJson(json['productSummary'])
-        : null,
-    productCategories: json['productCategories'] != null
-        ? List<ProductCategory>.from(
-        json['productCategories'].map((x) => ProductCategory.fromJson(x)))
-        : null,
-    serviceSummary: json['serviceSummary'] != null
-        ? ServiceSummary.fromJson(json['serviceSummary'])
-        : null,
-    rating: json['rating'],
-    share:
-        json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
-  );
+  factory ServiceData.fromJson(Map<String, dynamic> json) {
+    List<T>? parseList<T>(
+      dynamic raw,
+      T Function(Map<String, dynamic> j) fromJson,
+    ) {
+      if (raw is! List) return null;
+      final out = <T>[];
+      for (final v in raw) {
+        if (v is! Map) continue;
+        try {
+          out.add(fromJson(Map<String, dynamic>.from(v)));
+        } catch (_) {}
+      }
+      return out;
+    }
+
+    return ServiceData(
+      id: json['id']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+      category: json['category']?.toString(),
+      subCategory: json['subCategory']?.toString(),
+      shopKind: json['shopKind']?.toString(),
+      englishName: json['englishName']?.toString(),
+      tamilName: json['tamilName']?.toString(),
+      descriptionEn: json['descriptionEn']?.toString(),
+      descriptionTa: json['descriptionTa']?.toString(),
+      addressEn: json['addressEn']?.toString(),
+      addressTa: json['addressTa']?.toString(),
+      gpsLatitude: json['gpsLatitude']?.toString(),
+      gpsLongitude: json['gpsLongitude']?.toString(),
+      primaryPhone: json['primaryPhone']?.toString(),
+      alternatePhone: json['alternatePhone']?.toString(),
+      contactEmail: json['contactEmail']?.toString(),
+      ownerImageUrl: json['ownerImageUrl']?.toString(),
+      doorDelivery: json['doorDelivery'] == true,
+      isTrusted: json['isTrusted'] == true,
+      city: json['city']?.toString(),
+      state: json['state']?.toString(),
+      country: json['country']?.toString(),
+      postalCode: json['postalCode']?.toString(),
+      serviceTags: (json['serviceTags'] is List)
+          ? (json['serviceTags'] as List).map((e) => e.toString()).toList()
+          : null,
+      weeklyHours: json['weeklyHours'] is List
+          ? List<dynamic>.from(json['weeklyHours'] as List)
+          : null,
+      averageRating: json['averageRating']?.toString(),
+      reviewCount: (json['reviewCount'] as num?)?.toInt(),
+      status: json['status']?.toString(),
+      media: parseList<Media>(json['media'], (j) => Media.fromJson(j)),
+      keywords: parseList<Keyword>(json['keywords'], (j) => Keyword.fromJson(j)),
+      products: parseList<Product>(json['products'], (j) => Product.fromJson(j)),
+      services: parseList<Service>(json['services'], (j) => Service.fromJson(j)),
+      reviews: json['reviews'] is List ? List<dynamic>.from(json['reviews'] as List) : null,
+      offers: json['offers'] is List ? List<dynamic>.from(json['offers'] as List) : null,
+      productSummary: () {
+        final raw = json['productSummary'];
+        if (raw is! Map) return null;
+        try {
+          return ProductSummary.fromJson(Map<String, dynamic>.from(raw));
+        } catch (_) {
+          return null;
+        }
+      }(),
+      productCategories: parseList<ProductCategory>(
+        json['productCategories'],
+        (j) => ProductCategory.fromJson(j),
+      ),
+      serviceSummary: () {
+        final raw = json['serviceSummary'];
+        if (raw is! Map) return null;
+        try {
+          return ServiceSummary.fromJson(Map<String, dynamic>.from(raw));
+        } catch (_) {
+          return null;
+        }
+      }(),
+      rating: (json['rating'] as num?)?.toInt(),
+      share: json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,

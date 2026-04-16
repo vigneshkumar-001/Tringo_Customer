@@ -106,7 +106,11 @@ final goRouter = GoRouter(
       path: '/shop/details',
       builder: (context, state) {
         final shopId = state.uri.queryParameters['shopId'] ?? '';
-        final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
+        // Default to ShopsDetails tab when not provided (fixes share links that
+        // only include `shopId`).
+        final rawTab =
+            int.tryParse(state.uri.queryParameters['tab'] ?? '4') ?? 4;
+        final tab = (rawTab < 0 || rawTab > 4) ? 4 : rawTab;
 
         return ServiceAndShopsDetails(
           shopId: shopId,
@@ -183,6 +187,56 @@ final goRouter = GoRouter(
     GoRoute(
       path: AppRoutes.homePath,
       name: AppRoutes.home,
+      // Support "home" deep links that actually carry an entity id.
+      // Example: https://bknd.tringobiz.com/home?shopId=... should open shop details.
+      redirect: (context, state) {
+        final qp = state.uri.queryParameters;
+
+        String pick(List<String> keys) {
+          for (final k in keys) {
+            final v = (qp[k] ?? '').trim();
+            if (v.isNotEmpty) return v;
+          }
+          return '';
+        }
+
+        final productId = pick(const ['productId', 'productID']);
+        if (productId.isNotEmpty) {
+          return Uri(
+            path: '/product/details',
+            queryParameters: {'productId': productId},
+          ).toString();
+        }
+
+        final serviceId = pick(const ['serviceId', 'serviceID']);
+        if (serviceId.isNotEmpty) {
+          return Uri(
+            path: '/service/details',
+            queryParameters: {'serviceId': serviceId},
+          ).toString();
+        }
+
+        final shopId = pick(const ['shopId', 'shopID']);
+        final offerId = pick(const ['offerId', 'offerID']);
+        if (shopId.isNotEmpty && offerId.isNotEmpty) {
+          return Uri(
+            path: '/surprise/details',
+            queryParameters: {'shopId': shopId, 'offerId': offerId},
+          ).toString();
+        }
+
+        if (shopId.isNotEmpty) {
+          final tab =
+              int.tryParse((qp['tab'] ?? '').trim()) ??
+              4;
+          return Uri(
+            path: '/shop/details',
+            queryParameters: {'shopId': shopId, 'tab': '$tab'},
+          ).toString();
+        }
+
+        return null;
+      },
       builder: (context, state) => const HomeScreen(),
     ),
     GoRoute(

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark pill button with neon green outline (reference-like) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <corners android:radius="24dp" />
+            <solid android:color="#0F1333" />
+            <stroke android:width="2dp" android:color="#5539E38C" />
+        </shape>
+    </item>
+    <item android:insetLeft="2dp" android:insetTop="2dp" android:insetRight="2dp" android:insetBottom="2dp">
+        <shape>
+            <corners android:radius="22dp" />
+            <gradient
+                android:angle="0"
+                android:startColor="#0B1428"
+                android:endColor="#12163A" />
+        </shape>
+    </item>
+</layer-list>

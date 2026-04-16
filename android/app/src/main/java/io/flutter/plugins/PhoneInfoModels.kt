@@ -22,6 +22,8 @@ data class PhoneInfoCard(
     @SerializedName("subtitle") val subtitle: String? = null,
     @SerializedName("phone") val phone: String? = null,
     @SerializedName("imageUrl") val imageUrl: String? = null,
+    @SerializedName("isTrusted") val isTrusted: Boolean? = null,
+    @SerializedName("editable") val editable: Boolean? = null,
     @SerializedName("details") val details: PhoneInfoDetails? = null
 )
 
@@ -68,6 +70,12 @@ data class AdItem(
 
     @SerializedName("rating") val rating: Double? = null,
     @SerializedName("ratingCount") val ratingCount: Int? = null,
+    @SerializedName(
+        value = "viewsCount",
+        alternate = ["viewCount", "views", "totalViews", "totalViewCount"]
+    )
+    val viewsCount: Int? = null,
+    @SerializedName("viewCountLabel") val viewCountLabel: String? = null,
 
     @SerializedName("isTrusted") val isTrusted: Boolean? = null,
     @SerializedName("openLabel") val openLabel: String? = null,
@@ -77,5 +85,20 @@ data class AdItem(
     // ✅ IMPORTANT
     @SerializedName("primaryImageUrl") val primaryImageUrl: String? = null,
 
-    @SerializedName("distanceLabel") val distanceLabel: String? = null
+    @SerializedName("distanceLabel") val distanceLabel: String? = null,
+
+    @SerializedName("appOffer") val appOffer: AppOffer? = null
+)
+
+data class AppOffer(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("subtitle") val subtitle: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("details") val details: String? = null,
+    @SerializedName("discountPercentage") val discountPercentage: Int? = null,
+    @SerializedName("bannerUrl") val bannerUrl: String? = null,
+    @SerializedName("validUntil") val validUntil: String? = null,
+    @SerializedName("ctaLabel") val ctaLabel: String? = null,
+    @SerializedName("ctaText") val ctaText: String? = null
 )
