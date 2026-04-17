@@ -153,6 +153,7 @@ class TringoOverlayService : Service() {
     private var postCallShownOnce = false
     private val INCOMING_SHOW_MS = 10_000L
     private val POST_CALL_SHOW_MS = 15_000L
+    private val POSTCALL_IDLE_WAIT_MS = 7_000L
     private val IDLE_CONFIRM_MS = 650L
 
     // ==========================================================
@@ -375,17 +376,17 @@ class TringoOverlayService : Service() {
         removeOverlay()
         postCallShownOnce = true
 
-        postCallFlowJob = serviceScope.launch {
-            val startWaitAt = System.currentTimeMillis()
-            while (safeCallState() != TelephonyManager.CALL_STATE_IDLE && isActive) {
-                if (System.currentTimeMillis() - startWaitAt >= 1_500L) break
+         postCallFlowJob = serviceScope.launch {
+             val startWaitAt = System.currentTimeMillis()
+             while (safeCallState() != TelephonyManager.CALL_STATE_IDLE && isActive) {
+                if (System.currentTimeMillis() - startWaitAt >= POSTCALL_IDLE_WAIT_MS) break
                 delay(150)
-            }
-            if (safeCallState() != TelephonyManager.CALL_STATE_IDLE) {
-                Log.w(TAG, "postCall start but device not idle after wait; abort")
+             }
+             if (safeCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                Log.w(TAG, "postCall start but device not idle after wait (${POSTCALL_IDLE_WAIT_MS}ms); abort")
                 stopSelf()
                 return@launch
-            }
+             }
 
             callEndedAt = System.currentTimeMillis()
             postCallPopupMode = true
@@ -1061,6 +1062,14 @@ class TringoOverlayService : Service() {
         try {
             windowManager?.addView(v, params)
             Log.d(TAG, "addView ok postCall=$postCallPopupMode phone=$phone")
+
+            // If we got here via a notification fallback, clear it so the user doesn't see extra UI.
+            try {
+                NotificationManagerCompat.from(this).cancel(301) // incoming fallback
+                NotificationManagerCompat.from(this).cancel(302) // post-call fallback
+                NotificationManagerCompat.from(this).cancel(303) // outgoing fallback
+            } catch (_: Exception) {}
+
             try {
                 val dy = 28f * resources.displayMetrics.density
                 val baseOffset = if (postCallPopupMode) 0f else belowCenterOffsetPx
@@ -1159,7 +1168,8 @@ class TringoOverlayService : Service() {
                 phoneForApi = normalizePhoneForPhoneInfo(phoneForApi).ifBlank { phoneForApi }
                 if (isUnknownPhone(phoneForApi) || phoneForApi.isBlank()) {
                     // Receiver may start the service before CallScreeningService writes the real number.
-                    for (i in 0 until 6) {
+                    // Give it a little more time on slow OEM devices.
+                    for (i in 0 until 14) {
                         val last = readLastKnownPhone()
                         val lastNorm = normalizePhoneForPhoneInfo(last).ifBlank { last.trim() }
                         if (!isUnknownPhone(lastNorm) && lastNorm.isNotBlank()) {

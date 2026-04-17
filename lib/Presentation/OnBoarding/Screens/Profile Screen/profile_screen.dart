@@ -91,92 +91,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           'Overlay permission not enabled yet. Turn on “Appear on top / Overlay”.',
         );
       }
+      if (mounted) setState(() => _callerIdOverlayEnabled = false);
+      await AppPrefs.setCallerIdOverlayEnabled(false);
+      await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
       return;
     }
 
     // System caller-id role prompt (optional; opens Android role UI).
     await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
 
-    final isUnrestricted =
-        await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
-    if (isUnrestricted == true) return;
-
-    // Ask battery optimization only on devices where background is restricted.
-    final restricted = await CallerIdRoleHelper.isBackgroundRestricted();
-    if (!restricted) return;
-    if (!mounted) return;
-
-    final openBattery = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: AppColor.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Battery setting',
-                style: GoogleFont.Mulish(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColor.darkBlue,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Some phones restrict background services. To show Caller ID overlay reliably, set Battery to Unrestricted / Don’t optimize.\n\n'
-                'Settings → Apps → Tringo → Battery → Unrestricted',
-                style: GoogleFont.Mulish(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColor.lightGray2,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Not now'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.darkBlue,
-                      ),
-                      child: const Text('Open settings'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (openBattery == true) {
-      final opened = await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
-      if (!opened) {
-        await CallerIdRoleHelper.requestIgnoreBatteryOptimization();
-      }
-    }
+    // Truecaller-style low-friction UX:
+    // Don't auto-prompt for battery settings. Show battery guidance only in the dedicated setup screen.
   }
 
   Future<void> _loadCallerIdOverlayPref() async {
     final enabled = await AppPrefs.getCallerIdOverlayEnabled();
+
+    // Keep the toggle honest: if required permissions are missing, force-disable the feature.
+    var effectiveEnabled = enabled && Platform.isAndroid;
+    if (effectiveEnabled) {
+      try {
+        final phoneOk = await Permission.phone.status.isGranted;
+        final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+        if (!phoneOk || !overlayOk) {
+          effectiveEnabled = false;
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
+        }
+      } catch (_) {
+        // If we can't check, keep the stored value.
+      }
+    }
+
     if (!mounted) return;
     setState(() {
-      _callerIdOverlayEnabled = enabled;
+      _callerIdOverlayEnabled = effectiveEnabled;
       _callerIdOverlayPrefLoaded = true;
     });
   }
@@ -210,12 +159,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     if (!phoneStatus.isGranted) {
       final phoneReq = await Permission.phone.request();
       if (!phoneReq.isGranted && mounted) {
-        AppSnackBar.error(context, 'Phone permission is needed for Caller ID overlay');
+        AppSnackBar.error(
+          context,
+          'Phone permission is needed for Caller ID overlay',
+        );
         setState(() => _callerIdOverlayEnabled = false);
         await AppPrefs.setCallerIdOverlayEnabled(false);
         return;
       }
     }
+
+    // Notifications (Android 13+) improve reliability on restricted devices.
+    // Best-effort only; do not block if user denies.
+    try {
+      final notifStatus = await Permission.notification.status;
+      if (!notifStatus.isGranted) {
+        await Permission.notification.request();
+      }
+    } catch (_) {}
 
     // Open overlay permission settings directly (easy UX).
     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
@@ -238,15 +199,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   Future<void> _openPrivacyPolicy() async {
     final Uri url = Uri.parse('https://bknd.tringobiz.com/privacy-policy.html');
 
-    final launched = await launchUrl(
-      url,
-      mode: LaunchMode.  inAppWebView,
-    );
+    final launched = await launchUrl(url, mode: LaunchMode.inAppWebView);
 
     if (!launched && mounted) {
       AppSnackBar.error(context, 'Could not open privacy policy');
     }
   }
+
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -717,7 +676,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 ),
                 SizedBox(height: 15),
                 InkWell(
-                  onTap: () => _setCallerIdOverlayEnabled(!_callerIdOverlayEnabled),
+                  onTap: () =>
+                      _setCallerIdOverlayEnabled(!_callerIdOverlayEnabled),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -732,9 +692,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             ),
                             child: Center(
                               child: Image.asset(
-                                AppImages.support,
+                                AppImages.callImage,
                                 height: 25,
                                 width: 19,
+                                   color: AppColor.darkBlue,
                               ),
                             ),
                           ),
@@ -750,7 +711,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       ),
                       Switch.adaptive(
                         value: _callerIdOverlayEnabled,
-                        onChanged: _callerIdOverlayPrefLoaded ? _setCallerIdOverlayEnabled : null,
+                        onChanged: _callerIdOverlayPrefLoaded
+                            ? _setCallerIdOverlayEnabled
+                            : null,
                         activeColor: AppColor.darkBlue,
                       ),
                     ],
@@ -800,7 +763,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 // ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: ()async {
+                  onTap: () async {
                     await _openPrivacyPolicy();
                     // Navigator.push(
                     //   context,

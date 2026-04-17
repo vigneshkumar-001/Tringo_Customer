@@ -13,7 +13,8 @@ class CallerIdSetupScreen extends ConsumerStatefulWidget {
   const CallerIdSetupScreen({super.key});
 
   @override
-  ConsumerState<CallerIdSetupScreen> createState() => _CallerIdSetupScreenState();
+  ConsumerState<CallerIdSetupScreen> createState() =>
+      _CallerIdSetupScreenState();
 }
 
 class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
@@ -22,6 +23,8 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
   bool _phoneGranted = false;
   bool _overlayGranted = false;
   bool _isDefaultCallerId = false;
+  bool _bgRestricted = false;
+  bool _ignoringBatteryOpt = true;
   BatteryGuide? _batteryGuide;
   ({String manufacturer, String brand, String model})? _label;
 
@@ -52,6 +55,9 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
       final phone = await Permission.phone.status;
       final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
       final roleOk = await CallerIdRoleHelper.isDefaultCallerIdApp();
+      final restricted = await CallerIdRoleHelper.isBackgroundRestricted();
+      final ignoring =
+          await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
 
       final label = await BatteryOptimizationGuide.deviceLabel();
       final guide = label == null
@@ -67,6 +73,8 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
         _phoneGranted = phone.isGranted;
         _overlayGranted = overlayOk;
         _isDefaultCallerId = roleOk;
+        _bgRestricted = restricted;
+        _ignoringBatteryOpt = ignoring;
         _label = label;
         _batteryGuide = guide;
       });
@@ -82,7 +90,10 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
       final res = await Permission.phone.request();
       if (!mounted) return;
       if (!res.isGranted) {
-        AppSnackBar.info(context, 'Phone permission needed for call end detection');
+        AppSnackBar.info(
+          context,
+          'Phone permission needed for call end detection',
+        );
       }
     } catch (_) {
       if (!mounted) return;
@@ -118,7 +129,10 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
       final opened = await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
       if (!opened) await CallerIdRoleHelper.requestIgnoreBatteryOptimization();
       if (!mounted) return;
-      AppSnackBar.info(context, 'Set TringoBiz to Unrestricted / Never sleeping apps');
+      AppSnackBar.info(
+        context,
+        'Set TringoBiz to Unrestricted / Never sleeping apps',
+      );
     } catch (_) {
       if (!mounted) return;
       AppSnackBar.error(context, 'Could not open battery settings');
@@ -163,7 +177,10 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(subtitle, style: TextStyle(color: Colors.grey.shade700)),
@@ -173,7 +190,10 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
                   runSpacing: 8,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(999),
                         color: ok ? Colors.green.shade50 : Colors.grey.shade100,
@@ -182,7 +202,9 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
                         ok ? okText : 'Not enabled',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: ok ? Colors.green.shade800 : Colors.grey.shade700,
+                          color: ok
+                              ? Colors.green.shade800
+                              : Colors.grey.shade700,
                           fontSize: 12,
                         ),
                       ),
@@ -193,7 +215,10 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColor.darkBlue,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -247,7 +272,10 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
                   const SizedBox(height: 10),
                   Text(
                     'Device: ${_label!.manufacturer} ${_label!.model}',
-                    style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 10),
@@ -268,7 +296,9 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: const Text('Caller overlay setup is available on Android only.'),
+              child: const Text(
+                'Caller overlay setup is available on Android only.',
+              ),
             ),
 
           if (isAndroid) ...[
@@ -297,7 +327,12 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
               onAction: _requestCallerIdRole,
             ),
 
-            if (_batteryGuide != null) ...[
+            // Don't show battery steps unless the OS says background is restricted.
+            // This keeps onboarding friction low (Truecaller-style) while still providing
+            // a fix path for devices that aggressively kill background work.
+            if (_batteryGuide != null &&
+                _bgRestricted &&
+                !_ignoringBatteryOpt) ...[
               Container(
                 margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 padding: const EdgeInsets.all(14),
@@ -310,19 +345,28 @@ class _CallerIdSetupScreenState extends ConsumerState<CallerIdSetupScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Battery optimization (optional)',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                      'Battery optimization (only if needed)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       _batteryGuide!.title,
-                      style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ..._batteryGuide!.steps.map(
                       (s) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
-                        child: Text('• $s', style: TextStyle(color: Colors.grey.shade700)),
+                        child: Text(
+                          '• $s',
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),

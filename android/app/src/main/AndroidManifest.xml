@@ -45,6 +45,8 @@
 
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required for full-screen call-style notifications on Android 10+ (esp. Android 14) -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Keep only base FGS permission if your service really runs in foreground -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

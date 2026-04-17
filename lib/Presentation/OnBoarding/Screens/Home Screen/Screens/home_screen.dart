@@ -122,82 +122,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!enabled) return;
 
     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
-    if (!overlayOk) return;
+    if (!overlayOk) {
+      // Keep feature state honest: if overlay isn't granted, disable the toggle/feature.
+      await AppPrefs.setCallerIdOverlayEnabled(false);
+      await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
+      return;
+    }
 
     // Prompt for system caller-id role (needed on some devices for call callbacks).
     await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
 
-    final batteryOk = await CallerIdRoleHelper.isIgnoringBatteryOptimizations();
-    if (batteryOk == true) return;
-
-    final restricted = await CallerIdRoleHelper.isBackgroundRestricted();
-    if (!restricted) return;
-    if (!mounted) return;
-
-    final openBattery = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: AppColor.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Battery setting',
-                style: GoogleFont.Mulish(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColor.darkBlue,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Some phones restrict background services. To show Caller ID overlay reliably, set Battery to Unrestricted / Don’t optimize.\n\n'
-                'Settings → Apps → Tringo → Battery → Unrestricted',
-                style: GoogleFont.Mulish(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColor.lightGray2,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Not now'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.darkBlue,
-                      ),
-                      child: const Text('Open settings'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (openBattery == true) {
-      final opened = await CallerIdRoleHelper.openBatteryUnrestrictedSettings();
-      if (!opened) {
-        await CallerIdRoleHelper.requestIgnoreBatteryOptimization();
-      }
-    }
+    // Truecaller-style low-friction UX:
+    // Don't auto-prompt for battery settings. Show battery guidance only in the dedicated setup screen.
   }
 
   Future<void> _autoSetupCallerOverlayIfEnabled() async {
@@ -209,8 +145,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Runtime permission (fast)
     final phoneStatus = await ph.Permission.phone.status;
     if (!phoneStatus.isGranted) {
-      await ph.Permission.phone.request();
+      final res = await ph.Permission.phone.request();
+      if (!res.isGranted) {
+        await AppPrefs.setCallerIdOverlayEnabled(false);
+        await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
+        return;
+      }
     }
+
+    // Notifications (Android 13+) - best-effort reliability improvement.
+    try {
+      final notif = await ph.Permission.notification.status;
+      if (!notif.isGranted) {
+        await ph.Permission.notification.request();
+      }
+    } catch (_) {}
 
     // Overlay is a settings toggle; auto-open once to make it easy.
     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
@@ -708,17 +657,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             }
           },
           onTap: () {
-           Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          ServiceAndShopsDetails(
-                                                            type: 'services',
-                                                            shopId: services.id,
-                                                            initialIndex: 3,
-                                                          ),
-                                                    ),
-                                                  );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServiceAndShopsDetails(
+                  type: 'services',
+                  shopId: services.id,
+                  initialIndex: 3,
+                ),
+              ),
+            );
           },
           whatsAppOnTap: () async {
             await MapUrls.openWhatsapp(
@@ -1899,7 +1847,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                   // Share Home link so receiver lands on Home screen.
                                                   final msg =
                                                       data.share?.shareMessage(
-                                                        fallbackTitle: data.title,
+                                                        fallbackTitle:
+                                                            data.title,
                                                       ) ??
                                                       DeepLinks.homeShareText(
                                                         title: data.title,
@@ -1917,8 +1866,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                           30,
                                                         ),
                                                   ),
-                                                  padding:
-                                                      const EdgeInsets.all(8),
+                                                  padding: const EdgeInsets.all(
+                                                    8,
+                                                  ),
                                                   child: const Icon(
                                                     Icons.share,
                                                     size: 18,
