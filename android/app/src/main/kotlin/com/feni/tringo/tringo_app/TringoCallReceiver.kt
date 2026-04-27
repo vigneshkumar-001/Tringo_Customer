@@ -18,6 +18,9 @@ class TringoCallReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "TRINGO_CALL_RX"
+        private const val PREF = "tringo_call_state"
+        private const val KEY_LAST_NUMBER = "last_number"
+        private const val KEY_LAST_NUMBER_AT = "last_number_at"
         // IMPORTANT: channel importance cannot be upgraded once created on Android O+.
         // Use a versioned channel id so older installs with a low-importance channel still get full-screen behavior.
         private const val INCOMING_NOTIF_CH = "tringo_incoming_overlay_v2"
@@ -33,19 +36,21 @@ class TringoCallReceiver : BroadcastReceiver() {
         if (stateStr != TelephonyManager.EXTRA_STATE_RINGING) return
 
         val numberFromBroadcast = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: ""
-        val last = try {
-            context.getSharedPreferences("tringo_call_state", Context.MODE_PRIVATE)
-                .getString("last_number", "")
-                ?.trim()
-                .orEmpty()
+        val now = System.currentTimeMillis()
+        val (last, lastAt) = try {
+            val sp = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+            val num = sp.getString(KEY_LAST_NUMBER, "")?.trim().orEmpty()
+            val at = sp.getLong(KEY_LAST_NUMBER_AT, 0L)
+            num to at
         } catch (_: Throwable) {
-            ""
+            "" to 0L
         }
+        val lastFresh = last.isNotBlank() && !last.equals("UNKNOWN", true) && lastAt > 0L && (now - lastAt) <= 1500L
 
         val phone = normalizePhoneForPhoneInfo(
             when {
                 numberFromBroadcast.isNotBlank() -> numberFromBroadcast
-                last.isNotBlank() && !last.equals("UNKNOWN", true) -> last
+                lastFresh -> last
                 else -> "UNKNOWN"
             }
         )
@@ -56,9 +61,10 @@ class TringoCallReceiver : BroadcastReceiver() {
         // Persist only real numbers (avoid storing UNKNOWN/blank).
         if (!finalPhone.equals("UNKNOWN", true)) {
             try {
-                context.getSharedPreferences("tringo_call_state", Context.MODE_PRIVATE)
+                context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
                     .edit()
-                    .putString("last_number", finalPhone)
+                    .putString(KEY_LAST_NUMBER, finalPhone)
+                    .putLong(KEY_LAST_NUMBER_AT, now)
                     .apply()
             } catch (_: Throwable) {}
         }

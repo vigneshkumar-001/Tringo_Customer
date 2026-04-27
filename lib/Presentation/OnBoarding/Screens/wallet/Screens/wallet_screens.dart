@@ -26,11 +26,7 @@ class WalletScreens extends ConsumerStatefulWidget {
   final String? initialType; // ALL / REWARDS / SENT / RECEIVED / WITHDRAW
   final String? initialToast; // optional info message (from push)
 
-  const WalletScreens({
-    super.key,
-    this.initialType,
-    this.initialToast,
-  });
+  const WalletScreens({super.key, this.initialType, this.initialToast});
 
   @override
   ConsumerState<WalletScreens> createState() => _WalletScreensState();
@@ -148,7 +144,9 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // ✅ initial load only (honor initialType if provided)
-      ref.read(walletNotifier.notifier).walletHistory(type: _types[selectedIndex]);
+      ref
+          .read(walletNotifier.notifier)
+          .walletHistory(type: _types[selectedIndex]);
 
       final toast = (widget.initialToast ?? '').trim();
       if (toast.isNotEmpty && mounted) {
@@ -659,132 +657,138 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
                   children: [
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ReferralScreen()),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColor.surfaceBlue,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border(
-                            left: BorderSide(color: AppColor.blue, width: 2),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ReferralScreen()),
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColor.surfaceBlue,
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border(
+                              left: BorderSide(color: AppColor.blue, width: 2),
+                            ),
                           ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 20,
-                            right: 40,
-                            bottom: 25,
-                            top: 25,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Image.asset(
-                                AppImages.referFriends,
-                                height: 64,
-                                width: 75,
-                              ),
-                              const SizedBox(height: 15),
-                              Text(
-                                'Refer Friends',
-                                style: GoogleFont.Mulish(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColor.darkBlue,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              bottom: 25,
+                              top: 25,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Image.asset(
+                                  AppImages.referFriends,
+                                  height: 64,
+                                  width: 75,
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Let’s Start',
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                const SizedBox(height: 15),
+                                Text(
+                                  'Refer Friends',
+                                  style: GoogleFont.Mulish(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColor.darkBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Let’s Start',
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColor.linkBlue,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Image.asset(
+                                      AppImages.rightSideArrow,
+                                      height: 13,
                                       color: AppColor.linkBlue,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Image.asset(
-                                    AppImages.rightSideArrow,
-                                    height: 13,
-                                    color: AppColor.linkBlue,
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ReviewAndEarn()),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColor.lightMint,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border(
-                            right: BorderSide(
-                              color: AppColor.positiveGreen,
-                              width: 2,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ReviewAndEarn()),
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColor.lightMint,
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border(
+                              right: BorderSide(
+                                color: AppColor.positiveGreen,
+                                width: 2,
+                              ),
                             ),
                           ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 20,
-                            right: 25,
-                            bottom: 25,
-                            top: 25,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Image.asset(
-                                AppImages.earnByReview,
-                                height: 64,
-                                width: 83,
-                              ),
-                              const SizedBox(height: 15),
-                              Text(
-                                'Earn by Review',
-                                style: GoogleFont.Mulish(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColor.darkBlue,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              bottom: 25,
+                              top: 25,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Image.asset(
+                                  AppImages.earnByReview,
+                                  height: 64,
+                                  width: 83,
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Know More',
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                const SizedBox(height: 15),
+                                Text(
+                                  'Earn by Review',
+                                  style: GoogleFont.Mulish(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColor.darkBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Know More',
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColor.positiveGreen,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Image.asset(
+                                      AppImages.rightSideArrow,
+                                      height: 13,
                                       color: AppColor.positiveGreen,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Image.asset(
-                                    AppImages.rightSideArrow,
-                                    height: 13,
-                                    color: AppColor.positiveGreen,
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

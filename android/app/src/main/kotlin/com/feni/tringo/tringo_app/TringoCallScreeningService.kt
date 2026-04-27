@@ -11,6 +11,7 @@ class TringoCallScreeningService : CallScreeningService() {
         private const val TAG = "TRINGO_SCREENING"
         private const val PREF = "tringo_call_state"
         private const val KEY_LAST_NUMBER = "last_number"
+        private const val KEY_LAST_NUMBER_AT = "last_number_at"
     }
 
     override fun onScreenCall(callDetails: Call.Details) {
@@ -28,6 +29,7 @@ class TringoCallScreeningService : CallScreeningService() {
                     .getSharedPreferences(PREF, Context.MODE_PRIVATE)
                     .edit()
                     .putString(KEY_LAST_NUMBER, phone)
+                    .putLong(KEY_LAST_NUMBER_AT, System.currentTimeMillis())
                     .apply()
             } catch (_: Throwable) {}
         }

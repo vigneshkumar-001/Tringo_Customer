@@ -20,6 +20,7 @@ class TringoInCallService : InCallService() {
         private const val TAG = "TRINGO_INCALL"
         private const val PREF = "tringo_call_state"
         private const val KEY_LAST_NUMBER = "last_number"
+        private const val KEY_LAST_NUMBER_AT = "last_number_at"
 
         // IMPORTANT: channel importance cannot be upgraded once created on Android O+.
         // Use a versioned channel id so older installs with a low-importance channel still get full-screen behavior.
@@ -42,6 +43,7 @@ class TringoInCallService : InCallService() {
                     .getSharedPreferences(PREF, Context.MODE_PRIVATE)
                     .edit()
                     .putString(KEY_LAST_NUMBER, phone)
+                    .putLong(KEY_LAST_NUMBER_AT, System.currentTimeMillis())
                     .apply()
             } catch (_: Throwable) {}
         }

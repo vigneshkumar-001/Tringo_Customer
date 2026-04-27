@@ -66,8 +66,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _isHomeRefreshRunning = false;
   ({double lat, double lng}) _lastKnownLoc = (lat: 0.0, lng: 0.0);
 
-  bool _shopsPressed = false;
-  bool _servicesPressed = false;
   bool _surpriseTapBusy = false;
 
   StreamSubscription<ServiceStatus>? _serviceSub;
@@ -794,7 +792,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         : servicesList.where((s) => s.category == selectedServiceSlug).toList();
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       child: Scaffold(
         body: SafeArea(
           child: RefreshIndicator(
@@ -1009,212 +1007,221 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         const SizedBox(height: 11),
 
-                        // Explore Near + QR
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            /// LEFT SECTION (Explore Near)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColor.lightBlueCont,
-                                borderRadius: BorderRadius.circular(40),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 10,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  /// Title
-                                  Text(
-                                    'Explore Near',
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 12,
-                                      color: AppColor.lightGray,
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 7),
-
-                                  /// Shops
-                                  GestureDetector(
-                                    onTapDown: (_) =>
-                                        setState(() => _shopsPressed = true),
-                                    onTapUp: (_) =>
-                                        setState(() => _shopsPressed = false),
-                                    onTapCancel: () =>
-                                        setState(() => _shopsPressed = false),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ButtomNavigatebar(
-                                                initialIndex: 3,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    child: AnimatedScale(
-                                      scale: _shopsPressed ? 0.9 : 1,
-                                      duration: const Duration(
-                                        milliseconds: 100,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Image.asset(
-                                            AppImages.shopImage,
-                                            height: 20,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Shops',
-                                            style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 12,
-                                              color: AppColor.lightGray,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 7),
-
-                                  Container(
-                                    width: 1,
-                                    height: 16,
-                                    color: AppColor.lightBlueBorder,
-                                  ),
-
-                                  const SizedBox(width: 7),
-
-                                  /// Services
-                                  GestureDetector(
-                                    onTapDown: (_) =>
-                                        setState(() => _servicesPressed = true),
-                                    onTapUp: (_) => setState(
-                                      () => _servicesPressed = false,
-                                    ),
-                                    onTapCancel: () => setState(
-                                      () => _servicesPressed = false,
-                                    ),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ButtomNavigatebar(
-                                                initialIndex: 4,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    child: AnimatedScale(
-                                      scale: _servicesPressed ? 0.9 : 1,
-                                      duration: const Duration(
-                                        milliseconds: 100,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Image.asset(
-                                            AppImages.servicesImage,
-                                            height: 20,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Services',
-                                            style: GoogleFont.Mulish(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 12,
-                                              color: AppColor.lightGray,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(width: 5),
-
-                            /// AI GUIDE BUTTON
-                            Expanded(
-                              child: InkWell(
-                                onTap: () async {
-                                  if (_homeScrollCtrl.hasClients) {
-                                    await _homeScrollCtrl.animateTo(
-                                      0,
-                                      duration: const Duration(
-                                        milliseconds: 350,
-                                      ),
-                                      curve: Curves.easeOut,
-                                    );
-                                  }
-
-                                  if (!mounted) return;
-
-                                  final route = scFlag
-                                      ? slideUpRoute(SmartConnectHistory())
-                                      : slideUpRoute(SmartConnectGuide());
-
-                                  await Navigator.of(context).push(route);
-                                },
-                                // onTap: () async {
-                                //   if (_homeScrollCtrl.hasClients) {
-                                //     await _homeScrollCtrl.animateTo(
-                                //       0,
-                                //       duration: const Duration(
-                                //         milliseconds: 350,
-                                //       ),
-                                //       curve: Curves.easeOut,
-                                //     );
-                                //   }
-                                //
-                                //   if (!mounted) return;
-                                //   if (scFlag == true) {
-                                //     await Navigator.of(
-                                //       context,
-                                //     ).push(slideUpRoute(SmartConnectHistory()));
-                                //   } else {
-                                //     await Navigator.of(
-                                //       context,
-                                //     ).push(slideUpRoute(SmartConnectGuide()));
-                                //   }
-                                // },
-                                child: Image.asset(
-                                  AppImages.aiGuideImage,
-                                  height: 42,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(width: 5),
-
-                            /// QR BUTTON
-                            Expanded(
-                              child: InkWell(
-                                onTap: () => _openQrAndAskAction(context),
-                                borderRadius: BorderRadius.circular(40),
+                        // Smart actions: AI Guide + QR
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColor.lightBlueCont,
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: AppColor.lightBlueBorder),
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                right: -42,
+                                top: -42,
                                 child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: const BoxDecoration(
+                                  width: 130,
+                                  height: 130,
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: AppColor.white,
-                                  ),
-                                  child: Image.asset(
-                                    AppImages.qRColor,
-                                    height: 20,
+                                    color: AppColor.accentCyan.withOpacity(
+                                      0.08,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () async {
+                                          final navigator = Navigator.of(
+                                            context,
+                                          );
+
+                                          if (_homeScrollCtrl.hasClients) {
+                                            await _homeScrollCtrl.animateTo(
+                                              0,
+                                              duration: const Duration(
+                                                milliseconds: 350,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          }
+
+                                          if (!mounted) return;
+
+                                          final route = scFlag
+                                              ? slideUpRoute(
+                                                  SmartConnectHistory(),
+                                                )
+                                              : slideUpRoute(
+                                                  SmartConnectGuide(),
+                                                );
+
+                                          await navigator.push(route);
+                                        },
+                                        borderRadius: BorderRadius.circular(18),
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            minHeight: 78,
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12,
+                                              horizontal: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  AppColor.midnightBlue,
+                                                  AppColor.lightBlueCont,
+                                                ],
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 44,
+                                                  height: 44,
+                                                  alignment: Alignment.center,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: AppColor.white
+                                                        .withOpacity(0.12),
+                                                  ),
+                                                  child: Image.asset(
+                                                    AppImages.aiGuideImage,
+                                                    height: 28,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        'Smart Connect',
+                                                        style:
+                                                            GoogleFont.Mulish(
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w900,
+                                                              color: AppColor
+                                                                  .white,
+                                                            ),
+                                                      ),
+                                                     
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Icon(
+                                                  Icons
+                                                      .arrow_forward_ios_rounded,
+                                                  size: 14,
+                                                  color: AppColor.textLowWhite,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () =>
+                                            _openQrAndAskAction(context),
+                                        borderRadius: BorderRadius.circular(18),
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            minHeight: 78,
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12,
+                                              horizontal: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColor.midnightBlue,
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              border: Border.all(
+                                                color: AppColor.lightBlueBorder,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 44,
+                                                  height: 44,
+                                                  alignment: Alignment.center,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: AppColor.white,
+                                                      ),
+                                                  child: Image.asset(
+                                                    AppImages.qRColor,
+                                                    height: 22,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        'Scan QR',
+                                                        style:
+                                                            GoogleFont.Mulish(
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w900,
+                                                              color: AppColor
+                                                                  .white,
+                                                            ),
+                                                      ),
+                                                     
+                                                   
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Icon(
+                                                  Icons
+                                                      .arrow_forward_ios_rounded,
+                                                  size: 14,
+                                                  color: AppColor.textLowWhite,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         /* Row(
 

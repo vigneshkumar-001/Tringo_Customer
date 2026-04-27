@@ -22,6 +22,7 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         private const val PREF = "tringo_call_state"
         private const val KEY_LAST_STATE = "last_state"
         private const val KEY_LAST_NUMBER = "last_number"
+        private const val KEY_LAST_NUMBER_AT = "last_number_at"
         private const val KEY_USER_CLOSED = "user_closed_during_call"
         private const val KEY_USER_CLOSED_NUMBER = "user_closed_number"
         private const val KEY_RINGING_AT = "ringing_at"
@@ -70,7 +71,12 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         val lastPostSession = prefs.getLong(KEY_LAST_POSTCALL_SESSION, 0L)
 
         val number = normalizePhoneForPhoneInfo(numberRaw)
-        if (number.isNotBlank()) prefs.edit().putString(KEY_LAST_NUMBER, number).apply()
+        if (number.isNotBlank()) {
+            prefs.edit()
+                .putString(KEY_LAST_NUMBER, number)
+                .putLong(KEY_LAST_NUMBER_AT, now)
+                .apply()
+        }
 
         val finalNumber = when {
             number.isNotBlank() -> number

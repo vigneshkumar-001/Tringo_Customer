@@ -74,12 +74,14 @@ class TringoOverlayService : Service() {
     private val KEY_USER_CLOSED = "user_closed_during_call"
     private val KEY_USER_CLOSED_NUMBER = "user_closed_number"
     private val KEY_LAST_NUMBER = "last_number"
+    private val KEY_LAST_NUMBER_AT = "last_number_at"
 
     private var adsAdapter: OverlayAdsAdapter? = null
     private var adsCarouselAdapter: OverlayBusinessCarouselAdapter? = null
 
     private var pendingPhone: String = ""
     private var pendingContact: String = ""
+    private var serviceStartedAtMs: Long = 0L
 
     private var launchedByReceiver = false
     private var postCallPopupMode = false
@@ -139,14 +141,14 @@ class TringoOverlayService : Service() {
         return p.isBlank() || p.equals("UNKNOWN", ignoreCase = true)
     }
 
-    private fun readLastKnownPhone(): String {
+    private fun readLastKnownPhoneWithAt(): Pair<String, Long> {
         return try {
-            getSharedPreferences(PREF, MODE_PRIVATE)
-                .getString(KEY_LAST_NUMBER, "")
-                ?.trim()
-                .orEmpty()
+            val sp = getSharedPreferences(PREF, MODE_PRIVATE)
+            val num = sp.getString(KEY_LAST_NUMBER, "")?.trim().orEmpty()
+            val at = sp.getLong(KEY_LAST_NUMBER_AT, 0L)
+            num to at
         } catch (_: Throwable) {
-            ""
+            "" to 0L
         }
     }
 
@@ -282,6 +284,8 @@ class TringoOverlayService : Service() {
             return START_NOT_STICKY
         }
 
+        serviceStartedAtMs = System.currentTimeMillis()
+
         pendingPhone = intent?.getStringExtra("phone") ?: ""
         pendingContact = intent?.getStringExtra("contactName") ?: ""
         launchedByReceiver = intent?.getBooleanExtra("launchedByReceiver", false) ?: false
@@ -293,13 +297,19 @@ class TringoOverlayService : Service() {
 
         val prefs = getSharedPreferences(PREF, MODE_PRIVATE)
         val last = (prefs.getString(KEY_LAST_NUMBER, "") ?: "").trim()
+        val lastAt = prefs.getLong(KEY_LAST_NUMBER_AT, 0L)
         val userClosed = prefs.getBoolean(KEY_USER_CLOSED, false)
         val closedNumber = (prefs.getString(KEY_USER_CLOSED_NUMBER, "") ?: "").trim()
 
         // Android may hide EXTRA_INCOMING_NUMBER on newer versions/devices.
-        // Still show overlay; use last known number if available.
+        // Still show overlay; NEVER reuse stale last_number (can show previous caller).
         if (pendingPhone.isBlank() || pendingPhone.equals("UNKNOWN", true)) {
-            pendingPhone = if (last.isNotBlank() && !last.equals("UNKNOWN", true)) last else "UNKNOWN"
+            val lastFreshForThisStart =
+                last.isNotBlank() &&
+                    !last.equals("UNKNOWN", true) &&
+                    lastAt > 0L &&
+                    (serviceStartedAtMs - lastAt) in 0L..1500L
+            pendingPhone = if (lastFreshForThisStart) last else "UNKNOWN"
         }
         // Normalize to a stable format for API and UI (prefer +91xxxxxxxxxx when possible).
         val normalizedIncoming = normalizePhoneForPhoneInfo(pendingPhone)
@@ -319,7 +329,10 @@ class TringoOverlayService : Service() {
 
         // Store only real numbers (avoid persisting UNKNOWN/blank).
         if (pendingPhone.isNotBlank() && !pendingPhone.equals("UNKNOWN", true)) {
-            prefs.edit().putString(KEY_LAST_NUMBER, pendingPhone).apply()
+            prefs.edit()
+                .putString(KEY_LAST_NUMBER, pendingPhone)
+                .putLong(KEY_LAST_NUMBER_AT, serviceStartedAtMs)
+                .apply()
         }
 
         startForegroundDataSyncSafe()
@@ -461,6 +474,7 @@ class TringoOverlayService : Service() {
             if (phone.isNotBlank() && !phone.equals("UNKNOWN", true)) {
                 edit.putString(KEY_USER_CLOSED_NUMBER, phone)
                 edit.putString(KEY_LAST_NUMBER, phone)
+                edit.putLong(KEY_LAST_NUMBER_AT, System.currentTimeMillis())
             }
 
             edit.apply()
@@ -1170,10 +1184,13 @@ class TringoOverlayService : Service() {
                     // Receiver may start the service before CallScreeningService writes the real number.
                     // Give it a little more time on slow OEM devices.
                     for (i in 0 until 14) {
-                        val last = readLastKnownPhone()
-                        val lastNorm = normalizePhoneForPhoneInfo(last).ifBlank { last.trim() }
-                        if (!isUnknownPhone(lastNorm) && lastNorm.isNotBlank()) {
+                        val (lastNum, lastNumAt) = readLastKnownPhoneWithAt()
+                        val lastNorm = normalizePhoneForPhoneInfo(lastNum).ifBlank { lastNum.trim() }
+                        val updatedForThisStart =
+                            lastNumAt > 0L && lastNumAt >= (serviceStartedAtMs - 750L)
+                        if (updatedForThisStart && !isUnknownPhone(lastNorm) && lastNorm.isNotBlank()) {
                             phoneForApi = lastNorm
+                            pendingPhone = phoneForApi
                             break
                         }
                         delay(250)
