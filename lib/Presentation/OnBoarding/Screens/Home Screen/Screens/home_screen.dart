@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -22,7 +21,9 @@ import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
@@ -31,6 +32,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Scree
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Controller/login_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/Opened_surprise_offer_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Shared/qr_scan_flow.dart';
 
 import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/map_urls.dart';
@@ -41,10 +43,6 @@ import '../../../../../Core/Widgets/advetisements_screens.dart';
 import '../../../../../Core/Widgets/caller_id_role_helper.dart';
 import '../../No Data Screen/Screen/no_data_screen.dart';
 import '../../Profile Screen/profile_screen.dart';
-import '../../wallet/Controller/wallet_notifier.dart';
-import '../../wallet/Screens/enter_review.dart';
-import '../../wallet/Screens/qr_scan_screen.dart';
-import '../../wallet/Screens/send_screen.dart';
 import '../../wallet/Screens/wallet_screens.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -368,129 +366,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Future<void> _ensureWalletReady() async {
-    final st = ref.read(walletNotifier);
-    if (st.walletHistoryResponse != null) return;
-    await ref.read(walletNotifier.notifier).walletHistory(type: "ALL");
-  }
 
-  Future<void> _openQrAndAskAction(BuildContext context) async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const QrScanScreen(title: 'Scan QR Code'),
-      ),
-    );
-
-    if (result == null || result.trim().isEmpty) return;
-    if (!context.mounted) return;
-
-    final payload = QrScanPayload.fromScanValue(result);
-    final toUid = (payload.toUid ?? '').trim();
-    final shopId = (payload.shopId ?? '').trim();
-
-    final hasUid = toUid.isNotEmpty;
-    final hasShop = shopId.isNotEmpty;
-
-    if (!hasUid && !hasShop) {
-      AppSnackBar.error(context, "Invalid QR");
-      return;
-    }
-
-    await _ensureWalletReady();
-
-    final walletState = ref.read(walletNotifier);
-    final wallet = walletState.walletHistoryResponse?.data.wallet;
-
-    final myUid = (wallet?.uid ?? '').toString();
-    final myBal = (wallet?.tcoinBalance ?? 0).toString();
-
-    if (!context.mounted) return;
-
-    if (hasUid && !hasShop) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              SendScreen(tCoinBalance: myBal, uid: myUid, initialToUid: toUid),
-        ),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(22),
-              topRight: Radius.circular(22),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 4,
-                width: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                "Choose Action",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 14),
-              ListTile(
-                enabled: hasUid,
-                leading: const Icon(Icons.account_balance_wallet_rounded),
-                title: const Text("Pay"),
-                onTap: hasUid
-                    ? () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SendScreen(
-                              tCoinBalance: myBal,
-                              uid: myUid,
-                              initialToUid: toUid,
-                            ),
-                          ),
-                        );
-                      }
-                    : null,
-              ),
-              ListTile(
-                enabled: hasShop,
-                leading: const Icon(Icons.rate_review_rounded),
-                title: const Text("Review"),
-                onTap: hasShop
-                    ? () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EnterReview(shopId: shopId),
-                          ),
-                        );
-                      }
-                    : null,
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Future<void> _refreshAll() async {
     await _refreshHomeData(refreshLocation: true);
@@ -550,22 +426,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           fireTooltip: 'App Offer 5%',
           isMessageLoading: isThisCardLoading,
           messageDisabled: hasMessaged,
-          messageOnTap: () async {
-            if (hasMessaged || isThisCardLoading) {
-              return;
-            }
+           messageOnTap: () async {
+             if (hasMessaged || isThisCardLoading) {
+               return;
+             }
 
-            final ok = await ref
-                .read(homeNotifierProvider.notifier)
-                .putEnquiry(
-                  context: context,
-                  serviceId: '',
-                  productId: '',
-                  message: '',
-                  shopId: shops.id,
-                );
+             final enquiryMsg = await showEnquiryBottomSheet(
+               context: context,
+               shopName: shops.englishName.toString(),
+             );
 
-            if (!mounted) return;
+             if (!mounted) return;
+
+             // If user dismissed/cancelled the sheet, do nothing.
+             if (enquiryMsg == null) return;
+             if (enquiryMsg.trim().isEmpty) {
+               AppSnackBar.error(context, 'Please enter your message');
+               return;
+             }
+
+             final ok = await ref
+                 .read(homeNotifierProvider.notifier)
+                 .putEnquiry(
+                   context: context,
+                   serviceId: '',
+                   productId: '',
+                   message: enquiryMsg.trim(),
+                   shopId: shops.id,
+                 );
+
+             if (!mounted) return;
 
             if (ok) {
               setState(() => _disabledMessageShopIds.add(shops.id));
@@ -633,22 +523,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           fireOnTap: () {},
           isMessageLoading: isThisCardLoading,
           messageDisabled: hasMessaged,
-          messageOnTap: () async {
-            if (hasMessaged || isThisCardLoading) {
-              return;
-            }
+           messageOnTap: () async {
+             if (hasMessaged || isThisCardLoading) {
+               return;
+             }
 
-            final ok = await ref
-                .read(homeNotifierProvider.notifier)
-                .putEnquiry(
-                  context: context,
-                  serviceId: '',
-                  productId: '',
-                  message: '',
-                  shopId: services.id,
-                );
+             final enquiryMsg = await showEnquiryBottomSheet(
+               context: context,
+               shopName: services.englishName.toString(),
+             );
 
-            if (!mounted) return;
+             if (!mounted) return;
+
+             // If user dismissed/cancelled the sheet, do nothing.
+             if (enquiryMsg == null) return;
+             if (enquiryMsg.trim().isEmpty) {
+               AppSnackBar.error(context, 'Please enter your message');
+               return;
+             }
+
+             final ok = await ref
+                 .read(homeNotifierProvider.notifier)
+                 .putEnquiry(
+                   context: context,
+                   serviceId: '',
+                   productId: '',
+                   message: enquiryMsg.trim(),
+                   shopId: services.id,
+                 );
+
+             if (!mounted) return;
 
             if (ok) {
               setState(() => _disabledMessageServiceIds.add(services.id));
@@ -1143,7 +1047,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     Expanded(
                                       child: InkWell(
                                         onTap: () =>
-                                            _openQrAndAskAction(context),
+                                            QrScanFlow.openQrAndAskAction(
+                                              context: context,
+                                              ref: ref,
+                                            ),
                                         borderRadius: BorderRadius.circular(18),
                                         child: ConstrainedBox(
                                           constraints: const BoxConstraints(
@@ -1363,7 +1270,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                             ),
                            InkWell(
-                             onTap: () => _openQrAndAskAction(context),
+                             onTap: () => QrScanFlow.openQrAndAskAction(
+                               context: context,
+                               ref: ref,
+                             ),
                              child: Container(
                                padding: const EdgeInsets.symmetric(
                                  horizontal: 13,
@@ -1840,48 +1750,106 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                   data.closeTime?.toString() ??
                                                   '',
                                               Images: data.bannerUrl.toString(),
-                                              badgeText: alreadyClaimed
-                                                  ? 'Claimed'
-                                                  : null,
+                                              badgeText: null,
                                             ),
                                             Positioned(
                                               top: 8,
                                               right: 8,
-                                              child: InkWell(
-                                                borderRadius:
-                                                    BorderRadius.circular(30),
-                                                onTap: () {
-                                                  // Share Home link so receiver lands on Home screen.
-                                                  final msg =
-                                                      data.share?.shareMessage(
-                                                        fallbackTitle:
-                                                            data.title,
-                                                      ) ??
-                                                      DeepLinks.homeShareText(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  if (alreadyClaimed)
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(0.35),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                          20,
+                                                        ),
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 6,
+                                                      ),
+                                                      child: const Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.check_circle,
+                                                            size: 14,
+                                                            color: Colors.white,
+                                                          ),
+                                                          SizedBox(width: 6),
+                                                          Text(
+                                                            'Claimed',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  if (alreadyClaimed)
+                                                    const SizedBox(width: 8),
+                                                  InkWell(
+                                                    borderRadius:
+                                                        BorderRadius.circular(30),
+                                                    onTap: () {
+                                                      // Share Home link so receiver lands on Home screen.
+                                                      final base = data.share
+                                                              ?.shareMessage(
+                                                                fallbackTitle:
+                                                                    data.title,
+                                                              ) ??
+                                                          DeepLinks.homeShareText(
+                                                            title: data.title,
+                                                          );
+                                                      final msg = ShareHelper
+                                                          .buildAttractiveText(
+                                                        baseText: base,
                                                         title: data.title,
                                                       );
-                                                  if (msg.trim().isNotEmpty) {
-                                                    Share.share(msg);
-                                                  }
-                                                },
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.35),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
+                                                      if (msg
+                                                          .trim()
+                                                          .isNotEmpty) {
+                                                        ShareHelper
+                                                            .shareTextWithImage(
+                                                          text: msg,
+                                                          imageUrl: data.bannerUrl
+                                                              .toString(),
+                                                          cardTitle: data.title,
+                                                        );
+                                                      }
+                                                    },
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withOpacity(0.35),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
                                                           30,
                                                         ),
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                        8,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.share,
+                                                        size: 18,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
                                                   ),
-                                                  padding: const EdgeInsets.all(
-                                                    8,
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.share,
-                                                    size: 18,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
+                                                ],
                                               ),
                                             ),
                                           ],
@@ -2378,140 +2346,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ),
     );
-  }
-}
-
-class QrScanPayload {
-  final String? toUid;
-  final String? shopId;
-  final String? action;
-  final List<String> options;
-
-  const QrScanPayload({
-    this.toUid,
-    this.shopId,
-    this.action,
-    this.options = const [],
-  });
-
-  bool get hasUid => (toUid ?? '').trim().isNotEmpty;
-  bool get hasShop => (shopId ?? '').trim().isNotEmpty;
-
-  bool get canPay => options.contains('SEND_TCOIN') || hasUid;
-  bool get canReview => options.contains('REVIEW') || hasShop;
-
-  static QrScanPayload fromScanValue(String raw) {
-    final v = raw.trim();
-    if (v.isEmpty) return const QrScanPayload();
-
-    final uri = Uri.tryParse(v);
-
-    final payloadParam = uri?.queryParameters['payload'];
-    if (payloadParam != null && payloadParam.trim().isNotEmpty) {
-      final jsonMap = _tryDecodePayloadToJson(payloadParam.trim());
-      if (jsonMap != null) return _fromJsonMap(jsonMap);
-    }
-
-    if (uri != null && uri.queryParameters.isNotEmpty) {
-      final qp = uri.queryParameters;
-      final toUid = _pick(qp, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
-      final shopId = _pick(qp, ['shopId', 'shopID', 'shop_id', 'shop']);
-      if ((toUid ?? '').trim().isNotEmpty || (shopId ?? '').trim().isNotEmpty) {
-        return QrScanPayload(
-          toUid: toUid?.trim(),
-          shopId: shopId?.trim(),
-          action: _pick(qp, ['action'])?.trim(),
-          options: const [],
-        );
-      }
-    }
-
-    final jsonMapDirect = _tryJsonDecode(v);
-    if (jsonMapDirect != null) return _fromJsonMap(jsonMapDirect);
-
-    final onlyUid = _extractUid(v);
-    if (onlyUid != null) {
-      return QrScanPayload(toUid: onlyUid, options: const ['SEND_TCOIN']);
-    }
-
-    return const QrScanPayload();
-  }
-
-  static QrScanPayload _fromJsonMap(Map<String, dynamic> m) {
-    final toUid = _pick(m, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
-    final shopId = _pick(m, ['shopId', 'shopID', 'shop_id', 'shop']);
-    final action = _pick(m, ['action', 'act']);
-
-    return QrScanPayload(
-      toUid: toUid?.toString().trim(),
-      shopId: shopId?.toString().trim(),
-      action: action?.toString().trim(),
-      options: _readOptions(m),
-    );
-  }
-
-  static Map<String, dynamic>? _tryDecodePayloadToJson(String b64url) {
-    try {
-      var s = b64url.replaceAll('-', '+').replaceAll('_', '/');
-      while (s.length % 4 != 0) {
-        s += '=';
-      }
-      final bytes = base64Decode(s);
-      final decoded = utf8.decode(bytes);
-      final map = jsonDecode(decoded);
-      return (map as Map).cast<String, dynamic>();
-    } catch (_) {
-      try {
-        final bytes = base64Decode(b64url);
-        final decoded = utf8.decode(bytes);
-        final map = jsonDecode(decoded);
-        return (map as Map).cast<String, dynamic>();
-      } catch (_) {
-        return null;
-      }
-    }
-  }
-
-  static Map<String, dynamic>? _tryJsonDecode(String v) {
-    try {
-      final map = jsonDecode(v);
-      if (map is Map) return map.cast<String, dynamic>();
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static String? _extractUid(String v) {
-    final m = RegExp(r'(UID[A-Za-z0-9]+)', caseSensitive: false).firstMatch(v);
-    return m?.group(1)?.toUpperCase();
-  }
-
-  static String? _pick(Map m, List<String> keys) {
-    for (final k in keys) {
-      if (m.containsKey(k) && (m[k]?.toString().trim().isNotEmpty ?? false)) {
-        return m[k].toString();
-      }
-    }
-    return null;
-  }
-
-  static List<String> _readOptions(Map<String, dynamic> jsonMap) {
-    final opts = jsonMap['options'];
-    if (opts is List) {
-      return opts
-          .map((e) {
-            if (e is Map) {
-              return (e['key'] ?? e['code'] ?? e['name'])?.toString();
-            }
-            return e?.toString();
-          })
-          .whereType<String>()
-          .map((e) => e.trim().toUpperCase())
-          .where((e) => e.isNotEmpty)
-          .toList();
-    }
-    return const [];
   }
 }
 

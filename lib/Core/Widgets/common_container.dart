@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -517,6 +516,8 @@ class CommonContainer {
     VoidCallback? mapOnTap,
     VoidCallback? messageOnTap,
     VoidCallback? whatsAppOnTap,
+    VoidCallback? mailOnTap,
+    VoidCallback? upiOnTap,
     VoidCallback? fireOnTap,
     VoidCallback? followButtonOnTap,
 
@@ -525,6 +526,8 @@ class CommonContainer {
     bool canFollow = false,
     bool fullEnquiry = false,
     bool whatsAppIcon = false,
+    bool mailIcon = false,
+    bool upiIcon = false,
     bool MessageIcon = false,
     bool FireIcon = false,
     bool order = false,
@@ -546,6 +549,8 @@ class CommonContainer {
     double? mapTextSize,
     double? messagesIconSize,
     double? whatsAppIconSize,
+    double? mailIconSize,
+    double? upiIconSize,
     double? fireIconSize,
 
     Color? callImageColor,
@@ -744,10 +749,12 @@ class CommonContainer {
                 onTap: followButtonOnTap ?? () {},
               )
             : SizedBox.shrink(),
-        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
+        if (messageContainer &&
+            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || FireIcon))
           const SizedBox(width: 9),
 
-        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
+        if (messageContainer &&
+            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || FireIcon))
           Container(
             padding:
                 iconContainerPadding ??
@@ -756,10 +763,11 @@ class CommonContainer {
               color: AppColor.white2,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Wrap(
-              spacing: 16,
-              alignment: WrapAlignment.center,
-              children: [
+             child: Wrap(
+               spacing: 16,
+               alignment: WrapAlignment.center,
+               crossAxisAlignment: WrapCrossAlignment.center,
+               children: [
                 if (MessageIcon)
                   GestureDetector(
                     // ❌ disable tap when loading OR already clicked once
@@ -806,9 +814,43 @@ class CommonContainer {
                 if (whatsAppIcon)
                   GestureDetector(
                     onTap: whatsAppOnTap,
-                    child: Image.asset(
-                      AppImages.whatsappImage,
+                    child: SizedBox(
                       height: whatsAppIconSize ?? 19,
+                      width: whatsAppIconSize ?? 19,
+                      child: Center(
+                        child: Image.asset(
+                          AppImages.whatsappImage,
+                          height: whatsAppIconSize ?? 19,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (mailIcon)
+                  GestureDetector(
+                    onTap: mailOnTap,
+                    child: SizedBox(
+                      height: mailIconSize ?? 22,
+                      width: mailIconSize ?? 22,
+                      child: Center(
+                        child: Image.asset(
+                          AppImages.gmailImage,
+                          height: mailIconSize ?? 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (upiIcon)
+                  GestureDetector(
+                    onTap: upiOnTap,
+                    child: SizedBox(
+                      height: upiIconSize ?? 26,
+                      width: upiIconSize ?? 26,
+                      child: Center(
+                        child: Image.asset(
+                          AppImages.upi,
+                          height: upiIconSize ?? 26,
+                        ),
+                      ),
                     ),
                   ),
                 if (FireIcon)
@@ -1087,6 +1129,7 @@ class CommonContainer {
 
   static serviceDetails({
     VoidCallback? onTap,
+    VoidCallback? onImageTap,
     required String filedName,
     required String image,
     required String ratingStar,
@@ -1105,29 +1148,33 @@ class CommonContainer {
             padding: const EdgeInsets.symmetric(vertical: 20.0),
             child: Row(
               children: [
-                ClipRRect(
+                InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    height: 130,
-                    width: 130,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: image, // your network image URL
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Center(
-                        child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                  onTap: onImageTap ?? onTap,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      height: 130,
+                      width: 130,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      errorWidget: (context, url, error) => Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          size: 40, // reduce icon size
-                          color: Colors.grey,
+                      child: CachedNetworkImage(
+                        imageUrl: image, // your network image URL
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Center(
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 40, // reduce icon size
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                     ),
@@ -1419,6 +1466,7 @@ class CommonContainer {
     bool weight = false,
     bool Ad = false,
     VoidCallback? onTap,
+    VoidCallback? onImageTap,
     bool horizontalDivider = false,
 
     // List<String> weightOptions = const ['300Gm', '500Gm'],
@@ -1431,45 +1479,51 @@ class CommonContainer {
     //   ...weightOptions.where((w) => w.toLowerCase().endsWith('gm')).take(2),
     // ];
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
-            child: Row(
-              children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        height: 130,
-                        width: 130,
-                        decoration: BoxDecoration(
+     return InkWell(
+       borderRadius: BorderRadius.circular(16),
+       onTap: onTap,
+       child: Column(
+         children: [
+           Padding(
+             padding: const EdgeInsets.symmetric(vertical: 20.0),
+             child: Row(
+               children: [
+                 Stack(
+                   children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: onImageTap ?? onTap,
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: CachedNetworkImage(
-                          imageUrl: image, // your network image URL
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Center(
-                            child: SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                          child: Container(
+                            height: 130,
+                            width: 130,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 40, // reduce icon size
-                              color: Colors.grey,
+                            child: CachedNetworkImage(
+                              imageUrl: image, // your network image URL
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Center(
+                                child: SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 40, // reduce icon size
+                                  color: Colors.grey,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
                     // ClipRRect(
                     //   borderRadius: BorderRadius.circular(16),

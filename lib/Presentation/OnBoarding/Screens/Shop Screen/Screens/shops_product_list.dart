@@ -10,6 +10,7 @@ import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Widgets/full_screen_image_gallery.dart';
 import '../../Products/Screens/product_details.dart';
 
 class ShopsProductList extends ConsumerStatefulWidget {
@@ -303,26 +304,43 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: CachedNetworkImage(
-                                      imageUrl: widget.shopImgUrl ?? '',
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => Center(
-                                        child: SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                                    child: InkWell(
+                                      onTap: () {
+                                        final url =
+                                            (widget.shopImgUrl ?? '').trim();
+                                        if (url.isEmpty) return;
+                                        FullScreenImageGallery.open(
+                                          context,
+                                          imageUrls: [url],
+                                          heroTagPrefix:
+                                              'shop_${(widget.shopId ?? '').toString()}_profile',
+                                        );
+                                      },
+                                      child: Hero(
+                                        tag:
+                                            'shop_${(widget.shopId ?? '').toString()}_profile_0',
+                                        child: CachedNetworkImage(
+                                          imageUrl: widget.shopImgUrl ?? '',
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) => Center(
+                                            child: SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          Center(
+                                          errorWidget: (context, url, error) =>
+                                              Center(
                                             child: Icon(
                                               Icons.broken_image,
                                               size: 40, // reduce icon size
                                               color: Colors.grey,
                                             ),
                                           ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -465,6 +483,14 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                                   builder: (context) =>
                                       ProductDetails(productId: service?.id),
                                 ),
+                              );
+                            },
+                            onImageTap: () {
+                              final url = (image).toString().trim();
+                              if (url.isEmpty) return;
+                              FullScreenImageGallery.open(
+                                context,
+                                imageUrls: [url],
                               );
                             },
                             imageWidth: 130,

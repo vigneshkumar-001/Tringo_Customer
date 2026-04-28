@@ -790,6 +790,25 @@ class TringoOverlayService : Service() {
 
         metaReferenceAt = if (postCallPopupMode && callEndedAt > 0L) callEndedAt else System.currentTimeMillis()
 
+        // Reset per-call state early so we never briefly render the previous caller's name/details.
+        // Keep cache only when it is valid for this exact phone.
+        val canUseCacheNow = preferCache && isCacheValidFor(phone)
+        currentCallerName = contactName.trim()
+        if (!canUseCacheNow) {
+            cachePhone = null
+            cacheAt = 0L
+            cacheIsShop = false
+            cacheTitle = ""
+            cacheCardSubtitle = ""
+            cacheSubtitleLine = ""
+            cacheImageUrl = ""
+            cacheCanEditName = false
+            cacheShowEditIcon = false
+            cacheRequiresAuthToEdit = true
+            cacheAdsTitle = "Advertisements"
+            cacheAdsCards = emptyList()
+        }
+
         // Headers
         val headerBusiness = v.findViewById<View>(R.id.headerBusiness)
         val headerPerson = v.findViewById<View>(R.id.headerPerson)
@@ -889,9 +908,9 @@ class TringoOverlayService : Service() {
 	        )
 	        setButtonIconDp(
 	            chatBtnPerson,
-	            R.drawable.ic_message_outline,
+	            R.drawable.ic_whatsapp_png,
 	            14f,
-	            tintColor = 0xFFFFFFFF.toInt()
+	            tintColor = null
 	        )
 
         val dialClick = View.OnClickListener {
@@ -920,7 +939,7 @@ class TringoOverlayService : Service() {
         chatBtnBusiness?.visibility = View.GONE
         callBtnPerson?.setOnClickListener(dialClick)
         saveContactBtnPerson?.setOnClickListener(saveContactClick)
-        chatBtnPerson?.setOnClickListener(smsClick)
+        chatBtnPerson?.setOnClickListener(whatsappClick)
 
         // Incoming overlay: hide action row. Post-call overlay: show action row.
         val showPostCallActions = postCallPopupMode
@@ -1155,7 +1174,7 @@ class TringoOverlayService : Service() {
         applyAdsVisibilityNow()
 
         // ✅ CACHE instant apply
-        if (preferCache && isCacheValidFor(phone)) {
+        if (canUseCacheNow) {
             applyCacheToUi(
                 headerBusiness = headerBusiness,
                 headerPerson = headerPerson,

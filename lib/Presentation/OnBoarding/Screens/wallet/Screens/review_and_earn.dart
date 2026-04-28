@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/qr_scan_screen.dart';
 
@@ -7,7 +7,7 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_loader.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
-import '../../Home Screen/Screens/home_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Shared/qr_scan_flow.dart';
 import '../Controller/wallet_notifier.dart';
 import '../Model/review_history_response.dart';
 import 'enter_review.dart';
@@ -28,7 +28,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
     super.initState();
     _controller = AnimationController(vsync: this);
 
-    // ✅ API Call
+    // âœ… API Call
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(walletNotifier.notifier).reviewHistory();
     });
@@ -95,7 +95,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
               ),
               const SizedBox(height: 41),
 
-              // ✅ HEADER
+              // âœ… HEADER
               Container(
                 decoration: BoxDecoration(
                   image: DecorationImage(
@@ -124,7 +124,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                           ),
                           const SizedBox(width: 15),
 
-                          // ✅ TOTAL from API
+                          // âœ… TOTAL from API
                           ShaderMask(
                             shaderCallback: (bounds) {
                               return LinearGradient(
@@ -184,7 +184,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
 
                     const SizedBox(height: 25),
 
-                    // ✅ SCAN QR CARD
+                    // âœ… SCAN QR CARD
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 50),
                       child: Row(
@@ -226,7 +226,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'Scan Shop’s QR',
+                                                'Scan Shopâ€™s QR',
                                                 style: GoogleFont.Mulish(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
@@ -263,7 +263,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                                 result.trim().isEmpty)
                                               return;
 
-                                            // ✅ parse QR
+                                            // parse QR
                                             final payload =
                                                 QrScanPayload.fromScanValue(
                                                   result,
@@ -273,7 +273,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                                 (payload.shopId ?? '').trim();
 
                                             if (shopId.isEmpty) {
-                                              // shopId இல்லாத QR -> review screen open ஆக முடியாது
+                                              // If QR doesn't contain shopId, we cannot open review.
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
@@ -286,7 +286,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                               return;
                                             }
 
-                                            // ✅ Auto navigate to EnterReview with shopId
+                                            // âœ… Auto navigate to EnterReview with shopId
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
@@ -349,7 +349,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
 
               const SizedBox(height: 25),
 
-              // ✅ HISTORY TITLE
+              // âœ… HISTORY TITLE
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
@@ -369,13 +369,13 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
 
               const SizedBox(height: 15),
 
-              // ✅ LOADING
+              // âœ… LOADING
               if (walletState.isLoading) ...[
                 const SizedBox(height: 40),
                 ThreeDotsLoader(),
                 const SizedBox(height: 40),
               ]
-              // ✅ EMPTY
+              // âœ… EMPTY
               else if (sections.isEmpty) ...[
                 const SizedBox(height: 40),
                 Text(
@@ -388,7 +388,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                 ),
                 const SizedBox(height: 40),
               ]
-              // ✅ DATA LIST
+              // âœ… DATA LIST
               else ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -399,7 +399,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                         children: [
                           const SizedBox(height: 18),
                           Text(
-                            sec!.dayLabel, // ✅ Today / 23 Jan 2026
+                            sec!.dayLabel, // âœ… Today / 23 Jan 2026
                             style: GoogleFont.Mulish(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -408,7 +408,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                           ),
                           const SizedBox(height: 10),
 
-                          // ✅ ITEMS list under this day
+                          // âœ… ITEMS list under this day
                           Column(
                             children: sec.items.map((item) {
                               final badgeColor = _badgeColor(item.badgeType);
@@ -418,7 +418,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                 child: CommonContainer.walletHistoryBox(
                                   upiTexts: false,
                                   containerColor: AppColor.coolWhite,
-                                  mainText: item.title, // ✅ shop/user
+                                  mainText: item.title, // âœ… shop/user
                                   timeText: item.timeLabel,
                                   numberText: item.amountTcoin.toString(),
                                   endText: item.badgeLabel,

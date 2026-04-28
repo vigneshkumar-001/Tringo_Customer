@@ -2,11 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
+import 'package:tringo_app/Core/Widgets/full_screen_image_gallery.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/product_notifier.dart';
 
@@ -33,12 +36,28 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
   Future<void> _shareProductLink({
     required String productId,
     String? shareText,
+    String? imageUrl,
+    String? cardTitle,
+    String? cardDescription,
+    List<String> cardMetaLines = const [],
+    String? badgeText,
+    double? ratingValue,
+    int? ratingCount,
   }) async {
     final text =
         (shareText != null && shareText.trim().isNotEmpty)
             ? shareText
             : DeepLinks.productShareText(productId: productId);
-    await Share.share(text);
+    await ShareHelper.shareTextWithImage(
+      text: text,
+      imageUrl: imageUrl,
+      cardTitle: cardTitle,
+      cardDescription: cardDescription,
+      cardMetaLines: cardMetaLines,
+      badgeText: badgeText,
+      ratingValue: ratingValue,
+      ratingCount: ratingCount,
+    );
   }
 
   @override
@@ -55,11 +74,24 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
     required BuildContext context,
     required String productId,
     required String shopId,
+    required String shopName,
   }) async {
     final homeState = ref.read(homeNotifierProvider);
 
     // ✅ prevent double tap
     if (_messageDisabled || homeState.isEnquiryLoading) return;
+
+    final enquiryMsg = await showEnquiryBottomSheet(
+      context: context,
+      shopName: shopName,
+    );
+
+    if (!mounted) return;
+    if (enquiryMsg == null) return;
+    if (enquiryMsg.trim().isEmpty) {
+      AppSnackBar.error(context, 'Please enter your message');
+      return;
+    }
 
     final ok = await ref
         .read(homeNotifierProvider.notifier)
@@ -67,7 +99,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
           context: context,
           serviceId: '',
           productId: productId,
-          message: '',
+          message: enquiryMsg.trim(),
           shopId: shopId,
         );
 
@@ -146,9 +178,67 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                                   productDetailData.data.share?.shareText ??
                                   productDetailData.data.product.share
                                       ?.shareText;
+
+                              final img =
+                                  productDetailData
+                                          .data
+                                          .product
+                                          .media
+                                          .isNotEmpty
+                                      ? productDetailData
+                                          .data
+                                          .product
+                                          .media
+                                          .first
+                                          .url
+                                      : productDetailData
+                                          .data
+                                          .product
+                                          .imageUrl;
+                              final metaLines = <String>[
+                                'Price: ₹${productDetailData.data.product.offerPrice}',
+                                (productDetailData.data.product.unitLabel ?? '')
+                                            .toString()
+                                            .trim()
+                                            .isNotEmpty
+                                    ? 'Unit: ${productDetailData.data.product.unitLabel}'
+                                    : '',
+                              ];
+                              final metaCard =
+                                  metaLines
+                                      .where((e) => e.trim().isNotEmpty)
+                                      .join(' | ');
                               _shareProductLink(
                                 productId: productId,
-                                shareText: apiShareText,
+                                shareText: ShareHelper.buildAttractiveText(
+                                  baseText:
+                                      (apiShareText != null &&
+                                              apiShareText.trim().isNotEmpty)
+                                          ? apiShareText
+                                          : DeepLinks.productShareText(
+                                              productId: productId,
+                                            ),
+                                  title: productDetailData.data.product.englishName,
+                                  description:
+                                      productDetailData.data.product.description,
+                                  metaLines: metaLines,
+                                ),
+                                imageUrl: img,
+                                cardTitle: productDetailData.data.product.englishName,
+                                cardDescription:
+                                    productDetailData.data.product.description,
+                                cardMetaLines:
+                                    metaCard.isEmpty ? const [] : [metaCard],
+                                badgeText:
+                                    (productDetailData.data.product.offerPrice <
+                                            productDetailData.data.product.price)
+                                        ? 'Limited time deal'
+                                        : null,
+                                ratingValue:
+                                    (productDetailData.data.product.rating)
+                                        .toDouble(),
+                                ratingCount:
+                                    productDetailData.data.product.ratingCount,
                               );
                             },
                             child: Container(
@@ -178,6 +268,12 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         scrollDirection: Axis.horizontal,
                         itemCount: productDetailData.data.product.media.length,
                         itemBuilder: (context, index) {
+                          final imageUrls = productDetailData.data.product.media
+                              .map((e) => (e.url).toString().trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+                          final heroTagPrefix =
+                              'product_${(widget.productId ?? '').toString()}_img';
                           final data =
                               productDetailData.data.product.media[index];
                           return Padding(
@@ -186,18 +282,29 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
-                              child: CachedNetworkImage(
-                                imageUrl: data.url,
-                                height: 250,
-                                width: 310,
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => Container(
-                                  height: 250,
-                                  width: 310,
-                                  color: Colors.grey.withOpacity(0.2),
+                              child: InkWell(
+                                onTap: () => FullScreenImageGallery.open(
+                                  context,
+                                  imageUrls: imageUrls,
+                                  initialIndex: index,
+                                  heroTagPrefix: heroTagPrefix,
                                 ),
-                                errorWidget: (_, __, ___) =>
-                                    const Icon(Icons.broken_image),
+                                child: Hero(
+                                  tag: '${heroTagPrefix}_$index',
+                                  child: CachedNetworkImage(
+                                    imageUrl: data.url,
+                                    height: 250,
+                                    width: 310,
+                                    fit: BoxFit.cover,
+                                    placeholder: (_, __) => Container(
+                                      height: 250,
+                                      width: 310,
+                                      color: Colors.grey.withOpacity(0.2),
+                                    ),
+                                    errorWidget: (_, __, ___) =>
+                                        const Icon(Icons.broken_image),
+                                  ),
+                                ),
                               ),
                             ),
                           );
@@ -334,6 +441,8 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                       context: context,
                       productId: productDetailData.data.product.id,
                       shopId: productDetailData.data.shop.id,
+                      shopName:
+                          productDetailData.data.shop.englishName.toString(),
                     );
                   },
 

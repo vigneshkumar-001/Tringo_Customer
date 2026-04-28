@@ -2,12 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_data_notifier.dart';
 
@@ -34,12 +36,28 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
   Future<void> _shareServiceLink({
     required String serviceId,
     String? shareText,
+    String? imageUrl,
+    String? cardTitle,
+    String? cardDescription,
+    List<String> cardMetaLines = const [],
+    String? badgeText,
+    double? ratingValue,
+    int? ratingCount,
   }) async {
     final text =
         (shareText != null && shareText.trim().isNotEmpty)
             ? shareText
             : DeepLinks.serviceShareText(serviceId: serviceId);
-    await Share.share(text);
+    await ShareHelper.shareTextWithImage(
+      text: text,
+      imageUrl: imageUrl,
+      cardTitle: cardTitle,
+      cardDescription: cardDescription,
+      cardMetaLines: cardMetaLines,
+      badgeText: badgeText,
+      ratingValue: ratingValue,
+      ratingCount: ratingCount,
+    );
   }
 
   @override
@@ -58,11 +76,24 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
     required BuildContext context,
     required String serviceId,
     required String shopId,
+    required String shopName,
   }) async {
     final homeState = ref.read(homeNotifierProvider);
 
     // ✅ prevent double tap
     if (_enquiryDisabled || homeState.isEnquiryLoading) return;
+
+    final enquiryMsg = await showEnquiryBottomSheet(
+      context: context,
+      shopName: shopName,
+    );
+
+    if (!mounted) return;
+    if (enquiryMsg == null) return;
+    if (enquiryMsg.trim().isEmpty) {
+      AppSnackBar.error(context, 'Please enter your message');
+      return;
+    }
 
     final ok = await ref
         .read(homeNotifierProvider.notifier)
@@ -70,7 +101,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
           context: context,
           serviceId: serviceId,
           productId: '',
-          message: '',
+          message: enquiryMsg.trim(),
           shopId: shopId,
         );
 
@@ -149,9 +180,54 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                   serviceDetailData.data.share?.shareText ??
                                   serviceDetailData.data.service.share
                                       ?.shareText;
+                              final img =
+                                  serviceDetailData.data.service.media.isNotEmpty
+                                      ? serviceDetailData
+                                          .data
+                                          .service
+                                          .media
+                                          .first
+                                          .url
+                                      : null;
+                              final metaLines = <String>[
+                                'Price: ₹${serviceDetailData.data.service.offerPrice}',
+                                'Duration: ${serviceDetailData.data.service.durationMinutes} mins',
+                              ];
+                              final metaCard =
+                                  metaLines
+                                      .where((e) => e.trim().isNotEmpty)
+                                      .join(' | ');
                               _shareServiceLink(
                                 serviceId: serviceId,
-                                shareText: apiShareText,
+                                shareText: ShareHelper.buildAttractiveText(
+                                  baseText:
+                                      (apiShareText != null &&
+                                              apiShareText.trim().isNotEmpty)
+                                          ? apiShareText
+                                          : DeepLinks.serviceShareText(
+                                              serviceId: serviceId,
+                                            ),
+                                  title: serviceDetailData.data.service.englishName,
+                                  description:
+                                      serviceDetailData.data.service.description,
+                                  metaLines: metaLines,
+                                ),
+                                imageUrl: img,
+                                cardTitle: serviceDetailData.data.service.englishName,
+                                cardDescription:
+                                    serviceDetailData.data.service.description,
+                                cardMetaLines:
+                                    metaCard.isEmpty ? const [] : [metaCard],
+                                badgeText:
+                                    (serviceDetailData.data.service.offerPrice <
+                                            serviceDetailData.data.service.startsAt)
+                                        ? 'Limited time deal'
+                                        : null,
+                                ratingValue:
+                                    (serviceDetailData.data.service.rating)
+                                        .toDouble(),
+                                ratingCount:
+                                    serviceDetailData.data.service.reviewCount,
                               );
                             },
                             child: Container(
@@ -333,6 +409,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       context: context,
                       serviceId: serviceDetailData.data.service.id,
                       shopId: shopsData.id,
+                      shopName: shopsData.englishName.toString(),
                     );
                   },
                 ),

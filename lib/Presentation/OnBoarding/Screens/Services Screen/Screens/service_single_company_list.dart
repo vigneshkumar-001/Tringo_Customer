@@ -5,10 +5,10 @@ import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Screens/search_service_data.dart';
 
-import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Widgets/full_screen_image_gallery.dart';
 
 class ServiceSingleCompanyList extends ConsumerStatefulWidget {
   final String? shopId;
@@ -418,12 +418,20 @@ class _ServiceSingleCompanyListState
                                 ),
                               );
                             },
+                            onImageTap: () {
+                              final url = (image).toString().trim();
+                              if (url.isEmpty) return;
+                              FullScreenImageGallery.open(
+                                context,
+                                imageUrls: [url],
+                              );
+                            },
                             filedName: title,
                             imageWidth: 130,
                             image: image,
                             ratingStar: rating.toString() ?? '',
                             ratingCount: ratingCount.toString() ?? '',
-                            offAmound: offerPrice != null ? '₹$offerPrice' : '',
+                            offAmound: offerPrice != null ? '\u20B9$offerPrice' : '',
                             horizontalDivider:
                                 index != filteredServices.length - 1,
                           );

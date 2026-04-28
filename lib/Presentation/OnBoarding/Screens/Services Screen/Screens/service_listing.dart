@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_notifier.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
@@ -100,6 +102,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
   Future<void> _handleServiceEnquiry({
     required BuildContext context,
     required String? serviceOrShopId,
+    required String shopName,
     required bool isThisCardLoading,
   }) async {
     if (serviceOrShopId == null || serviceOrShopId.isEmpty) return;
@@ -107,13 +110,25 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
     final hasMessaged = _disabledMessageServiceIds.contains(serviceOrShopId);
     if (hasMessaged || isThisCardLoading) return;
 
+    final enquiryMsg = await showEnquiryBottomSheet(
+      context: context,
+      shopName: shopName,
+    );
+
+    if (!mounted) return;
+    if (enquiryMsg == null) return;
+    if (enquiryMsg.trim().isEmpty) {
+      AppSnackBar.error(context, 'Please enter your message');
+      return;
+    }
+
     final ok = await ref
         .read(homeNotifierProvider.notifier)
         .putEnquiry(
           context: context,
           serviceId: '',
           productId: '',
-          message: '',
+          message: enquiryMsg.trim(),
           shopId: serviceOrShopId,
         );
 
@@ -263,6 +278,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                               await _handleServiceEnquiry(
                                 context: context,
                                 serviceOrShopId: id,
+                                shopName: data.englishName.toString(),
                                 isThisCardLoading: isThisCardLoading,
                               );
                             },

@@ -33,6 +33,21 @@ class ApiUrl {
   static const String smartConnectGuide = "${base}api/smart-connect/guide";
   static const String smartConnect = "${base}api/smart-connect";
 
+  // Subscriptions
+  static const String subscriptionsBase = "${base}api/v1/subscriptions";
+  static const String subscriptionPlans = "$subscriptionsBase/plans";
+  static const String subscriptionCcavenueInit = "$subscriptionsBase/ccavenue/init";
+  static const String subscriptionCcavenueExtendInit =
+      "$subscriptionsBase/ccavenue/extend/init";
+  static const String subscriptionCcavenueConfirm =
+      "$subscriptionsBase/ccavenue/confirm";
+
+  static String subscriptionCurrent({String? businessProfileId}) {
+    final id = (businessProfileId ?? '').trim();
+    if (id.isEmpty) return "$subscriptionsBase/current";
+    return "$subscriptionsBase/current?businessProfileId=$id";
+  }
+
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";

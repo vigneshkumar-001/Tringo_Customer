@@ -1,21 +1,26 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/shops_product.dart';
 import 'package:tringo_app/Core/Widgets/advetisements_screens.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
+import 'package:tringo_app/Core/Widgets/full_screen_image_gallery.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Shared/qr_scan_flow.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
 
@@ -23,7 +28,6 @@ import '../../Products/Screens/product_details.dart';
 import '../../Services Screen/Controller/service_notifier.dart';
 import '../../Services Screen/Screens/search_service_data.dart';
 import '../../Surprise_Screens/Screens/surprise_screens.dart';
-import '../../wallet/Screens/enter_review.dart';
 
 class ShopsDetails extends ConsumerStatefulWidget {
   final String? heroTag; // optional; if null/empty, no hero anim
@@ -55,12 +59,141 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
   bool _enquiryDisabled = false;
 
-  Future<void> _shareShopLink({required String shopId, String? shareText}) async {
-    final text =
-        (shareText != null && shareText.trim().isNotEmpty)
-            ? shareText
-            : DeepLinks.shopShareText(shopId: shopId);
-    await Share.share(text);
+  Future<void> _showUpiIdDialog(String upiId) async {
+    final v = upiId.trim();
+    if (v.isEmpty) {
+      if (!mounted) return;
+      AppSnackBar.info(context, 'UPI ID not available');
+      return;
+    }
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'UPI',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (context, _, __) {
+        return SafeArea(
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.86,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColor.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'UPI ID',
+                      style: GoogleFont.Mulish(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColor.darkBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.brightGray,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: SelectableText(
+                        v,
+                        style: GoogleFont.Mulish(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColor.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Close',
+                              style: GoogleFont.Mulish(
+                                fontWeight: FontWeight.w800,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              await Clipboard.setData(ClipboardData(text: v));
+                              if (!mounted) return;
+                              Navigator.pop(context);
+                              AppSnackBar.success(context, 'UPI ID copied');
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColor.darkBlue,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Copy',
+                                style: GoogleFont.Mulish(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColor.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _shareShopLink({
+    required String shopId,
+    String? shareText,
+    String? imageUrl,
+    String? title,
+    List<String> metaLines = const [],
+  }) async {
+    final text = (shareText != null && shareText.trim().isNotEmpty)
+        ? shareText
+        : DeepLinks.shopShareText(shopId: shopId);
+
+    final msg = ShareHelper.buildAttractiveText(
+      baseText: text,
+      title: title,
+      metaLines: metaLines,
+    );
+
+    await ShareHelper.shareTextWithImage(
+      text: msg,
+      imageUrl: imageUrl,
+      cardTitle: title,
+      cardMetaLines: metaLines,
+    );
   }
 
   late final AnimationController _ac;
@@ -102,7 +235,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
           .advertisements( placement: 'SHOP_DETAIL',lat: 0.0,lang: 0.0);
       final notifier = ref.read(shopsNotifierProvider.notifier);
 
-      // ✅ Reset old follow state FIRST
+      // âœ… Reset old follow state FIRST
       notifier.resetFollowState();
     });
 
@@ -146,7 +279,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
       curve: const Interval(0.62, 0.78),
     );
 
-    // Dividers + “People also viewed”
+    // Dividers + â€œPeople also viewedâ€
     aHorizonalDivider = CurvedAnimation(
       parent: curve,
       curve: const Interval(0.66, 0.80),
@@ -201,13 +334,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ✅ Full Stars
+        // âœ… Full Stars
         for (int i = 0; i < full; i++) _star(size, AppColor.green),
 
-        // ✅ Half Star (image + clip)
+        // âœ… Half Star (image + clip)
         if (hasHalf) _halfStar(size),
 
-        // ✅ Empty Stars
+        // âœ… Empty Stars
         for (int i = 0; i < empty; i++) _star(size, AppColor.borderGray),
       ],
     );
@@ -233,7 +366,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
         width: size,
         child: Stack(
           children: [
-            // ✅ Background Empty Star
+            // âœ… Background Empty Star
             Image.asset(
               AppImages.starImage,
               height: size,
@@ -241,11 +374,11 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
               color: AppColor.borderGray,
             ),
 
-            // ✅ Half Filled Star
+            // âœ… Half Filled Star
             ClipRect(
               child: Align(
                 alignment: Alignment.centerLeft,
-                widthFactor: 0.5, // ✅ half fill
+                widthFactor: 0.5, // âœ… half fill
                 child: Image.asset(
                   AppImages.starImage,
                   height: size,
@@ -285,7 +418,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
         .read(shopsNotifierProvider.notifier)
         .showSpecificShopDetails(shopId: widget.shopId ?? '');
 
-    // ✅ if you want refresh service provider also
+    // âœ… if you want refresh service provider also
     ref.invalidate(shopServicesProvider(widget.shopId ?? ''));
   }
 
@@ -329,7 +462,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
     if ((shopsData.data?.productCategories?.isNotEmpty ?? false) &&
         selectedIndex == null) {
-      selectedIndex = 0; // ✅ default select "All"
+      selectedIndex = 0; // âœ… default select "All"
     }
 
 
@@ -390,10 +523,47 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                               ? widget.shopId!
                                               : (shopsData.data?.id ?? '');
                                       if (shopId.isEmpty) return;
+
+                                      final wImg =
+                                          (widget.image ?? '').toString().trim();
+                                      final mediaImg = (shopsData.data?.media
+                                                  ?.isNotEmpty ??
+                                              false)
+                                          ? (shopsData.data?.media?.first.url ??
+                                                  '')
+                                              .toString()
+                                              .trim()
+                                          : '';
+                                      final ownerImg = (shopsData
+                                                  .data?.ownerImageUrl ??
+                                              '')
+                                          .toString()
+                                          .trim();
+
+                                      final imageUrl = wImg.startsWith('http')
+                                          ? wImg
+                                          : (mediaImg.startsWith('http')
+                                              ? mediaImg
+                                              : (ownerImg.startsWith('http')
+                                                  ? ownerImg
+                                                  : null));
+
                                       _shareShopLink(
                                         shopId: shopId,
                                         shareText:
                                             shopsData.data?.share?.shareText,
+                                        imageUrl: imageUrl,
+                                        title:
+                                            (shopsData.data?.englishName ?? '')
+                                                .toString(),
+                                        metaLines: [
+                                          (shopsData.data?.city ?? '')
+                                              .toString()
+                                              .trim(),
+                                          (shopsData.data?.state ?? '')
+                                              .toString()
+                                              .trim(),
+                                        ],
                                       );
                                     },
                                     child: Container(
@@ -638,18 +808,30 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     messageOnTap: () async {
                                       if (_enquiryDisabled || stateS.isEnquiryLoading) return;
 
+                                      final enquiryMsg = await showEnquiryBottomSheet(
+                                        context: context,
+                                        shopName: shopsData.data?.englishName.toString() ?? '',
+                                      );
+
+                                      if (!mounted) return;
+                                      if (enquiryMsg == null) return;
+                                      if (enquiryMsg.trim().isEmpty) {
+                                        AppSnackBar.error(context, 'Please enter your message');
+                                        return;
+                                      }
+
                                       final ok = await ref.read(homeNotifierProvider.notifier).putEnquiry(
                                         context: context,
                                         serviceId: '',
                                         productId: '',
-                                        message: '',
+                                        message: enquiryMsg.trim(),
                                         shopId: shopsData.data?.id.toString() ?? '',
                                       );
 
                                       if (!mounted) return;
 
                                       if (ok) {
-                                        setState(() => _enquiryDisabled = true); // ✅ disable only on success
+                                        setState(() => _enquiryDisabled = true); // âœ… disable only on success
                                       }
                                     },
 
@@ -670,6 +852,33 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         shopId: shopsData.data?.id.toString()?? '',
                                       );
                                     },
+                                    mailIcon: (shopsData.data?.contactEmail
+                                                .toString()
+                                                .trim() ??
+                                            '')
+                                        .isNotEmpty,
+                                    mailOnTap: () async {
+                                      await MapUrls.openEmail(
+                                        context,
+                                        toEmail: (shopsData.data?.contactEmail
+                                                .toString() ??
+                                            ''),
+                                        subject:
+                                            (shopsData.data?.englishName ?? '')
+                                                .toString(),
+                                      );
+                                    },
+                                    upiIcon: (shopsData.data?.upiId
+                                                .toString()
+                                                .trim() ??
+                                            '')
+                                        .isNotEmpty,
+                                    upiOnTap: () async {
+                                      await _showUpiIdDialog(
+                                        (shopsData.data?.upiId.toString() ?? ''),
+                                      );
+                                    },
+                                    upiIconSize: 30,
                                     messageLoading: stateS.isEnquiryLoading,
                                     messageDisabled: _enquiryDisabled,
                                     MessageIcon: true,
@@ -710,7 +919,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   scrollDirection: Axis.horizontal,
                                   itemCount: shopsData.data?.media?.length,
                                   itemBuilder: (context, index) {
+                                    final imageUrls = (shopsData.data?.media ?? [])
+                                        .map((e) => (e.url ?? '').toString().trim())
+                                        .where((e) => e.isNotEmpty)
+                                        .toList();
+                                    final heroTagPrefix =
+                                        'shop_${(widget.shopId ?? '').toString()}_media';
                                     final data = shopsData.data?.media?[index];
+                                    final url = (data?.url ?? '').toString().trim();
                                     return Row(
                                       children: [
                                         Stack(
@@ -723,35 +939,51 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                               child: ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(20),
-                                                child: CachedNetworkImage(
-                                                  imageUrl: data?.url ?? '',
-                                                  height: 250,
-                                                  width: 310,
-                                                  fit: BoxFit.cover,
-                                                  placeholder: (_, __) =>
-                                                      Container(
+                                                child: InkWell(
+                                                  onTap: url.isEmpty
+                                                      ? null
+                                                      : () => FullScreenImageGallery
+                                                              .open(
+                                                            context,
+                                                            imageUrls: imageUrls,
+                                                            initialIndex: index,
+                                                            heroTagPrefix:
+                                                                heroTagPrefix,
+                                                          ),
+                                                  child: Hero(
+                                                    tag: '${heroTagPrefix}_$index',
+                                                    child: CachedNetworkImage(
+                                                      imageUrl: url,
+                                                      height: 250,
+                                                      width: 310,
+                                                      fit: BoxFit.cover,
+                                                      placeholder: (_, __) =>
+                                                          Container(
                                                         height: 250,
                                                         width: 310,
                                                         color: Colors.grey
                                                             .withOpacity(0.2),
                                                       ),
-                                                  errorWidget: (_, __, ___) =>
-                                                      Container(
+                                                      errorWidget: (_, __, ___) =>
+                                                          Container(
                                                         height: 250,
                                                         width: 310,
-                                                        decoration: BoxDecoration(
+                                                        decoration:
+                                                            BoxDecoration(
                                                           borderRadius:
                                                               BorderRadius.circular(
-                                                                20,
-                                                              ),
+                                                            20,
+                                                          ),
                                                           color: Colors
                                                               .grey
                                                               .shade300,
                                                         ),
-                                                        child: Icon(
+                                                        child: const Icon(
                                                           Icons.broken_image,
                                                         ),
                                                       ),
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
 
@@ -892,7 +1124,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       clipBehavior: Clip
                                           .none, // allow gift to overflow above
                                       children: [
-                                        // Base pill: NOT positioned → Stack takes this size (auto height)
+                                        // Base pill: NOT positioned â†’ Stack takes this size (auto height)
                                         GestureDetector(
                                           onTap:
                                               shopsData
@@ -966,7 +1198,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                             ),
                                             child: Column(
                                               mainAxisSize: MainAxisSize
-                                                  .min, // 👈 auto height from content
+                                                  .min, // ðŸ‘ˆ auto height from content
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
@@ -976,7 +1208,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                               ?.surprise
                                                               ?.isClaimed ==
                                                           true
-                                                      ? 'Surprise Claimed 🎉'
+                                                      ? 'Surprise Claimed ðŸŽ‰'
                                                       : 'Surprise Offer',
                                                   style: GoogleFont.Mulish(
                                                     fontSize:
@@ -1004,7 +1236,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                               ?.surprise
                                                               ?.isClaimed ==
                                                           true
-                                                      ? 'You’ve already unlocked this offer'
+                                                      ? 'Youâ€™ve already unlocked this offer'
                                                       : 'Visit the shop nearby to unlock',
                                                   style: GoogleFont.Mulish(
                                                     fontSize:
@@ -1148,9 +1380,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                             final allServices = shopsData.data?.services ?? [];
                             final tags =
                                 shopsData.data?.serviceCategories ??
-                                []; // ✅ correct list
+                                []; // âœ… correct list
 
-                            // ✅ selected slug
+                            // âœ… selected slug
                             String? selectedSlug;
                             if (selectedIndex != null &&
                                 selectedIndex! >= 0 &&
@@ -1158,7 +1390,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               selectedSlug = tags[selectedIndex!].slug;
                             }
 
-                            // ✅ filter
+                            // âœ… filter
                             final filteredServices =
                                 (selectedSlug == null ||
                                     selectedSlug.isEmpty ||
@@ -1204,11 +1436,20 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           CommonContainer.serviceDetails(
                                             filedName: data.englishName,
                                             imageWidth: 120,
-                                            image: data.imageUrl, // ✅ FIX
+                                            image: data.imageUrl, // âœ… FIX
                                             ratingStar: data.rating.toString(),
                                             ratingCount: data.ratingCount
-                                                .toString(), // ✅ FIX
-                                            offAmound: '₹${data.offerPrice}',
+                                                .toString(), // âœ… FIX
+                                            offAmound: '\u20B9${data.offerPrice}',
+                                            onImageTap: () {
+                                              final url =
+                                                  (data.imageUrl ?? '').toString().trim();
+                                              if (url.isEmpty) return;
+                                              FullScreenImageGallery.open(
+                                                context,
+                                                imageUrls: [url],
+                                              );
+                                            },
                                             horizontalDivider: true,
                                             onTap: () {
                                               Navigator.push(
@@ -1229,7 +1470,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   },
                                 ),
 
-                                // ✅ View All Button (same)
+                                // âœ… View All Button (same)
                                 Positioned(
                                   bottom: 0,
                                   left: 0,
@@ -1441,7 +1682,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                     //                     ratingCount:
                     //                         data?.reviewCount.toString() ?? '',
                     //                     offAmound:
-                    //                         '₹${data?.offerPrice.toString() ?? ''}',
+                    //                         '\u20B9${data?.offerPrice.toString() ?? ''}',
                     //                     horizontalDivider: true,
                     //                   ),
                     //
@@ -1476,9 +1717,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                     //                   //   ratingCount:
                     //                   //       data?.reviewCount.toString() ?? '',
                     //                   //   offAmound:
-                    //                   //       '₹${data?.offerPrice.toString() ?? ''}',
+                    //                   //       '\u20B9${data?.offerPrice.toString() ?? ''}',
                     //                   //   oldAmound:
-                    //                   //       '₹${data?.startsAt.toString() ?? ''}',
+                    //                   //       '\u20B9${data?.startsAt.toString() ?? ''}',
                     //                   //   km: '',
                     //                   //   location: '',
                     //                   //   Verify: false,
@@ -1673,7 +1914,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               selectedSlug = tags[selectedIndex!].slug;
                             }
 
-                            // ✅ IMPORTANT: All / null / empty => show all products
+                            // âœ… IMPORTANT: All / null / empty => show all products
                             final filteredProducts =
                                 (selectedSlug == null ||
                                     selectedSlug.isEmpty ||
@@ -1736,9 +1977,9 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                 data.ratingCount?.toString() ??
                                                 '',
                                             offAmound:
-                                                '₹${data.offerPrice?.toString() ?? ''}',
+                                                '\u20B9${data.offerPrice?.toString() ?? ''}',
                                             oldAmound:
-                                                '₹${data.price?.toString() ?? ''}',
+                                                '\u20B9${data.price?.toString() ?? ''}',
                                             km: '',
                                             location: '',
                                             Verify: false,
@@ -1852,7 +2093,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                           final hasReviews = reviews.isNotEmpty;
 
-                          // ✅ show average rating from API
+                          // âœ… show average rating from API
                           final avgRating = hasReviews
                               ? (double.tryParse(
                                       shopsData.data?.averageRating ?? "0",
@@ -1860,19 +2101,18 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     0)
                               : (reviewUi?.averageRating.toDouble() ?? 0);
 
-                          // ✅ count label
+                          // âœ… count label
                           final countLabel = hasReviews
                               ? "${reviews.length} Reviews"
                               : (reviewUi?.countLabel ?? "No Reviews");
 
-                          // ✅ button text from API
-                          final buttonText =
-                              reviewUi?.buttonText ?? "Write a Review";
+                          // âœ… button text from API
+                          final buttonText = "Scan QR Code";
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // ✅ Reviews title
+                              // âœ… Reviews title
                               _staggerFromTop(
                                 aReviewText,
                                 Row(
@@ -1897,7 +2137,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                               const SizedBox(height: 18),
 
-                              // ✅ Rating row + Stars
+                              // âœ… Rating row + Stars
                               _staggerFromTop(
                                 aRating,
                                 Row(
@@ -1912,7 +2152,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     ),
                                     const SizedBox(width: 8),
 
-                                    // ✅ Only ONE STAR
+                                    // âœ… Only ONE STAR
                                     Image.asset(
                                       AppImages.starImage,
                                       height: 22,
@@ -1936,20 +2176,16 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                               const SizedBox(height: 15),
 
-                              // ✅ Review UI button (ALWAYS SHOW)
+                              // âœ… Review UI button (ALWAYS SHOW)
                               CommonContainer.button(
                                 imagePath: AppImages.rightSideArrow,
                                 buttonColor: AppColor.darkBlue,
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EnterReview(
-                                        shopId: shopsData
-                                            .data
-                                            ?.id, // ✅ pass shop id
-                                      ),
-                                    ),
+                                  QrScanFlow.openQrAndAskAction(
+                                    context: context,
+                                    ref: ref,
+                                    title: 'Scan QR for Review',
+                                    mode: QrScanFlowMode.reviewOnly,
                                   );
                                 },
                                 text: Text(buttonText),
@@ -1957,7 +2193,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                               const SizedBox(height: 20),
 
-                              // ✅ IF NO REVIEWS → show empty UI
+                              // âœ… IF NO REVIEWS â†’ show empty UI
                               if (!hasReviews) ...[
                                 _staggerFromTop(
                                   aReviewBox,
@@ -1989,7 +2225,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          "Be the first one to review and earn reward 🎁",
+                                          "Be the first one to review and earn reward",
                                           style: GoogleFont.Mulish(
                                             color: AppColor.lightGray3,
                                             fontSize: 13,
@@ -2001,7 +2237,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   ),
                                 ),
                               ]
-                              // ✅ IF REVIEWS EXIST → list show
+                              // If reviews exist, show list
                               else ...[
                                 _staggerFromTop(
                                   aReviewBox,

@@ -91,11 +91,7 @@ class MapUrls {
     final webUri = Uri.parse('https://wa.me/$digits?text=$encodedMsg');
 
     try {
-      print('WHATSAPP URI  : $whatsappUri');
-      print('WA.ME URI     : $webUri');
-
       final canWhats = await canLaunchUrl(whatsappUri);
-      print('canLaunch whatsapp:// = $canWhats');
 
       if (canWhats) {
         await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
@@ -103,7 +99,6 @@ class MapUrls {
       }
 
       final canWeb = await canLaunchUrl(webUri);
-      print('canLaunch wa.me = $canWeb');
 
       if (canWeb) {
         await launchUrl(webUri, mode: LaunchMode.externalApplication);
@@ -119,6 +114,57 @@ class MapUrls {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Could not open WhatsApp: $e')));
+    }
+  }
+
+  static Future<void> openEmail(
+    BuildContext context, {
+    required String toEmail,
+    String? subject,
+    String? body,
+  }) async {
+    final to = toEmail.trim();
+    if (to.isEmpty) {
+      if (!context.mounted) return;
+      AppSnackBar.info(context, 'Email not available');
+      return;
+    }
+
+    final s = (subject ?? '').trim();
+    final b = (body ?? '').trim();
+
+    final gmailUri = Uri.parse(
+      'googlegmail://co?to=${Uri.encodeComponent(to)}'
+      '${s.isNotEmpty ? '&subject=${Uri.encodeComponent(s)}' : ''}'
+      '${b.isNotEmpty ? '&body=${Uri.encodeComponent(b)}' : ''}',
+    );
+
+    // Build the mailto URI manually to ensure spaces stay as `%20` (not `+`),
+    // because some email clients show `+` literally in the subject.
+    final mailtoQueryParts = <String>[
+      if (s.isNotEmpty) 'subject=${Uri.encodeComponent(s)}',
+      if (b.isNotEmpty) 'body=${Uri.encodeComponent(b)}',
+    ];
+    final mailto = Uri.parse(
+      'mailto:$to${mailtoQueryParts.isEmpty ? '' : '?${mailtoQueryParts.join('&')}'}',
+    );
+
+    try {
+      // IMPORTANT:
+      // On Android 11+, `canLaunchUrl` may return false due to package visibility
+      // unless <queries> is added in AndroidManifest. Instead of blocking, we
+      // attempt to launch and fall back gracefully.
+      try {
+        await launchUrl(gmailUri, mode: LaunchMode.externalApplication);
+        return;
+      } catch (_) {
+        // ignore and fallback
+      }
+
+      await launchUrl(mailto, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackBar.error(context, 'Could not open email: $e');
     }
   }
 

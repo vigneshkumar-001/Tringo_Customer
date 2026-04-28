@@ -60,6 +60,10 @@ import '../../Presentation/OnBoarding/Screens/wallet/Model/uid_name_response.dar
 import '../../Presentation/OnBoarding/Screens/wallet/Model/wallet_history_response.dart';
 import '../../Presentation/OnBoarding/Screens/wallet/Model/wallet_qr_response.dart';
 import '../../Presentation/OnBoarding/Screens/wallet/Model/withdraw_request_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/ccavenue_confirm_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/ccavenue_init_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/subscription_current_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/subscription_plans_response.dart';
 import '../Repository/api_url.dart';
 import '../Repository/failure.dart';
 import '../Repository/request.dart';
@@ -2304,8 +2308,172 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(response.message ?? "Unknown Dio error"));
       }
     } catch (e, st) {
-      AppLogger.log.e(e);
-      print('$e,$st');
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  // ==========================================================
+  // Subscriptions
+  // ==========================================================
+
+  Future<Either<Failure, SubscriptionPlansResponse>> getSubscriptionPlans() async {
+    try {
+      final response = await Request.sendRequest(
+        ApiUrl.subscriptionPlans,
+        const {},
+        'GET',
+        false, // public
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(SubscriptionPlansResponse.fromJson(response.data));
+          }
+          return Left(
+            ServerFailure(response.data['message'] ?? 'Failed to load plans'),
+          );
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SubscriptionCurrentResponse>> getCurrentSubscription({
+    String? businessProfileId,
+  }) async {
+    try {
+      final url =
+          ApiUrl.subscriptionCurrent(businessProfileId: businessProfileId);
+      final response = await Request.sendRequest(
+        url,
+        const {},
+        'GET',
+        true, // x-session-token required
+        sendBearerToken: false,
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(SubscriptionCurrentResponse.fromJson(response.data));
+          }
+          return Left(
+            ServerFailure(
+              response.data['message'] ?? 'Failed to load subscription',
+            ),
+          );
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, CcavenueInitResponse>> initCcavenueCheckout({
+    required String planId,
+    String? businessProfileId,
+    String? shopId,
+    required bool extend,
+  }) async {
+    try {
+      final url = extend
+          ? ApiUrl.subscriptionCcavenueExtendInit
+          : ApiUrl.subscriptionCcavenueInit;
+
+      final body = <String, dynamic>{
+        'planId': planId,
+        if ((businessProfileId ?? '').trim().isNotEmpty)
+          'businessProfileId': businessProfileId!.trim(),
+        if ((shopId ?? '').trim().isNotEmpty) 'shopId': shopId!.trim(),
+      };
+
+      final response = await Request.sendRequest(
+        url,
+        body,
+        'POST',
+        true,
+        sendBearerToken: false,
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(CcavenueInitResponse.fromJson(response.data));
+          }
+          return Left(
+            ServerFailure(
+              response.data['message'] ?? 'Failed to initialize payment',
+            ),
+          );
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, CcavenueConfirmResponse>> confirmCcavenuePayment({
+    required String encResp,
+  }) async {
+    try {
+      final response = await Request.sendRequest(
+        ApiUrl.subscriptionCcavenueConfirm,
+        {'encResp': encResp},
+        'POST',
+        true,
+        sendBearerToken: false,
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          // NOTE: top-level `status` can be false even though paymentStatus exists.
+          return Right(CcavenueConfirmResponse.fromJson(response.data));
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
       return Left(ServerFailure(e.toString()));
     }
   }

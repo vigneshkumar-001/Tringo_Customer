@@ -3,13 +3,13 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
 
@@ -177,7 +177,17 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                                   ? shop!.id
                                   : data.shopId;
                           if (shopId.trim().isEmpty) return;
-                          Share.share(DeepLinks.shopShareText(shopId: shopId));
+                          ShareHelper.shareTextWithImage(
+                            text: ShareHelper.buildAttractiveText(
+                              baseText: DeepLinks.shopShareText(shopId: shopId),
+                              title: (shop?.name ?? '').toString(),
+                            ),
+                            imageUrl: shop?.imageUrl,
+                            cardTitle: (shop?.name ?? '').toString(),
+                            cardMetaLines: [
+                              (shop?.city ?? '').toString().trim(),
+                            ],
+                          );
                         },
                         child: Container(
                           decoration: BoxDecoration(

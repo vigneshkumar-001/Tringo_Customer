@@ -92,6 +92,8 @@ class HomeNotifier extends Notifier<homeState> {
         m.contains('before submitting an enquiry');
   }
 
+  static const String _enquirySuccessToast = 'Enquiry sent successfully';
+
   @override
   homeState build() {
     api = ref.read(apiDataSourceProvider);
@@ -224,7 +226,10 @@ class HomeNotifier extends Notifier<homeState> {
               error: state.error,
             );
             if (context.mounted) {
-              AppSnackBar.success(context, retryResponse.data.message);
+              AppSnackBar.success(
+                context,
+                _enquirySuccessToast,
+              );
             }
             return true;
           },
@@ -240,7 +245,10 @@ class HomeNotifier extends Notifier<homeState> {
         );
 
         if (context.mounted) {
-          AppSnackBar.success(context, response.data.message);
+          AppSnackBar.success(
+            context,
+            _enquirySuccessToast,
+          );
         }
         return true;
       },

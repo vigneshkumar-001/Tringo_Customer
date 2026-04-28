@@ -19,6 +19,7 @@ import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_snackbar.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
+import '../../../../Core/Widgets/full_screen_image_gallery.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/Screens/login_mobile_number.dart';
@@ -141,6 +142,69 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         });
       }
       return;
+    }
+
+    if (!enabled) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: AppColor.white,
+            surfaceTintColor: AppColor.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Turn off Caller ID?',
+              style: GoogleFont.Mulish(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: AppColor.darkBlue,
+              ),
+            ),
+            content: Text(
+              'You’ll miss deals & Free TCoins if Caller ID is OFF',
+              style: GoogleFont.Mulish(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColor.lightGray2,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Keep ON',
+                  style: GoogleFont.Mulish(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.darkBlue,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Turn OFF',
+                  style: GoogleFont.Mulish(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.lightRed,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (!mounted) return;
+      if (confirm != true) {
+        // Keep it ON.
+        setState(() => _callerIdOverlayEnabled = true);
+        return;
+      }
     }
 
     setState(() {
@@ -600,25 +664,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           horizontal: 10,
                           vertical: 12,
                         ),
-                        child: ClipRRect(
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          child: CachedNetworkImage(
-                            imageUrl: widget.url ?? '',
-                            height: 120,
-                            width: 120,
-                            fit: BoxFit.cover,
-
-                            placeholder: (context, url) => Container(
-                              height: 120,
-                              width: 120,
-                              color: Colors.grey.withOpacity(0.2),
-                            ),
-
-                            errorWidget: (context, url, error) => Container(
-                              height: 120,
-                              width: 120,
-                              color: Colors.grey.withOpacity(0.2),
-                              child: const Icon(Icons.broken_image, size: 28),
+                          onTap: () {
+                            final url = (widget.url ?? '').trim();
+                            if (url.isEmpty) return;
+                            FullScreenImageGallery.open(
+                              context,
+                              imageUrls: [url],
+                              heroTagPrefix: 'profile_avatar',
+                            );
+                          },
+                          child: Hero(
+                            tag: 'profile_avatar_0',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: CachedNetworkImage(
+                                imageUrl: widget.url ?? '',
+                                height: 120,
+                                width: 120,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  height: 120,
+                                  width: 120,
+                                  color: Colors.grey.withOpacity(0.2),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  height: 120,
+                                  width: 120,
+                                  color: Colors.grey.withOpacity(0.2),
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 28,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

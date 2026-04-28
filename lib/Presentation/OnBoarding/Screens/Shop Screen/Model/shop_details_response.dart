@@ -53,6 +53,7 @@ class ShopData {
   final String alternatePhone;
 
   final String contactEmail;
+  final String upiId;
   final String ownerImageUrl;
 
   final bool doorDelivery;
@@ -109,6 +110,7 @@ class ShopData {
     required this.primaryPhone,
     required this.alternatePhone,
     required this.contactEmail,
+    required this.upiId,
     required this.ownerImageUrl,
     required this.doorDelivery,
     required this.isTrusted,
@@ -139,6 +141,13 @@ class ShopData {
   });
 
   factory ShopData.fromJson(Map<String, dynamic> json) {
+    final contactEmailRaw = (json['contactEmail'] ?? '').toString().trim();
+    final contactEmail =
+        contactEmailRaw.toLowerCase() == 'null' ? '' : contactEmailRaw;
+
+    final upiIdRaw = (json['upiId'] ?? '').toString().trim();
+    final upiId = upiIdRaw.toLowerCase() == 'null' ? '' : upiIdRaw;
+
     return ShopData(
       id: json['id'].toString(),
       createdAt: json['createdAt'].toString(),
@@ -163,7 +172,8 @@ class ShopData {
       primaryPhone: json['primaryPhone'].toString(),
       alternatePhone: json['alternatePhone'].toString(),
 
-      contactEmail: json['contactEmail'].toString(),
+      contactEmail: contactEmail,
+      upiId: upiId,
       ownerImageUrl: json['ownerImageUrl'].toString(),
 
       doorDelivery: json['doorDelivery'] == true,
@@ -260,6 +270,7 @@ class ShopData {
     "primaryPhone": primaryPhone,
     "alternatePhone": alternatePhone,
     "contactEmail": contactEmail,
+    "upiId": upiId,
     "ownerImageUrl": ownerImageUrl,
     "doorDelivery": doorDelivery,
     "isTrusted": isTrusted,
