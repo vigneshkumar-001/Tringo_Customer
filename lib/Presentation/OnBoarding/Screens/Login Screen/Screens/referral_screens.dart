@@ -1,14 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
@@ -37,6 +34,15 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(loginNotifierProvider.notifier).resetState();
     });
+
+    // Auto-fill referral code from deep link if available.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final pending = await AppPrefs.getPendingReferralCode();
+      if (!mounted) return;
+      if (pending != null && pending.isNotEmpty && referralCode.text.isEmpty) {
+        setState(() => referralCode.text = pending);
+      }
+    });
   }
 
   @override
@@ -61,6 +67,7 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
       // OTP verified
       else if (next.referralResponse != null) {
         AppSnackBar.success(context, 'Referral Code verified successfully!');
+        await AppPrefs.clearPendingReferralCode();
         context.pushNamed(AppRoutes.privacyPolicy);
         notifier.resetState();
       }
@@ -226,6 +233,7 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(15),
                                   onTap: () {
+                                    AppPrefs.clearPendingReferralCode();
                                     context.pushNamed(AppRoutes.privacyPolicy);
 
                                     // TODO: Reject action (maybe pop/back or close app)
@@ -270,6 +278,9 @@ class _OtpScreenState extends ConsumerState<ReferralScreens> {
 
                                       return;
                                     }
+                                    AppPrefs.setPendingReferralCode(
+                                      enteredReferralCode,
+                                    );
                                     notifier.verifyReferralCode(
                                       referralCode: enteredReferralCode,
                                     );

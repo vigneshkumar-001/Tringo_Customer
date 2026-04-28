@@ -64,6 +64,7 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         val prefs = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
         val lastState = prefs.getString(KEY_LAST_STATE, "") ?: ""
         val savedNumber = prefs.getString(KEY_LAST_NUMBER, "") ?: ""
+        val savedNumberAt = prefs.getLong(KEY_LAST_NUMBER_AT, 0L)
         val userClosed = prefs.getBoolean(KEY_USER_CLOSED, false)
         val ringingAt = prefs.getLong(KEY_RINGING_AT, 0L)
         val sawOffhook = prefs.getBoolean(KEY_SAW_OFFHOOK, false)
@@ -78,9 +79,21 @@ class TringoCallEndReceiver : BroadcastReceiver() {
                 .apply()
         }
 
+        // Session-aware: never reuse an old "last_number" from a previous call.
+        // If Android doesn't provide EXTRA_INCOMING_NUMBER, only trust savedNumber when it was updated
+        // during the current call session.
+        val sessionStartForNumber = if (ringingAt > 0L) ringingAt else now
+        val savedFreshForThisSession =
+            savedNumber.isNotBlank() &&
+                savedNumberAt > 0L &&
+                // allow slight clock/order skew
+                savedNumberAt >= (sessionStartForNumber - 1500L) &&
+                // and must be recent
+                (now - savedNumberAt) <= 120_000L
+
         val finalNumber = when {
             number.isNotBlank() -> number
-            savedNumber.isNotBlank() -> normalizePhoneForPhoneInfo(savedNumber).ifBlank { savedNumber.trim() }
+            savedFreshForThisSession -> normalizePhoneForPhoneInfo(savedNumber).ifBlank { savedNumber.trim() }
             else -> "UNKNOWN"
         }
 
@@ -113,9 +126,15 @@ class TringoCallEndReceiver : BroadcastReceiver() {
                     (now - ringingAt) <= 120_000L
 
             if (!isLikelyIncomingAnswer && outgoingOverlaySession != sessionStart) {
+                val savedFreshForOutgoingSession =
+                    savedNumber.isNotBlank() &&
+                        savedNumberAt > 0L &&
+                        savedNumberAt >= (sessionStart - 1500L) &&
+                        (now - savedNumberAt) <= 120_000L
+
                 val outgoingPhone = when {
                     number.isNotBlank() -> number
-                    savedNumber.isNotBlank() -> normalizePhoneForPhoneInfo(savedNumber).ifBlank { savedNumber.trim() }
+                    savedFreshForOutgoingSession -> normalizePhoneForPhoneInfo(savedNumber).ifBlank { savedNumber.trim() }
                     else -> "UNKNOWN"
                 }
 

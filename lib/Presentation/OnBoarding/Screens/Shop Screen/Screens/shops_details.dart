@@ -2107,7 +2107,13 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               : (reviewUi?.countLabel ?? "No Reviews");
 
                           // âœ… button text from API
-                          final buttonText = "Scan QR Code";
+                          final buttonLabel =
+                              (reviewUi?.buttonText.trim().isNotEmpty ?? false)
+                                  ? reviewUi!.buttonText.trim()
+                                  : "Scan QR Code";
+
+                          // If API says reviews already present, hide the CTA button.
+                          final hideReviewButton = reviewUi?.hasReviews == true;
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2176,20 +2182,21 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
 
                               const SizedBox(height: 15),
 
-                              // âœ… Review UI button (ALWAYS SHOW)
-                              CommonContainer.button(
-                                imagePath: AppImages.rightSideArrow,
-                                buttonColor: AppColor.darkBlue,
-                                onTap: () {
-                                  QrScanFlow.openQrAndAskAction(
-                                    context: context,
-                                    ref: ref,
-                                    title: 'Scan QR for Review',
-                                    mode: QrScanFlowMode.reviewOnly,
-                                  );
-                                },
-                                text: Text(buttonText),
-                              ),
+                              // âœ… Review UI button
+                              if (!hideReviewButton)
+                                CommonContainer.button(
+                                  imagePath: AppImages.rightSideArrow,
+                                  buttonColor: AppColor.darkBlue,
+                                  onTap: () {
+                                    QrScanFlow.openQrAndAskAction(
+                                      context: context,
+                                      ref: ref,
+                                      title: 'Scan QR for Review',
+                                      mode: QrScanFlowMode.reviewOnly,
+                                    );
+                                  },
+                                  text: Text(buttonLabel),
+                                ),
 
                               const SizedBox(height: 20),
 

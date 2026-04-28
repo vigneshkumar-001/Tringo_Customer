@@ -9,6 +9,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Scr
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_details.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_offer_details_from_push.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/wallet_screens.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Shared/referral_deeplink_gate.dart';
 
 import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../Presentation/OnBoarding/Screens/Privacy Policy/screens/privacy_policy.dart';
@@ -180,6 +181,16 @@ final goRouter = GoRouter(
         toast ??= state.uri.queryParameters['toast'];
 
         return WalletScreens(initialType: type, initialToast: toast);
+      },
+    ),
+
+    // Referral deep link: https://bknd.tringobiz.com/referral?code=565799
+    GoRoute(
+      path: '/referral',
+      builder: (context, state) {
+        final qp = state.uri.queryParameters;
+        final code = (qp['code'] ?? qp['ref'] ?? '').trim();
+        return ReferralDeeplinkGate(referralCode: code);
       },
     ),
 

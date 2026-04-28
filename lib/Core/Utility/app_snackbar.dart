@@ -7,11 +7,11 @@ class AppSnackBar {
   static void _show(
     BuildContext context, {
     required Color background,
-    required Widget icon,
     required String message,
+    Widget? icon,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final overlay = Overlay.of(context);
+    final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
 
     showTopSnackBar(
@@ -39,13 +39,14 @@ class AppSnackBar {
             child: Row(
               mainAxisSize: MainAxisSize.max,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: icon,
-                ),
+                if (icon != null)
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: icon,
+                  ),
 
                 // message: allow wrapping
                 Expanded(
@@ -73,7 +74,6 @@ class AppSnackBar {
     _show(
       context,
       background: Colors.green.shade600,
-      icon: const Icon(Icons.check_circle, color: Colors.white, size: 26),
       message: message,
     );
   }

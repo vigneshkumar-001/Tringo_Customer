@@ -24,6 +24,7 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import android.graphics.Rect
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewTreeObserver
@@ -863,6 +864,21 @@ class TringoOverlayService : Service() {
         val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
         val rootCard = v.findViewById<View>(R.id.rootCard)
         outsideLayer?.setOnClickListener { dismissOverlayFromUser() }
+
+        // ✅ Dismiss overlay on BACK button as well (post-call / incoming overlay UX).
+        // This overlay is a full-screen WindowManager view, so we handle BACK manually.
+        try {
+            v.isFocusableInTouchMode = true
+            v.requestFocus()
+            v.setOnKeyListener { _, keyCode, event ->
+                if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                    dismissOverlayFromUser()
+                    true
+                } else {
+                    false
+                }
+            }
+        } catch (_: Exception) {}
 
         // Incoming overlay position: float slightly below center (not bottom, not perfectly centered).
         // Post-call overlay keeps the existing bottom placement.
