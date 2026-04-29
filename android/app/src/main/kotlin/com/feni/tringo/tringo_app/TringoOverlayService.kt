@@ -1120,11 +1120,17 @@ class TringoOverlayService : Service() {
             } catch (_: Exception) {}
 
             try {
-                val dy = 28f * resources.displayMetrics.density
+                val dx = 42f * resources.displayMetrics.density
                 val baseOffset = if (postCallPopupMode) 0f else belowCenterOffsetPx
                 rootCard?.alpha = 0f
-                rootCard?.translationY = baseOffset + dy
-                rootCard?.animate()?.alpha(1f)?.translationY(baseOffset)?.setDuration(180)?.start()
+                // Keep existing vertical placement, but animate entrance from left.
+                rootCard?.translationY = baseOffset
+                rootCard?.translationX = -dx
+                rootCard?.animate()
+                    ?.alpha(1f)
+                    ?.translationX(0f)
+                    ?.setDuration(180)
+                    ?.start()
             } catch (_: Exception) {}
         } catch (e: Exception) {
             showCallerHeadsUp(

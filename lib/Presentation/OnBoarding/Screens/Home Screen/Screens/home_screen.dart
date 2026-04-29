@@ -366,8 +366,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-
-
   Future<void> _refreshAll() async {
     await _refreshHomeData(refreshLocation: true);
   }
@@ -426,36 +424,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           fireTooltip: 'App Offer 5%',
           isMessageLoading: isThisCardLoading,
           messageDisabled: hasMessaged,
-           messageOnTap: () async {
-             if (hasMessaged || isThisCardLoading) {
-               return;
-             }
+          messageOnTap: () async {
+            if (hasMessaged || isThisCardLoading) {
+              return;
+            }
 
-             final enquiryMsg = await showEnquiryBottomSheet(
-               context: context,
-               shopName: shops.englishName.toString(),
-             );
+            final enquiryMsg = await showEnquiryBottomSheet(
+              context: context,
+              shopName: shops.englishName.toString(),
+            );
 
-             if (!mounted) return;
+            if (!mounted) return;
 
-             // If user dismissed/cancelled the sheet, do nothing.
-             if (enquiryMsg == null) return;
-             if (enquiryMsg.trim().isEmpty) {
-               AppSnackBar.error(context, 'Please enter your message');
-               return;
-             }
+            // If user dismissed/cancelled the sheet, do nothing.
+            if (enquiryMsg == null) return;
+            if (enquiryMsg.trim().isEmpty) {
+              AppSnackBar.error(context, 'Please enter your message');
+              return;
+            }
 
-             final ok = await ref
-                 .read(homeNotifierProvider.notifier)
-                 .putEnquiry(
-                   context: context,
-                   serviceId: '',
-                   productId: '',
-                   message: enquiryMsg.trim(),
-                   shopId: shops.id,
-                 );
+            final ok = await ref
+                .read(homeNotifierProvider.notifier)
+                .putEnquiry(
+                  context: context,
+                  serviceId: '',
+                  productId: '',
+                  message: enquiryMsg.trim(),
+                  shopId: shops.id,
+                );
 
-             if (!mounted) return;
+            if (!mounted) return;
 
             if (ok) {
               setState(() => _disabledMessageShopIds.add(shops.id));
@@ -523,36 +521,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           fireOnTap: () {},
           isMessageLoading: isThisCardLoading,
           messageDisabled: hasMessaged,
-           messageOnTap: () async {
-             if (hasMessaged || isThisCardLoading) {
-               return;
-             }
+          messageOnTap: () async {
+            if (hasMessaged || isThisCardLoading) {
+              return;
+            }
 
-             final enquiryMsg = await showEnquiryBottomSheet(
-               context: context,
-               shopName: services.englishName.toString(),
-             );
+            final enquiryMsg = await showEnquiryBottomSheet(
+              context: context,
+              shopName: services.englishName.toString(),
+            );
 
-             if (!mounted) return;
+            if (!mounted) return;
 
-             // If user dismissed/cancelled the sheet, do nothing.
-             if (enquiryMsg == null) return;
-             if (enquiryMsg.trim().isEmpty) {
-               AppSnackBar.error(context, 'Please enter your message');
-               return;
-             }
+            // If user dismissed/cancelled the sheet, do nothing.
+            if (enquiryMsg == null) return;
+            if (enquiryMsg.trim().isEmpty) {
+              AppSnackBar.error(context, 'Please enter your message');
+              return;
+            }
 
-             final ok = await ref
-                 .read(homeNotifierProvider.notifier)
-                 .putEnquiry(
-                   context: context,
-                   serviceId: '',
-                   productId: '',
-                   message: enquiryMsg.trim(),
-                   shopId: services.id,
-                 );
+            final ok = await ref
+                .read(homeNotifierProvider.notifier)
+                .putEnquiry(
+                  context: context,
+                  serviceId: '',
+                  productId: '',
+                  message: enquiryMsg.trim(),
+                  shopId: services.id,
+                );
 
-             if (!mounted) return;
+            if (!mounted) return;
 
             if (ok) {
               setState(() => _disabledMessageServiceIds.add(services.id));
@@ -1014,19 +1012,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                         CrossAxisAlignment
                                                             .start,
                                                     children: [
-                                                      Text(
-                                                        'Smart Connect',
-                                                        style:
-                                                            GoogleFont.Mulish(
-                                                              fontSize: 12,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w900,
-                                                              color: AppColor
-                                                                  .white,
-                                                            ),
+                                                      Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            'Smart',
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                            style:
+                                                                GoogleFont.Mulish(
+                                                                  fontSize: 14,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w900,
+                                                                  color: AppColor
+                                                                      .white,
+                                                                ),
+                                                          ),
+                                                          Text(
+                                                            'Connect',
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                            style:
+                                                                GoogleFont.Mulish(
+                                                                  fontSize: 14,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w900,
+                                                                  color: AppColor
+                                                                      .white,
+                                                                ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                     
                                                     ],
                                                   ),
                                                 ),
@@ -1106,8 +1128,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                                   .white,
                                                             ),
                                                       ),
-                                                     
-                                                   
                                                     ],
                                                   ),
                                                 ),
@@ -1765,14 +1785,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                             .withOpacity(0.35),
                                                         borderRadius:
                                                             BorderRadius.circular(
-                                                          20,
-                                                        ),
+                                                              20,
+                                                            ),
                                                       ),
                                                       padding:
                                                           const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 6,
-                                                      ),
+                                                            horizontal: 10,
+                                                            vertical: 6,
+                                                          ),
                                                       child: const Row(
                                                         mainAxisSize:
                                                             MainAxisSize.min,
@@ -1801,10 +1821,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     const SizedBox(width: 8),
                                                   InkWell(
                                                     borderRadius:
-                                                        BorderRadius.circular(30),
+                                                        BorderRadius.circular(
+                                                          30,
+                                                        ),
                                                     onTap: () {
                                                       // Share Home link so receiver lands on Home screen.
-                                                      final base = data.share
+                                                      final base =
+                                                          data.share
                                                               ?.shareMessage(
                                                                 fallbackTitle:
                                                                     data.title,
@@ -1812,18 +1835,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                           DeepLinks.homeShareText(
                                                             title: data.title,
                                                           );
-                                                      final msg = ShareHelper
-                                                          .buildAttractiveText(
-                                                        baseText: base,
-                                                        title: data.title,
-                                                      );
+                                                      final msg =
+                                                          ShareHelper.buildAttractiveText(
+                                                            baseText: base,
+                                                            title: data.title,
+                                                          );
                                                       if (msg
                                                           .trim()
                                                           .isNotEmpty) {
-                                                        ShareHelper
-                                                            .shareTextWithImage(
+                                                        ShareHelper.shareTextWithImage(
                                                           text: msg,
-                                                          imageUrl: data.bannerUrl
+                                                          imageUrl: data
+                                                              .bannerUrl
                                                               .toString(),
                                                           cardTitle: data.title,
                                                         );
@@ -1835,13 +1858,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                             .withOpacity(0.35),
                                                         borderRadius:
                                                             BorderRadius.circular(
-                                                          30,
-                                                        ),
+                                                              30,
+                                                            ),
                                                       ),
                                                       padding:
                                                           const EdgeInsets.all(
-                                                        8,
-                                                      ),
+                                                            8,
+                                                          ),
                                                       child: const Icon(
                                                         Icons.share,
                                                         size: 18,

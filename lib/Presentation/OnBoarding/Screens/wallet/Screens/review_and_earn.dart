@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/qr_scan_screen.dart';
 
@@ -187,31 +187,32 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                     // âœ… SCAN QR CARD
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 50),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            onTap: () {},
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColor.white.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(
-                                  color: AppColor.white,
-                                  width: 1.5,
-                                ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: InkWell(
+                          onTap: () {},
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColor.white.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: AppColor.white,
+                                width: 1.5,
                               ),
-                              child: Stack(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 20,
-                                      right: 20,
-                                      top: 8,
-                                      bottom: 11,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        InkWell(
+                            ),
+                            child: Stack(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                    right: 20,
+                                    top: 8,
+                                    bottom: 11,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: InkWell(
                                           onTap: () {
                                             Navigator.push(
                                               context,
@@ -224,9 +225,12 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'Scan Shopâ€™s QR',
+                                                "Scan Shop's QR",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: GoogleFont.Mulish(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
@@ -235,6 +239,8 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                               ),
                                               Text(
                                                 'Review the shop & Get Earnings',
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: GoogleFont.Mulish(
                                                   fontSize: 12,
                                                   color: AppColor.darkGrey,
@@ -243,102 +249,102 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(width: 30),
-                                        InkWell(
-                                          onTap: () async {
-                                            final result =
-                                                await Navigator.push<String>(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        const QrScanScreen(
-                                                          title:
-                                                              'Scan QR for Review',
-                                                        ),
-                                                  ),
-                                                );
-
-                                            if (!context.mounted) return;
-                                            if (result == null ||
-                                                result.trim().isEmpty)
-                                              return;
-
-                                            // parse QR
-                                            final payload =
-                                                QrScanPayload.fromScanValue(
-                                                  result,
-                                                );
-
-                                            final shopId =
-                                                (payload.shopId ?? '').trim();
-
-                                            if (shopId.isEmpty) {
-                                              // If QR doesn't contain shopId, we cannot open review.
-                                              ScaffoldMessenger.of(
+                                      ),
+                                      const SizedBox(width: 12),
+                                      InkWell(
+                                        onTap: () async {
+                                          final result =
+                                              await Navigator.push<String>(
                                                 context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    "Invalid QR: ShopId missing",
-                                                  ),
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const QrScanScreen(
+                                                        title:
+                                                            'Scan QR for Review',
+                                                      ),
                                                 ),
                                               );
-                                              return;
-                                            }
 
-                                            // âœ… Auto navigate to EnterReview with shopId
-                                            Navigator.push(
+                                          if (!context.mounted) return;
+                                          if (result == null ||
+                                              result.trim().isEmpty)
+                                            return;
+
+                                          // parse QR
+                                          final payload =
+                                              QrScanPayload.fromScanValue(
+                                                result,
+                                              );
+
+                                          final shopId = (payload.shopId ?? '')
+                                              .trim();
+
+                                          if (shopId.isEmpty) {
+                                            // If QR doesn't contain shopId, we cannot open review.
+                                            ScaffoldMessenger.of(
                                               context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    EnterReview(shopId: shopId),
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  "Invalid QR: ShopId missing",
+                                                ),
                                               ),
                                             );
-                                          },
+                                            return;
+                                          }
 
-                                          // onTap: () {
-                                          //   Navigator.push(
-                                          //     context,
-                                          //     MaterialPageRoute(
-                                          //       builder: (context) =>
-                                          //           QrScanScreen(
-                                          //             title:
-                                          //                 'Scan QR for Review',
-                                          //           ),
-                                          //     ),
-                                          //   );
-                                          // },
-                                          child: Image.asset(
-                                            AppImages.qRColor,
-                                            height: 37,
-                                            width: 34,
-                                          ),
+                                          // âœ… Auto navigate to EnterReview with shopId
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  EnterReview(shopId: shopId),
+                                            ),
+                                          );
+                                        },
+
+                                        // onTap: () {
+                                        //   Navigator.push(
+                                        //     context,
+                                        //     MaterialPageRoute(
+                                        //       builder: (context) =>
+                                        //           QrScanScreen(
+                                        //             title:
+                                        //                 'Scan QR for Review',
+                                        //           ),
+                                        //     ),
+                                        //   );
+                                        // },
+                                        child: Image.asset(
+                                          AppImages.qRColor,
+                                          height: 37,
+                                          width: 34,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(15),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Colors.black.withOpacity(0.02),
-                                            Colors.transparent,
-                                            Colors.black.withOpacity(0.01),
-                                          ],
-                                          stops: const [0, 1, 1],
-                                        ),
+                                ),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(15),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.black.withOpacity(0.02),
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.01),
+                                        ],
+                                        stops: const [0, 1, 1],
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
 

@@ -1,4 +1,4 @@
-﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -232,7 +232,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
           .showSpecificShopDetails(shopId: widget.shopId ?? '');
       ref
           .read(homeNotifierProvider.notifier)
-          .advertisements( placement: 'SHOP_DETAIL',lat: 0.0,lang: 0.0);
+          .advertisements(placement: 'SHOP_DETAIL', lat: 0.0, lang: 0.0);
       final notifier = ref.read(shopsNotifierProvider.notifier);
 
       // âœ… Reset old follow state FIRST
@@ -465,7 +465,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
       selectedIndex = 0; // âœ… default select "All"
     }
 
-
     // final Widget bigImage = ClipRRect(
     //   clipBehavior: Clip.antiAlias,
     //   borderRadius: BorderRadius.circular(20),
@@ -520,33 +519,33 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     onTap: () {
                                       final shopId =
                                           (widget.shopId?.isNotEmpty ?? false)
-                                              ? widget.shopId!
-                                              : (shopsData.data?.id ?? '');
+                                          ? widget.shopId!
+                                          : (shopsData.data?.id ?? '');
                                       if (shopId.isEmpty) return;
 
-                                      final wImg =
-                                          (widget.image ?? '').toString().trim();
-                                      final mediaImg = (shopsData.data?.media
-                                                  ?.isNotEmpty ??
-                                              false)
-                                          ? (shopsData.data?.media?.first.url ??
-                                                  '')
-                                              .toString()
-                                              .trim()
-                                          : '';
-                                      final ownerImg = (shopsData
-                                                  .data?.ownerImageUrl ??
-                                              '')
+                                      final wImg = (widget.image ?? '')
                                           .toString()
                                           .trim();
+                                      final mediaImg =
+                                          (shopsData.data?.media?.isNotEmpty ??
+                                              false)
+                                          ? (shopsData.data?.media?.first.url ??
+                                                    '')
+                                                .toString()
+                                                .trim()
+                                          : '';
+                                      final ownerImg =
+                                          (shopsData.data?.ownerImageUrl ?? '')
+                                              .toString()
+                                              .trim();
 
                                       final imageUrl = wImg.startsWith('http')
                                           ? wImg
                                           : (mediaImg.startsWith('http')
-                                              ? mediaImg
-                                              : (ownerImg.startsWith('http')
-                                                  ? ownerImg
-                                                  : null));
+                                                ? mediaImg
+                                                : (ownerImg.startsWith('http')
+                                                      ? ownerImg
+                                                      : null));
 
                                       _shareShopLink(
                                         shopId: shopId,
@@ -806,38 +805,53 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           );
                                     },
                                     messageOnTap: () async {
-                                      if (_enquiryDisabled || stateS.isEnquiryLoading) return;
+                                      if (_enquiryDisabled ||
+                                          stateS.isEnquiryLoading)
+                                        return;
 
-                                      final enquiryMsg = await showEnquiryBottomSheet(
-                                        context: context,
-                                        shopName: shopsData.data?.englishName.toString() ?? '',
-                                      );
+                                      final enquiryMsg =
+                                          await showEnquiryBottomSheet(
+                                            context: context,
+                                            shopName:
+                                                shopsData.data?.englishName
+                                                    .toString() ??
+                                                '',
+                                          );
 
                                       if (!mounted) return;
                                       if (enquiryMsg == null) return;
                                       if (enquiryMsg.trim().isEmpty) {
-                                        AppSnackBar.error(context, 'Please enter your message');
+                                        AppSnackBar.error(
+                                          context,
+                                          'Please enter your message',
+                                        );
                                         return;
                                       }
 
-                                      final ok = await ref.read(homeNotifierProvider.notifier).putEnquiry(
-                                        context: context,
-                                        serviceId: '',
-                                        productId: '',
-                                        message: enquiryMsg.trim(),
-                                        shopId: shopsData.data?.id.toString() ?? '',
-                                      );
+                                      final ok = await ref
+                                          .read(homeNotifierProvider.notifier)
+                                          .putEnquiry(
+                                            context: context,
+                                            serviceId: '',
+                                            productId: '',
+                                            message: enquiryMsg.trim(),
+                                            shopId:
+                                                shopsData.data?.id.toString() ??
+                                                '',
+                                          );
 
                                       if (!mounted) return;
 
                                       if (ok) {
-                                        setState(() => _enquiryDisabled = true); // âœ… disable only on success
+                                        setState(
+                                          () => _enquiryDisabled = true,
+                                        ); // âœ… disable only on success
                                       }
                                     },
 
                                     whatsAppIcon: true,
-                                    whatsAppOnTap: ()async {
-                                      await   MapUrls.openWhatsapp(
+                                    whatsAppOnTap: () async {
+                                      await MapUrls.openWhatsapp(
                                         message: 'hi',
                                         context: context,
                                         phone:
@@ -848,19 +862,23 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       await ref
                                           .read(homeNotifierProvider.notifier)
                                           .markCallOrLocation(
-                                        type: 'WHATSAPP',
-                                        shopId: shopsData.data?.id.toString()?? '',
-                                      );
+                                            type: 'WHATSAPP',
+                                            shopId:
+                                                shopsData.data?.id.toString() ??
+                                                '',
+                                          );
                                     },
-                                    mailIcon: (shopsData.data?.contactEmail
-                                                .toString()
-                                                .trim() ??
-                                            '')
-                                        .isNotEmpty,
+                                    mailIcon:
+                                        (shopsData.data?.contactEmail
+                                                    .toString()
+                                                    .trim() ??
+                                                '')
+                                            .isNotEmpty,
                                     mailOnTap: () async {
                                       await MapUrls.openEmail(
                                         context,
-                                        toEmail: (shopsData.data?.contactEmail
+                                        toEmail:
+                                            (shopsData.data?.contactEmail
                                                 .toString() ??
                                             ''),
                                         subject:
@@ -868,14 +886,16 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                 .toString(),
                                       );
                                     },
-                                    upiIcon: (shopsData.data?.upiId
-                                                .toString()
-                                                .trim() ??
-                                            '')
-                                        .isNotEmpty,
+                                    upiIcon:
+                                        (shopsData.data?.upiId
+                                                    .toString()
+                                                    .trim() ??
+                                                '')
+                                            .isNotEmpty,
                                     upiOnTap: () async {
                                       await _showUpiIdDialog(
-                                        (shopsData.data?.upiId.toString() ?? ''),
+                                        (shopsData.data?.upiId.toString() ??
+                                            ''),
                                       );
                                     },
                                     upiIconSize: 30,
@@ -919,14 +939,21 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   scrollDirection: Axis.horizontal,
                                   itemCount: shopsData.data?.media?.length,
                                   itemBuilder: (context, index) {
-                                    final imageUrls = (shopsData.data?.media ?? [])
-                                        .map((e) => (e.url ?? '').toString().trim())
-                                        .where((e) => e.isNotEmpty)
-                                        .toList();
+                                    final imageUrls =
+                                        (shopsData.data?.media ?? [])
+                                            .map(
+                                              (e) => (e.url ?? '')
+                                                  .toString()
+                                                  .trim(),
+                                            )
+                                            .where((e) => e.isNotEmpty)
+                                            .toList();
                                     final heroTagPrefix =
                                         'shop_${(widget.shopId ?? '').toString()}_media';
                                     final data = shopsData.data?.media?[index];
-                                    final url = (data?.url ?? '').toString().trim();
+                                    final url = (data?.url ?? '')
+                                        .toString()
+                                        .trim();
                                     return Row(
                                       children: [
                                         Stack(
@@ -942,16 +969,19 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                 child: InkWell(
                                                   onTap: url.isEmpty
                                                       ? null
-                                                      : () => FullScreenImageGallery
-                                                              .open(
-                                                            context,
-                                                            imageUrls: imageUrls,
-                                                            initialIndex: index,
-                                                            heroTagPrefix:
-                                                                heroTagPrefix,
-                                                          ),
+                                                      : () =>
+                                                            FullScreenImageGallery.open(
+                                                              context,
+                                                              imageUrls:
+                                                                  imageUrls,
+                                                              initialIndex:
+                                                                  index,
+                                                              heroTagPrefix:
+                                                                  heroTagPrefix,
+                                                            ),
                                                   child: Hero(
-                                                    tag: '${heroTagPrefix}_$index',
+                                                    tag:
+                                                        '${heroTagPrefix}_$index',
                                                     child: CachedNetworkImage(
                                                       imageUrl: url,
                                                       height: 250,
@@ -959,29 +989,36 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                       fit: BoxFit.cover,
                                                       placeholder: (_, __) =>
                                                           Container(
-                                                        height: 250,
-                                                        width: 310,
-                                                        color: Colors.grey
-                                                            .withOpacity(0.2),
-                                                      ),
-                                                      errorWidget: (_, __, ___) =>
-                                                          Container(
-                                                        height: 250,
-                                                        width: 310,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                            20,
+                                                            height: 250,
+                                                            width: 310,
+                                                            color: Colors.grey
+                                                                .withOpacity(
+                                                                  0.2,
+                                                                ),
                                                           ),
-                                                          color: Colors
-                                                              .grey
-                                                              .shade300,
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.broken_image,
-                                                        ),
-                                                      ),
+                                                      errorWidget:
+                                                          (
+                                                            _,
+                                                            __,
+                                                            ___,
+                                                          ) => Container(
+                                                            height: 250,
+                                                            width: 310,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        20,
+                                                                      ),
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                                ),
+                                                            child: const Icon(
+                                                              Icons
+                                                                  .broken_image,
+                                                            ),
+                                                          ),
                                                     ),
                                                   ),
                                                 ),
@@ -1142,13 +1179,14 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                             shopsData.data?.id
                                                                 .toString() ??
                                                             '',
-                                                        subOfferId: (shopsData
-                                                                    .data
-                                                                    ?.surprise
-                                                                    ?.offerId ??
-                                                                '')
-                                                            .toString()
-                                                            .trim(),
+                                                        subOfferId:
+                                                            (shopsData
+                                                                        .data
+                                                                        ?.surprise
+                                                                        ?.offerId ??
+                                                                    '')
+                                                                .toString()
+                                                                .trim(),
                                                         shopLat: double.parse(
                                                           shopsData
                                                                   .data
@@ -1236,7 +1274,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                               ?.surprise
                                                               ?.isClaimed ==
                                                           true
-                                                      ? 'Youâ€™ve already unlocked this offer'
+                                                      ? "You've already unlocked this offer"
                                                       : 'Visit the shop nearby to unlock',
                                                   style: GoogleFont.Mulish(
                                                     fontSize:
@@ -1440,10 +1478,12 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                             ratingStar: data.rating.toString(),
                                             ratingCount: data.ratingCount
                                                 .toString(), // âœ… FIX
-                                            offAmound: '\u20B9${data.offerPrice}',
+                                            offAmound:
+                                                '\u20B9${data.offerPrice}',
                                             onImageTap: () {
-                                              final url =
-                                                  (data.imageUrl ?? '').toString().trim();
+                                              final url = (data.imageUrl ?? '')
+                                                  .toString()
+                                                  .trim();
                                               if (url.isEmpty) return;
                                               FullScreenImageGallery.open(
                                                 context,
@@ -1463,7 +1503,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                               );
                                             },
                                           ),
-
                                         ],
                                       ),
                                     );
@@ -1545,7 +1584,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     ),
                                   ),
                                 ),
-
                               ],
                             );
                           },
@@ -1554,11 +1592,11 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                       addsBanner == null
                           ? const SizedBox.shrink()
                           : DismissibleAdBanner(
-                        imageUrl: addsBanner.imageUrl,
-                        onTap: () {
-                          // open banner.ctaUrl if needed
-                        },
-                      ),
+                              imageUrl: addsBanner.imageUrl,
+                              onTap: () {
+                                // open banner.ctaUrl if needed
+                              },
+                            ),
                       const SizedBox(height: 20),
                       _staggerFromTop(
                         aHorizonalDivider,
@@ -2074,17 +2112,17 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                       addsBanner == null
                           ? const SizedBox.shrink()
                           : DismissibleAdBanner(
-                        imageUrl: addsBanner.imageUrl,
-                        onTap: () {
-                          // open banner.ctaUrl if needed
-                        },
-                      ),
+                              imageUrl: addsBanner.imageUrl,
+                              onTap: () {
+                                // open banner.ctaUrl if needed
+                              },
+                            ),
                       SizedBox(height: 40),
                     ],
 
                     SizedBox(height: 30),
 
-                  Padding(
+                    Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 15),
                       child: Builder(
                         builder: (context) {
@@ -2109,8 +2147,8 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                           // âœ… button text from API
                           final buttonLabel =
                               (reviewUi?.buttonText.trim().isNotEmpty ?? false)
-                                  ? reviewUi!.buttonText.trim()
-                                  : "Scan QR Code";
+                              ? reviewUi!.buttonText.trim()
+                              : "Scan QR Code";
 
                           // If API says reviews already present, hide the CTA button.
                           final hideReviewButton = reviewUi?.hasReviews == true;
