@@ -7,17 +7,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
     private const val BASE_URL = "https://bknd.tringobiz.com/"
-//    private const val BASE_URL = "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/"
     private const val TAG = "TRINGO_HTTP"
 
-    /**
-     * ✅ Logs raw JSON safely using peekBody (does NOT consume response)
-     */
     private val rawBodyLogger: Interceptor = Interceptor { chain ->
         val req = chain.request()
         Log.d(TAG, "→ ${req.method} ${req.url}")
@@ -26,11 +23,34 @@ object ApiClient {
         Log.d(TAG, "← ${res.code} ${res.request.url}")
 
         try {
-            val peek = res.peekBody(1024 * 1024) // 1MB
+            val peek = res.peekBody(1024 * 1024)
             val bodyStr = peek.string()
             Log.d(TAG, "BODY: ${if (bodyStr.isNotBlank()) bodyStr else "<empty>"}")
         } catch (e: Exception) {
             Log.e(TAG, "peekBody failed: ${e.message}")
+        }
+
+        res
+    }
+
+    // ✅ Retry only for temp network/proxy errors
+    private val retryInterceptor = Interceptor { chain ->
+        var res = chain.proceed(chain.request())
+
+        val retryCodes = setOf(522, 524, 502, 503, 504)
+        var tryCount = 0
+
+        while (res.code in retryCodes && tryCount < 2) {
+            tryCount++
+            Log.w(TAG, "Retrying request due to HTTP ${res.code} (try $tryCount) ...")
+            res.close()
+
+            // small backoff
+            try {
+                Thread.sleep((600L * tryCount))
+            } catch (_: Exception) {}
+
+            res = chain.proceed(chain.request())
         }
 
         res
@@ -43,11 +63,14 @@ object ApiClient {
 
     private val okHttp: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
+            // ✅ more generous timeouts (Cloudflare/origin delays)
+            .connectTimeout(25, TimeUnit.SECONDS)
+            .readTimeout(25, TimeUnit.SECONDS)
+            .writeTimeout(25, TimeUnit.SECONDS)
+            .callTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .addInterceptor(rawBodyLogger) // ✅ only this
+            .addInterceptor(retryInterceptor)
+            .addInterceptor(rawBodyLogger)
             .build()
     }
 

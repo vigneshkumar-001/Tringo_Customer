@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
@@ -124,7 +125,8 @@ class _ButtomNavigatebarState extends State<ButtomNavigatebar> {
     // if (index == _selectedIndex) return;
     switch (i) {
       case 0:
-        _pushCategory('Home');
+        _goTo(0);
+        // _pushCategory('Home');
         break; // Home
       case 1:
         openSearchShell(context);

@@ -1,338 +1,634 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/overlayRootFull"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#66000000">
 
-    <!-- Outside tap close layer -->
     <View
         android:id="@+id/outsideCloseLayer"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Main card -->
-    <LinearLayout
+    <ScrollView
         android:id="@+id/rootCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_gravity="center"
-        android:orientation="vertical"
-        android:background="@drawable/bg_overlay_card"
-        android:padding="14dp">
+        android:layout_margin="12dp"
+        android:layout_marginBottom="48dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:background="@drawable/bg_overlay_card_dark">
 
-        <!-- Top row -->
-        <RelativeLayout
+        <LinearLayout
+            android:id="@+id/overlayContent"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
 
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/smallTopText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tringo Identifies"
+                    android:textColor="#EAF7FF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/closeBtn"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_alignParentEnd="true"
+                    android:padding="6dp"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    android:tint="#EAF7FF"
+                    android:background="@drawable/bg_circle_soft" />
+            </RelativeLayout>
+
+            <!-- Business header (kept for compatibility; service forces person layout) -->
+            <LinearLayout
+                android:id="@+id/headerBusiness"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:baselineAligned="false"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:layout_width="104dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/bg_image_frame_overlay_ad"
+                    android:padding="2dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_image_clip_rect_12"
+                        android:clipToOutline="true">
+
+                        <ImageView
+                            android:id="@+id/logoImageBusiness"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop" />
+                    </FrameLayout>
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/businessNameText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#FFFFFF"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        tools:text="Shop Name" />
+
+                    <TextView
+                        android:id="@+id/metaText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="#D9F1FF"
+                        android:textSize="13sp"
+                        android:maxLines="2"
+                        tools:text="Category • Address • Opens" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/callBtn"
+                            android:layout_width="0dp"
+                            android:layout_height="42dp"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="Call"
+                            android:textColor="#EAF7FF"
+                            android:textStyle="bold"
+                            android:background="@drawable/bg_btn_dark"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp" />
+
+                        <View
+                            android:layout_width="10dp"
+                            android:layout_height="1dp" />
+
+                        <TextView
+                            android:id="@+id/chatBtn"
+                            android:layout_width="0dp"
+                            android:layout_height="42dp"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="Chat"
+                            android:textColor="#EAF7FF"
+                            android:textStyle="bold"
+                            android:background="@drawable/bg_btn_dark"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Person header (incoming + post-call) -->
+            <LinearLayout
+                android:id="@+id/headerPerson"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:baselineAligned="false"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:layout_width="92dp"
+                    android:layout_height="92dp">
+
+                    <View
+                        android:layout_width="110dp"
+                        android:layout_height="110dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_avatar_glow" />
+
+                    <ImageView
+                        android:id="@+id/logoImagePerson"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerInside"
+                        android:background="@drawable/bg_avatar_circle"
+                        android:src="@drawable/ic_avatar_person"
+                        android:tint="#EAF7FF"
+                        android:clipToOutline="true" />
+
+                    <TextView
+                        android:id="@+id/personAvatarBadge"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="bottom|end"
+                        android:layout_margin="6dp"
+                        android:gravity="center"
+                        android:text="?"
+                        android:textColor="#EAF7FF"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:background="@drawable/bg_badge_question" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/personBadgeText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:textColor="#EAF7FF"
+                        android:textStyle="bold"
+                        android:textSize="11sp"
+                        android:drawableStart="@drawable/ic_sparkle"
+                        android:drawablePadding="5dp"
+                        android:drawableTint="#FFFFFF"
+                        android:background="@drawable/bg_chip_unknown_purple"
+                        android:visibility="gone"
+                        tools:text="UNKNOWN CALLER"
+                        tools:visibility="visible" />
+
+                    <TextView
+                        android:id="@+id/personNameText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="#FFFFFF"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:includeFontPadding="false"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:autoSizeTextType="uniform"
+                        android:autoSizeMinTextSize="14sp"
+                        android:autoSizeMaxTextSize="24sp"
+                        android:autoSizeStepGranularity="1sp"
+                        tools:text="Unknown Number" />
+
+                    <TextView
+                        android:id="@+id/personPhoneText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="#D9F1FF"
+                        android:textSize="13.5sp"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:visibility="gone"
+                        tools:text="+91 98765 43210"
+                        tools:visibility="visible" />
+
+                    <LinearLayout
+                        android:id="@+id/personMetaRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/personMetaText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="#D9F1FF"
+                            android:textSize="13sp"
+                            android:maxLines="1"
+                            tools:text="India • Just now" />
+
+                        <ImageView
+                            android:id="@+id/personEditIcon"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_edit_outline"
+                            android:tint="#B37CFF"
+                            android:background="@drawable/bg_circle_soft"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Suggestion/info block (incoming only) -->
+            <LinearLayout
+                android:id="@+id/suggestionCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal"
+                android:padding="14dp"
+                android:background="@drawable/bg_suggestion_card_premium"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_suggestion_icon"
+                    android:clipToOutline="true">
+
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_bulb_outline"
+                        android:tint="#B37CFF" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/suggestionTopText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="WE THINK THIS COULD BE"
+                        android:textColor="#B9D9FF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+
+                    <TextView
+                        android:id="@+id/suggestionNameText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Jebaraj"
+                        android:textColor="#FFFFFF"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        tools:text="Jebaraj" />
+
+                    <TextView
+                        android:id="@+id/suggestionMetaText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Suggested by Tringo users"
+                        android:textColor="#D9F1FF"
+                        android:textSize="12sp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        tools:text="Suggested by 12 Tringo Users" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/suggestedEditBtn"
+                        android:layout_width="80dp"
+                        android:layout_height="38dp"
+                        android:gravity="center"
+                        android:text="Edit"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:background="@drawable/bg_btn_edit"
+                        android:drawableStart="@drawable/ic_edit_outline"
+                        android:drawablePadding="5dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+
+                    <View
+                        android:layout_width="10dp"
+                        android:layout_height="1dp" />
+
+                    <TextView
+                        android:id="@+id/confirmSaveBtnPerson"
+                        android:layout_width="132dp"
+                        android:layout_height="34dp"
+                        android:gravity="center"
+                        android:text="Confirm &amp; Save"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:textSize="11sp"
+                        android:background="@drawable/bg_btn_confirm"
+                        android:drawableStart="@drawable/ic_check_outline"
+                        android:drawablePadding="5dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Full-width action row (matches reference: spans entire card width) -->
+            <LinearLayout
+                android:id="@+id/actionRowPerson"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/callBtnPerson"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="CALL"
+                    android:textColor="#39E38C"
+                    android:textStyle="bold"
+                    android:textSize="11sp"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="8sp"
+                    android:autoSizeMaxTextSize="11sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:background="@drawable/bg_overlay_action_call"
+                    android:drawableStart="@drawable/ic_call_outline"
+                    android:drawablePadding="4dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/saveContactBtnPerson"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="SAVE"
+                    android:textColor="#7DB0FF"
+                    android:textStyle="bold"
+                    android:textSize="11sp"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="8sp"
+                    android:autoSizeMaxTextSize="11sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:background="@drawable/bg_overlay_action_save"
+                    android:drawableStart="@drawable/ic_person_add_outline"
+                    android:drawablePadding="4dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/chatBtnPerson"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="WHATSAPP"
+                    android:textColor="#D1B1FF"
+                    android:textStyle="bold"
+                    android:textSize="11sp"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="7sp"
+                    android:autoSizeMaxTextSize="11sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:background="@drawable/bg_overlay_action_msg"
+                    android:drawableStart="@drawable/ic_whatsapp_png"
+                    android:drawablePadding="4dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerLine"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="10dp"
+                android:background="#33FFFFFF"
+                android:visibility="gone" />
+
+            <!-- kept for compatibility; not shown in the new design -->
             <TextView
-                android:id="@+id/smallTopText"
+                android:id="@+id/adsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tringo Identifies"
-                android:textColor="#EAF7FF"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:visibility="gone"
+                tools:text="BUSINESS FOUND NEAR YOU!" />
 
-            <ImageView
-                android:id="@+id/closeBtn"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_alignParentEnd="true"
-                android:padding="6dp"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                android:tint="#EAF7FF"
-                android:background="@drawable/bg_circle_soft" />
-        </RelativeLayout>
-
-        <!-- =========================
-             HEADER: BUSINESS (Shop)
-        ========================== -->
-        <LinearLayout
-            android:id="@+id/headerBusiness"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal"
-            android:baselineAligned="false"
-            android:visibility="gone">
-
-            <!-- ✅ Image should reach bottom (match right column height) -->
-            <ImageView
-                android:id="@+id/logoImageBusiness"
-                android:layout_width="92dp"
-                android:layout_height="match_parent"
-                android:minHeight="92dp"
-                android:scaleType="centerCrop"
-                android:background="@drawable/bg_image_rounded"
-                android:clipToOutline="true" />
-
-            <!-- Right column -->
-            <LinearLayout
-                android:layout_width="0dp"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/adsRecycler"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/businessNameText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Shop Name"
-                    android:textColor="#FFFFFF"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:maxLines="1" />
-
-                <TextView
-                    android:id="@+id/metaText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Category • Address • Opens Upto"
-                    android:textColor="#D9F1FF"
-                    android:textSize="13sp"
-                    android:maxLines="2" />
-
-                <!-- ✅ Call / Chat row -->
-                <LinearLayout
-                    android:id="@+id/actionRowBusiness"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal"
-                    android:gravity="end">
-
-                    <TextView
-                        android:id="@+id/callBtn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="42dp"
-                        android:minWidth="120dp"
-                        android:gravity="center_vertical|center_horizontal"
-                        android:text="Call"
-                        android:textColor="#0C2A3A"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_btn_light"
-                        android:drawableStart="@drawable/ic_call_png"
-                        android:drawablePadding="8dp"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp" />
-
-                    <View
-                        android:layout_width="10dp"
-                        android:layout_height="1dp" />
-
-                    <TextView
-                        android:id="@+id/chatBtn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="42dp"
-                        android:minWidth="120dp"
-                        android:gravity="center_vertical|center_horizontal"
-                        android:text="Chat"
-                        android:textColor="#EAF7FF"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_btn_dark"
-                        android:drawableStart="@drawable/ic_whatsapp_png"
-                        android:drawablePadding="8dp"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp" />
-                </LinearLayout>
-
-            </LinearLayout>
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:overScrollMode="never"
+                android:visibility="gone" />
         </LinearLayout>
+    </ScrollView>
 
-        <!-- =========================
-             HEADER: PERSON
-        ========================== -->
-        <!-- =========================
-         HEADER: PERSON
-    ========================== -->
-        <LinearLayout
-            android:id="@+id/headerPerson"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal"
-            android:baselineAligned="false"
-            android:visibility="gone">
+    <!-- Premium edit sheet (in-overlay, avoids default dialogs) -->
+    <FrameLayout
+        android:id="@+id/editSheetRoot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
 
-            <ImageView
-                android:id="@+id/logoImagePerson"
-                android:layout_width="92dp"
-                android:layout_height="92dp"
-                android:scaleType="centerCrop"
-                android:background="@drawable/bg_image_rounded"
-                android:clipToOutline="true" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/personNameText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Person Name"
-                    android:textColor="#FFFFFF"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:maxLines="1" />
-
-                <TextView
-                    android:id="@+id/personMetaText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Contact (BUSINESS_OWNER)"
-                    android:textColor="#D9F1FF"
-                    android:textSize="13sp"
-                    android:maxLines="2" />
-
-                <!-- ✅ Call / Chat row (PERSON) -->
-                <LinearLayout
-                    android:id="@+id/actionRowPerson"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal"
-                    android:gravity="end">
-
-                    <TextView
-                        android:id="@+id/callBtnPerson"
-                        android:layout_width="wrap_content"
-                        android:layout_height="42dp"
-                        android:minWidth="120dp"
-                        android:gravity="center_vertical|center_horizontal"
-                        android:text="Call"
-                        android:textColor="#0C2A3A"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_btn_light"
-                        android:drawableStart="@drawable/ic_call_png"
-                        android:drawablePadding="8dp"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp" />
-
-                    <View
-                        android:layout_width="10dp"
-                        android:layout_height="1dp" />
-
-                    <TextView
-                        android:id="@+id/chatBtnPerson"
-                        android:layout_width="wrap_content"
-                        android:layout_height="42dp"
-                        android:minWidth="120dp"
-                        android:gravity="center_vertical|center_horizontal"
-                        android:text="Chat"
-                        android:textColor="#EAF7FF"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_btn_dark"
-                        android:drawableStart="@drawable/ic_whatsapp_png"
-                        android:drawablePadding="8dp"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp" />
-                </LinearLayout>
-
-            </LinearLayout>
-        </LinearLayout>
-
-
-        <!--        <LinearLayout-->
-<!--            android:id="@+id/headerPerson"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginTop="12dp"-->
-<!--            android:orientation="horizontal"-->
-<!--            android:baselineAligned="false"-->
-<!--            android:visibility="gone">-->
-
-<!--            <ImageView-->
-<!--                android:id="@+id/logoImagePerson"-->
-<!--                android:layout_width="92dp"-->
-<!--                android:layout_height="match_parent"-->
-<!--                android:minHeight="92dp"-->
-<!--                android:scaleType="centerCrop"-->
-<!--                android:background="@drawable/bg_image_rounded"-->
-<!--                android:clipToOutline="true" />-->
-
-<!--            <LinearLayout-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_marginStart="12dp"-->
-<!--                android:layout_weight="1"-->
-<!--                android:orientation="vertical">-->
-
-<!--                <TextView-->
-<!--                    android:id="@+id/personNameText"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="Person Name"-->
-<!--                    android:textColor="#FFFFFF"-->
-<!--                    android:textSize="22sp"-->
-<!--                    android:textStyle="bold"-->
-<!--                    android:maxLines="1" />-->
-
-<!--                <TextView-->
-<!--                    android:id="@+id/personMetaText"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginTop="6dp"-->
-<!--                    android:text="Loading..."-->
-<!--                    android:textColor="#D9F1FF"-->
-<!--                    android:textSize="13sp"-->
-<!--                    android:maxLines="2" />-->
-
-<!--                <LinearLayout-->
-<!--                    android:id="@+id/actionRowPerson"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginTop="10dp"-->
-<!--                    android:orientation="horizontal"-->
-<!--                    android:gravity="end" />-->
-
-<!--            </LinearLayout>-->
-<!--        </LinearLayout>-->
-
-        <!-- Divider -->
         <View
-            android:id="@+id/dividerLine"
+            android:id="@+id/editSheetScrim"
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="14dp"
-            android:background="#33FFFFFF"
-            android:visibility="gone" />
+            android:layout_height="match_parent"
+            android:background="#99000000" />
 
-        <!-- Ads Title -->
-        <TextView
-            android:id="@+id/adsTitle"
+        <LinearLayout
+            android:id="@+id/editSheetCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Advertisements"
-            android:textAlignment="center"
-            android:textColor="#EAF7FF"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
+            android:layout_gravity="bottom"
+            android:layout_margin="16dp"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@drawable/bg_edit_sheet_card">
 
-        <!-- Ads Recycler -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/adsRecycler"
-            android:layout_width="match_parent"
-            android:layout_height="270dp"
-            android:layout_marginTop="14dp"
-            android:clipToPadding="false"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:overScrollMode="never"
-            android:visibility="gone" />
+            <TextView
+                android:id="@+id/editSheetTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Edit caller"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="16sp" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/editSheetSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#D9F1FF"
+                android:textSize="12sp"
+                tools:text="+91 98765 43210" />
+
+            <EditText
+                android:id="@+id/editSheetNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_input_dark"
+                android:hint="Caller name"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#88D9F1FF"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:singleLine="true"
+                android:imeOptions="actionDone" />
+
+            <TextView
+                android:id="@+id/editSheetError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="#FF6B6B"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="Something went wrong"
+                tools:visibility="visible" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ProgressBar
+                    android:id="@+id/editSheetLoading"
+                    style="?android:attr/progressBarStyleSmall"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="10dp"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/editSheetCancelBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:gravity="center"
+                    android:text="Cancel"
+                    android:textColor="#D9F1FF"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:background="@drawable/bg_btn_dark" />
+
+                <View
+                    android:layout_width="10dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/editSheetSaveBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:gravity="center"
+                    android:text="Save"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:background="@drawable/bg_btn_confirm" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 </FrameLayout>
-
-

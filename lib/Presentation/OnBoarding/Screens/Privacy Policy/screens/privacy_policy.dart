@@ -1,12 +1,16 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
-import '../../Home Screen/Screens/home_screen.dart';
 import '../controller/terms_and_condition_notifier.dart';
 
 class PrivacyPolicy extends ConsumerStatefulWidget {
@@ -18,6 +22,19 @@ class PrivacyPolicy extends ConsumerStatefulWidget {
 }
 
 class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
+  bool isTermsAccepted = false;
+  Future<void> _openTermsAndConditions() async {
+    final Uri url = Uri.parse('https://bknd.tringobiz.com/privacy-policy.html');
+
+    final launched = await launchUrl(
+      url,
+      mode: LaunchMode.inAppWebView,
+    );
+
+    if (!launched && mounted) {
+      AppSnackBar.error(context, 'Could not open Terms and Conditions');
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -225,11 +242,81 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                       ),
                     ),
 
-                    const SizedBox(height: 35),
-
                     if (widget.showAcceptReject &&
                         hasContent &&
-                        !state.isLoading)
+                        !state.isLoading) ...[
+                      // Padding(
+                      //   padding: const EdgeInsets.symmetric(horizontal: 35),
+                      //   child: Row(
+                      //     children: [
+                      //       Checkbox(
+                      //         value: isTermsAccepted,
+                      //         onChanged: (value) {
+                      //           setState(() {
+                      //             isTermsAccepted = value ?? false;
+                      //           });
+                      //         },
+                      //       ),
+                      //       Expanded(
+                      //         child: Text(
+                      //           'I agree to the Terms and Conditions',
+                      //           style: GoogleFont.Mulish(
+                      //             fontSize: 14,
+                      //             fontWeight: FontWeight.w600,
+                      //             color: AppColor.darkBlue,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 35),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Checkbox(
+                              value: isTermsAccepted,
+                              onChanged: (value) {
+                                setState(() {
+                                  isTermsAccepted = value ?? false;
+                                });
+                              },
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: 'I agree to the '),
+                                      TextSpan(
+                                        text: 'Terms and Conditions',
+                                        style: GoogleFont.Mulish(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.blue,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () async {
+                                            await _openTermsAndConditions();
+                                          },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 35),
                         child: Row(
@@ -262,12 +349,14 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                             InkWell(
                               borderRadius: BorderRadius.circular(15),
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => HomeScreen(),
-                                  ),
-                                );
+                                if (!isTermsAccepted) {
+                                  AppSnackBar.info(
+                                    context,
+                                    'Please accept Terms and Conditions',
+                                  );
+                                  return;
+                                }
+                                context.go(AppRoutes.homePath);
                               },
                               child: Container(
                                 decoration: BoxDecoration(
@@ -290,8 +379,8 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                             ),
                           ],
                         ),
-                      )
-                    else
+                      ),
+                    ] else
                       const SizedBox.shrink(),
                   ],
                 ),

@@ -1,15 +1,21 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
+import 'package:tringo_app/Core/Widgets/full_screen_image_gallery.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Controller/product_notifier.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
-import '../../../../../Core/Widgets/Common Bottom Navigation bar/payment_successful_bottombar.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../Home Screen/Controller/home_notifier.dart';
 
@@ -27,6 +33,33 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
   // ✅ Disable only after SUCCESS
   bool _messageDisabled = false;
 
+  Future<void> _shareProductLink({
+    required String productId,
+    String? shareText,
+    String? imageUrl,
+    String? cardTitle,
+    String? cardDescription,
+    List<String> cardMetaLines = const [],
+    String? badgeText,
+    double? ratingValue,
+    int? ratingCount,
+  }) async {
+    final text =
+        (shareText != null && shareText.trim().isNotEmpty)
+            ? shareText
+            : DeepLinks.productShareText(productId: productId);
+    await ShareHelper.shareTextWithImage(
+      text: text,
+      imageUrl: imageUrl,
+      cardTitle: cardTitle,
+      cardDescription: cardDescription,
+      cardMetaLines: cardMetaLines,
+      badgeText: badgeText,
+      ratingValue: ratingValue,
+      ratingCount: ratingCount,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -41,19 +74,34 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
     required BuildContext context,
     required String productId,
     required String shopId,
+    required String shopName,
   }) async {
     final homeState = ref.read(homeNotifierProvider);
 
     // ✅ prevent double tap
     if (_messageDisabled || homeState.isEnquiryLoading) return;
 
-    final ok = await ref.read(homeNotifierProvider.notifier).putEnquiry(
+    final enquiryMsg = await showEnquiryBottomSheet(
       context: context,
-      serviceId: '',
-      productId: productId,
-      message: '',
-      shopId: shopId,
+      shopName: shopName,
     );
+
+    if (!mounted) return;
+    if (enquiryMsg == null) return;
+    if (enquiryMsg.trim().isEmpty) {
+      AppSnackBar.error(context, 'Please enter your message');
+      return;
+    }
+
+    final ok = await ref
+        .read(homeNotifierProvider.notifier)
+        .putEnquiry(
+          context: context,
+          serviceId: '',
+          productId: productId,
+          message: enquiryMsg.trim(),
+          shopId: shopId,
+        );
 
     if (!mounted) return;
 
@@ -106,8 +154,108 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         horizontal: 15,
                         vertical: 16,
                       ),
-                      child: CommonContainer.leftSideArrow(
-                        onTap: () => Navigator.pop(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CommonContainer.leftSideArrow(
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(AppRoutes.homePath);
+                              }
+                            },
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(30),
+                            onTap: () {
+                              final productId =
+                                  (widget.productId?.isNotEmpty ?? false)
+                                      ? widget.productId!
+                                      : productDetailData.data.product.id
+                                          .toString();
+                              final apiShareText =
+                                  productDetailData.data.share?.shareText ??
+                                  productDetailData.data.product.share
+                                      ?.shareText;
+
+                              final img =
+                                  productDetailData
+                                          .data
+                                          .product
+                                          .media
+                                          .isNotEmpty
+                                      ? productDetailData
+                                          .data
+                                          .product
+                                          .media
+                                          .first
+                                          .url
+                                      : productDetailData
+                                          .data
+                                          .product
+                                          .imageUrl;
+                              final metaLines = <String>[
+                                'Price: ₹${productDetailData.data.product.offerPrice}',
+                                (productDetailData.data.product.unitLabel ?? '')
+                                            .toString()
+                                            .trim()
+                                            .isNotEmpty
+                                    ? 'Unit: ${productDetailData.data.product.unitLabel}'
+                                    : '',
+                              ];
+                              final metaCard =
+                                  metaLines
+                                      .where((e) => e.trim().isNotEmpty)
+                                      .join(' | ');
+                              _shareProductLink(
+                                productId: productId,
+                                shareText: ShareHelper.buildAttractiveText(
+                                  baseText:
+                                      (apiShareText != null &&
+                                              apiShareText.trim().isNotEmpty)
+                                          ? apiShareText
+                                          : DeepLinks.productShareText(
+                                              productId: productId,
+                                            ),
+                                  title: productDetailData.data.product.englishName,
+                                  description:
+                                      productDetailData.data.product.description,
+                                  metaLines: metaLines,
+                                ),
+                                imageUrl: img,
+                                cardTitle: productDetailData.data.product.englishName,
+                                cardDescription:
+                                    productDetailData.data.product.description,
+                                cardMetaLines:
+                                    metaCard.isEmpty ? const [] : [metaCard],
+                                badgeText:
+                                    (productDetailData.data.product.offerPrice <
+                                            productDetailData.data.product.price)
+                                        ? 'Limited time deal'
+                                        : null,
+                                ratingValue:
+                                    (productDetailData.data.product.rating)
+                                        .toDouble(),
+                                ratingCount:
+                                    productDetailData.data.product.ratingCount,
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColor.white,
+                                border: Border.all(color: AppColor.white4),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.all(11.5),
+                              child: const Icon(
+                                Icons.share,
+                                size: 18,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(
@@ -120,23 +268,43 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         scrollDirection: Axis.horizontal,
                         itemCount: productDetailData.data.product.media.length,
                         itemBuilder: (context, index) {
-                          final data = productDetailData.data.product.media[index];
+                          final imageUrls = productDetailData.data.product.media
+                              .map((e) => (e.url).toString().trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+                          final heroTagPrefix =
+                              'product_${(widget.productId ?? '').toString()}_img';
+                          final data =
+                              productDetailData.data.product.media[index];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
-                              child: CachedNetworkImage(
-                                imageUrl: data.url,
-                                height: 250,
-                                width: 310,
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => Container(
-                                  height: 250,
-                                  width: 310,
-                                  color: Colors.grey.withOpacity(0.2),
+                              child: InkWell(
+                                onTap: () => FullScreenImageGallery.open(
+                                  context,
+                                  imageUrls: imageUrls,
+                                  initialIndex: index,
+                                  heroTagPrefix: heroTagPrefix,
                                 ),
-                                errorWidget: (_, __, ___) =>
-                                const Icon(Icons.broken_image),
+                                child: Hero(
+                                  tag: '${heroTagPrefix}_$index',
+                                  child: CachedNetworkImage(
+                                    imageUrl: data.url,
+                                    height: 250,
+                                    width: 310,
+                                    fit: BoxFit.cover,
+                                    placeholder: (_, __) => Container(
+                                      height: 250,
+                                      width: 310,
+                                      color: Colors.grey.withOpacity(0.2),
+                                    ),
+                                    errorWidget: (_, __, ___) =>
+                                        const Icon(Icons.broken_image),
+                                  ),
+                                ),
                               ),
                             ),
                           );
@@ -175,8 +343,10 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                     ),
                     const SizedBox(height: 9),
                     CommonContainer.greenStarRating(
-                      ratingCount: productDetailData.data.product.rating.toString(),
-                      ratingStar: productDetailData.data.product.ratingCount.toString(),
+                      ratingCount: productDetailData.data.product.rating
+                          .toString(),
+                      ratingStar: productDetailData.data.product.ratingCount
+                          .toString(),
                     ),
                     const SizedBox(height: 9),
                     Row(
@@ -224,14 +394,27 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                 scrollDirection: Axis.horizontal,
                 child: CommonContainer.callNowButton(
                   callOnTap: () {
-                    MapUrls.openDialer(context, productDetailData.data.shop.primaryPhone);
+                    MapUrls.openDialer(
+                      context,
+                      productDetailData.data.shop.primaryPhone,
+                    );
                   },
                   mapBox: true,
                   mapOnTap: () {
+                    MapUrls.openMap(
+                      context: context,
+                      latitude: productDetailData.data.shop.gpsLatitude
+                          .toString(),
+                      longitude: productDetailData.data.shop.gpsLongitude
+                          .toString(),
+                    );
                     // TODO: Map open if you have lat/lng in product shop response
                   },
                   mapText: 'Map',
-                  mapBoxPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  mapBoxPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   order: false,
                   callText: 'Call Now',
                   callImage: AppImages.callImage,
@@ -240,8 +423,14 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                   messagesIconSize: 23,
                   whatsAppIconSize: 23,
                   fireIconSize: 23,
-                  callNowPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  iconContainerPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                  callNowPadding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 12,
+                  ),
+                  iconContainerPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 13,
+                  ),
                   whatsAppIcon: true,
 
                   // ✅ Message button logic
@@ -252,10 +441,26 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                       context: context,
                       productId: productDetailData.data.product.id,
                       shopId: productDetailData.data.shop.id,
+                      shopName:
+                          productDetailData.data.shop.englishName.toString(),
                     );
                   },
 
-                  whatsAppOnTap: () {},
+                  whatsAppOnTap: () async {
+                    await MapUrls.openWhatsapp(
+                      message: 'hi',
+                      context: context,
+                      phone:
+                          productDetailData.data.shop.primaryPhone.toString() ??
+                          '',
+                    );
+                    await ref
+                        .read(homeNotifierProvider.notifier)
+                        .markCallOrLocation(
+                          type: 'WHATSAPP',
+                          shopId: productDetailData.data.shop.id,
+                        );
+                  },
                   messageContainer: true,
                   MessageIcon: true,
                 ),
@@ -266,118 +471,141 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
               // --- your shop card (unchanged) ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.textWhite,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            productDetailData.data.shop.isTrusted == true
-                                ? CommonContainer.verifyTick()
-                                : const SizedBox.shrink(),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  shopsData?.englishName.toString() ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColor.darkBlue,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Image.asset(
-                                  AppImages.rightArrow,
-                                  height: 8,
-                                  color: AppColor.lightBlueCont,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Image.asset(
-                                  AppImages.locationImage,
-                                  height: 10,
-                                  color: AppColor.lightGray2,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    '${shopsData?.city}, ${shopsData?.state},${shopsData?.country}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    final shopId = productDetailData.data.shop.id
+                        .toString()
+                        .trim();
+                    if (shopId.isEmpty) return;
+
+                    final route = Uri(
+                      path: '/shop/details',
+                      queryParameters: {'shopId': shopId, 'tab': '4'},
+                    ).toString();
+
+                    context.push(route);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColor.textWhite,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              productDetailData.data.shop.isTrusted == true
+                                  ? CommonContainer.verifyTick()
+                                  : const SizedBox.shrink(),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    shopsData?.englishName.toString() ?? '',
                                     style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Image.asset(
+                                    AppImages.rightArrow,
+                                    height: 8,
+                                    color: AppColor.lightBlueCont,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Image.asset(
+                                    AppImages.locationImage,
+                                    height: 10,
+                                    color: AppColor.lightGray2,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${shopsData?.city}, ${shopsData?.state},${shopsData?.country}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 12,
+                                        color: AppColor.lightGray2,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    shopsData?.distanceLabel ?? '',
+                                    style: GoogleFont.Mulish(
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 12,
+                                      color: AppColor.lightGray3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CommonContainer.greenStarRating(
+                                    ratingCount:
+                                        shopsData?.rating.toString() ?? '',
+                                    ratingStar:
+                                        shopsData?.ratingCount.toString() ?? '',
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Opens Upto ',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
                                       color: AppColor.lightGray2,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  shopsData?.distanceLabel ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: AppColor.lightGray3,
+                                  Text(
+                                    shopsData?.closeTime ?? '',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
+                                      color: AppColor.lightGray2,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                CommonContainer.greenStarRating(
-                                  ratingCount: shopsData?.rating.toString() ?? '',
-                                  ratingStar: shopsData?.ratingCount.toString() ?? '',
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Opens Upto ',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                  ),
-                                ),
-                                Text(
-                                  shopsData?.closeTime ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: CachedNetworkImage(
-                            imageUrl: shopsData?.primaryImageUrl?.toString() ?? '',
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              height: 100,
-                              width: 100,
-                              color: Colors.grey.withOpacity(0.2),
-                            ),
-                            errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: CachedNetworkImage(
+                              imageUrl:
+                                  shopsData?.primaryImageUrl?.toString() ?? '',
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                height: 100,
+                                width: 100,
+                                color: Colors.grey.withOpacity(0.2),
+                              ),
+                              errorWidget: (_, __, ___) =>
+                                  const Icon(Icons.broken_image),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -399,8 +627,8 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                         color: AppColor.darkBlue,
                       ),
                     ),
-                    const Spacer(),
-                    CommonContainer.rightSideArrowButton(onTap: () {}),
+                    // const Spacer(),
+                    // CommonContainer.rightSideArrowButton(onTap: () {}),
                   ],
                 ),
               ),
@@ -416,17 +644,35 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                       final data = similarProducts!.items[index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CommonContainer.similarFoods(
-                          Verify: shopsData?.isTrusted ?? false,
-                          doorDelivery: data.doorDelivery ?? false,
-                          image: data.imageUrl?.toString() ?? '',
-                          foodName: data.englishName?.toString() ?? '',
-                          ratingStar: data.rating?.toString() ?? '',
-                          ratingCount: data.ratingCount?.toString() ?? '',
-                          offAmound: '₹${data.offerPrice?.toString() ?? ''}',
-                          oldAmound: '₹${data.price?.toString() ?? ''}',
-                          km: data.distanceLabel ?? (shopsData?.distanceLabel ?? ''),
-                          location: data.shopName ?? (shopsData?.englishName ?? ''),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            final productId = data.id.toString().trim();
+                            if (productId.isEmpty || productId == 'null') return;
+
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductDetails(productId: productId),
+                              ),
+                            );
+                          },
+                          child: CommonContainer.similarFoods(
+                            Verify: shopsData?.isTrusted ?? false,
+                            doorDelivery: data.doorDelivery ?? false,
+                            image: data.imageUrl?.toString() ?? '',
+                            foodName: data.englishName?.toString() ?? '',
+                            ratingStar: data.rating?.toString() ?? '',
+                            ratingCount: data.ratingCount?.toString() ?? '',
+                            offAmound: '₹${data.offerPrice?.toString() ?? ''}',
+                            oldAmound: '₹${data.price?.toString() ?? ''}',
+                            km:
+                                data.distanceLabel ??
+                                (shopsData?.distanceLabel ?? ''),
+                            location:
+                                data.shopName ?? (shopsData?.englishName ?? ''),
+                          ),
                         ),
                       );
                     },
@@ -434,7 +680,10 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                 ),
               ] else ...[
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 10,
+                  ),
                   child: Center(
                     child: Text(
                       'No similar products found.',
@@ -483,27 +732,46 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                             decoration: BoxDecoration(
                               color: AppColor.whiteSmoke,
                               borderRadius: BorderRadius.only(
-                                topLeft: index == 0 ? const Radius.circular(16) : Radius.zero,
-                                topRight: index == 0 ? const Radius.circular(16) : Radius.zero,
-                                bottomLeft: index == (highlights?.length ?? 0) - 1
+                                topLeft: index == 0
                                     ? const Radius.circular(16)
                                     : Radius.zero,
-                                bottomRight: index == (highlights?.length ?? 0) - 1
+                                topRight: index == 0
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
+                                bottomLeft:
+                                    index == (highlights?.length ?? 0) - 1
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
+                                bottomRight:
+                                    index == (highlights?.length ?? 0) - 1
                                     ? const Radius.circular(16)
                                     : Radius.zero,
                               ),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 12,
+                            ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  data?.label.toString() ?? '',
-                                  style: GoogleFont.Mulish(color: AppColor.lightGray3),
-                                ),
                                 Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    data?.label.toString() ?? '',
+                                    softWrap: true,
+                                    style: GoogleFont.Mulish(
+                                      color: AppColor.lightGray3,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 3,
                                   child: Text(
                                     data?.value.toString() ?? '',
                                     textAlign: TextAlign.center,
+                                    softWrap: true,
                                     style: GoogleFont.Mulish(
                                       fontWeight: FontWeight.w700,
                                       color: AppColor.darkBlue,
@@ -525,7 +793,6 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
     );
   }
 }
-
 
 // import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:flutter/material.dart';

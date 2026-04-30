@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'app_color.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class GoogleFont {
+  static double _sp(double size) {
+    try {
+      return size.sp;
+    } catch (_) {
+      return size;
+    }
+  }
+
   static Mulish({
     double fontSize = 14,
     double? height = 1.5,
@@ -17,7 +24,7 @@ class GoogleFont {
      Paint? foreground,
   }) {
     return GoogleFonts.mulish(
-      fontSize: fontSize,
+      fontSize: _sp(fontSize),
       fontWeight: fontWeight,
       color: color,
       letterSpacing: letterSpacing,
@@ -37,7 +44,7 @@ class GoogleFont {
     Color? color,
   }) {
     return GoogleFonts.ibmPlexSans(
-      fontSize: fontSize,
+      fontSize: _sp(fontSize),
       fontWeight: fontWeight,
       color: color,
       letterSpacing: letterSpacing,
@@ -47,7 +54,7 @@ class GoogleFont {
 
   static inter({double fontSize = 18, FontWeight? fontWeight, Color? color}) {
     return GoogleFonts.inter(
-      fontSize: fontSize,
+      fontSize: _sp(fontSize),
       fontWeight: fontWeight,
       color: color,
     );

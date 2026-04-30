@@ -7,7 +7,7 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_loader.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
-import '../../Home Screen/Screens/home_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Shared/qr_scan_flow.dart';
 import '../Controller/wallet_notifier.dart';
 import '../Model/review_history_response.dart';
 import 'enter_review.dart';
@@ -28,7 +28,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
     super.initState();
     _controller = AnimationController(vsync: this);
 
-    // ✅ API Call
+    // âœ… API Call
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(walletNotifier.notifier).reviewHistory();
     });
@@ -95,7 +95,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
               ),
               const SizedBox(height: 41),
 
-              // ✅ HEADER
+              // âœ… HEADER
               Container(
                 decoration: BoxDecoration(
                   image: DecorationImage(
@@ -124,7 +124,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                           ),
                           const SizedBox(width: 15),
 
-                          // ✅ TOTAL from API
+                          // âœ… TOTAL from API
                           ShaderMask(
                             shaderCallback: (bounds) {
                               return LinearGradient(
@@ -184,34 +184,35 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
 
                     const SizedBox(height: 25),
 
-                    // ✅ SCAN QR CARD
+                    // âœ… SCAN QR CARD
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 50),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            onTap: () {},
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColor.white.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(
-                                  color: AppColor.white,
-                                  width: 1.5,
-                                ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: InkWell(
+                          onTap: () {},
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColor.white.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: AppColor.white,
+                                width: 1.5,
                               ),
-                              child: Stack(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 20,
-                                      right: 20,
-                                      top: 8,
-                                      bottom: 11,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        InkWell(
+                            ),
+                            child: Stack(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                    right: 20,
+                                    top: 8,
+                                    bottom: 11,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: InkWell(
                                           onTap: () {
                                             Navigator.push(
                                               context,
@@ -224,9 +225,12 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'Scan Shop’s QR',
+                                                "Scan Shop's QR",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: GoogleFont.Mulish(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
@@ -235,6 +239,8 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                               ),
                                               Text(
                                                 'Review the shop & Get Earnings',
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: GoogleFont.Mulish(
                                                   fontSize: 12,
                                                   color: AppColor.darkGrey,
@@ -243,102 +249,102 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(width: 30),
-                                        InkWell(
-                                          onTap: () async {
-                                            final result =
-                                                await Navigator.push<String>(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        const QrScanScreen(
-                                                          title:
-                                                              'Scan QR for Review',
-                                                        ),
-                                                  ),
-                                                );
-
-                                            if (!context.mounted) return;
-                                            if (result == null ||
-                                                result.trim().isEmpty)
-                                              return;
-
-                                            // ✅ parse QR
-                                            final payload =
-                                                QrScanPayload.fromScanValue(
-                                                  result,
-                                                );
-
-                                            final shopId =
-                                                (payload.shopId ?? '').trim();
-
-                                            if (shopId.isEmpty) {
-                                              // shopId இல்லாத QR -> review screen open ஆக முடியாது
-                                              ScaffoldMessenger.of(
+                                      ),
+                                      const SizedBox(width: 12),
+                                      InkWell(
+                                        onTap: () async {
+                                          final result =
+                                              await Navigator.push<String>(
                                                 context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    "Invalid QR: ShopId missing",
-                                                  ),
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const QrScanScreen(
+                                                        title:
+                                                            'Scan QR for Review',
+                                                      ),
                                                 ),
                                               );
-                                              return;
-                                            }
 
-                                            // ✅ Auto navigate to EnterReview with shopId
-                                            Navigator.push(
+                                          if (!context.mounted) return;
+                                          if (result == null ||
+                                              result.trim().isEmpty)
+                                            return;
+
+                                          // parse QR
+                                          final payload =
+                                              QrScanPayload.fromScanValue(
+                                                result,
+                                              );
+
+                                          final shopId = (payload.shopId ?? '')
+                                              .trim();
+
+                                          if (shopId.isEmpty) {
+                                            // If QR doesn't contain shopId, we cannot open review.
+                                            ScaffoldMessenger.of(
                                               context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    EnterReview(shopId: shopId),
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  "Invalid QR: ShopId missing",
+                                                ),
                                               ),
                                             );
-                                          },
+                                            return;
+                                          }
 
-                                          // onTap: () {
-                                          //   Navigator.push(
-                                          //     context,
-                                          //     MaterialPageRoute(
-                                          //       builder: (context) =>
-                                          //           QrScanScreen(
-                                          //             title:
-                                          //                 'Scan QR for Review',
-                                          //           ),
-                                          //     ),
-                                          //   );
-                                          // },
-                                          child: Image.asset(
-                                            AppImages.qRColor,
-                                            height: 37,
-                                            width: 34,
-                                          ),
+                                          // âœ… Auto navigate to EnterReview with shopId
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  EnterReview(shopId: shopId),
+                                            ),
+                                          );
+                                        },
+
+                                        // onTap: () {
+                                        //   Navigator.push(
+                                        //     context,
+                                        //     MaterialPageRoute(
+                                        //       builder: (context) =>
+                                        //           QrScanScreen(
+                                        //             title:
+                                        //                 'Scan QR for Review',
+                                        //           ),
+                                        //     ),
+                                        //   );
+                                        // },
+                                        child: Image.asset(
+                                          AppImages.qRColor,
+                                          height: 37,
+                                          width: 34,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(15),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Colors.black.withOpacity(0.02),
-                                            Colors.transparent,
-                                            Colors.black.withOpacity(0.01),
-                                          ],
-                                          stops: const [0, 1, 1],
-                                        ),
+                                ),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(15),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.black.withOpacity(0.02),
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.01),
+                                        ],
+                                        stops: const [0, 1, 1],
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
 
@@ -349,7 +355,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
 
               const SizedBox(height: 25),
 
-              // ✅ HISTORY TITLE
+              // âœ… HISTORY TITLE
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
@@ -369,13 +375,13 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
 
               const SizedBox(height: 15),
 
-              // ✅ LOADING
+              // âœ… LOADING
               if (walletState.isLoading) ...[
                 const SizedBox(height: 40),
                 ThreeDotsLoader(),
                 const SizedBox(height: 40),
               ]
-              // ✅ EMPTY
+              // âœ… EMPTY
               else if (sections.isEmpty) ...[
                 const SizedBox(height: 40),
                 Text(
@@ -388,7 +394,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                 ),
                 const SizedBox(height: 40),
               ]
-              // ✅ DATA LIST
+              // âœ… DATA LIST
               else ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -399,7 +405,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                         children: [
                           const SizedBox(height: 18),
                           Text(
-                            sec!.dayLabel, // ✅ Today / 23 Jan 2026
+                            sec!.dayLabel, // âœ… Today / 23 Jan 2026
                             style: GoogleFont.Mulish(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -408,7 +414,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                           ),
                           const SizedBox(height: 10),
 
-                          // ✅ ITEMS list under this day
+                          // âœ… ITEMS list under this day
                           Column(
                             children: sec.items.map((item) {
                               final badgeColor = _badgeColor(item.badgeType);
@@ -418,7 +424,7 @@ class _ReviewAndEarnState extends ConsumerState<ReviewAndEarn>
                                 child: CommonContainer.walletHistoryBox(
                                   upiTexts: false,
                                   containerColor: AppColor.coolWhite,
-                                  mainText: item.title, // ✅ shop/user
+                                  mainText: item.title, // âœ… shop/user
                                   timeText: item.timeLabel,
                                   numberText: item.amountTcoin.toString(),
                                   endText: item.badgeLabel,

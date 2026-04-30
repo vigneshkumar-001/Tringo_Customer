@@ -1,14 +1,17 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
-import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/shops_product.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
+import 'package:tringo_app/Core/Widgets/full_screen_image_gallery.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Screens/search_service_data.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Screens/service_single_company_list.dart';
 
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
+import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Utility/map_urls.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/service_product_bottombar.dart';
@@ -38,6 +41,33 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
   int selectedWeight = 0; // default
 
   bool _enquiryDisabled = false;
+
+  Future<void> _shareServiceLink({
+    required String serviceId,
+    String? shareText,
+    String? imageUrl,
+    String? cardTitle,
+    String? cardDescription,
+    List<String> cardMetaLines = const [],
+    String? badgeText,
+    double? ratingValue,
+    int? ratingCount,
+  }) async {
+    final text =
+        (shareText != null && shareText.trim().isNotEmpty)
+            ? shareText
+            : DeepLinks.serviceShareText(serviceId: serviceId);
+    await ShareHelper.shareTextWithImage(
+      text: text,
+      imageUrl: imageUrl,
+      cardTitle: cardTitle,
+      cardDescription: cardDescription,
+      cardMetaLines: cardMetaLines,
+      badgeText: badgeText,
+      ratingValue: ratingValue,
+      ratingCount: ratingCount,
+    );
+  }
 
   late final AnimationController _ac;
 
@@ -118,7 +148,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
       curve: const Interval(0.62, 0.78),
     );
 
-    // Dividers + “People also viewed”
+    // Dividers + â€œPeople also viewedâ€
     aHorizonalDivider = CurvedAnimation(
       parent: curve,
       curve: const Interval(0.66, 0.80),
@@ -247,6 +277,76 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                   onTap: () => Navigator.pop(context),
                                 ),
                                 Spacer(),
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(30),
+                                  onTap: () {
+                                    final serviceId =
+                                        (widget.serviceID?.isNotEmpty ?? false)
+                                            ? widget.serviceID!
+                                            : (serviceRawData?.id ?? '');
+                                    if (serviceId.trim().isEmpty) return;
+                                    final img =
+                                        (serviceRawData?.media?.isNotEmpty ??
+                                                false)
+                                            ? serviceRawData!.media!.first.url
+                                            : null;
+                                    final metaLines = <String>[
+                                      [
+                                        (serviceRawData?.city ?? '')
+                                            .toString()
+                                            .trim(),
+                                        (serviceRawData?.state ?? '')
+                                            .toString()
+                                            .trim(),
+                                      ].where((e) => e.isNotEmpty).join(', '),
+                                      (serviceRawData?.doorDelivery == true)
+                                          ? 'Door delivery available'
+                                          : '',
+                                    ];
+                                    final metaCard =
+                                        metaLines
+                                            .where((e) => e.trim().isNotEmpty)
+                                            .join(' | ');
+                                    _shareServiceLink(
+                                      serviceId: serviceId,
+                                      shareText: ShareHelper.buildAttractiveText(
+                                        baseText:
+                                            serviceRawData?.share?.shareText ??
+                                            DeepLinks.serviceShareText(
+                                              serviceId: serviceId,
+                                            ),
+                                        title: serviceRawData?.englishName,
+                                        description: serviceRawData?.descriptionEn,
+                                        metaLines: metaLines,
+                                      ),
+                                      imageUrl: img,
+                                      cardTitle: serviceRawData?.englishName,
+                                      cardDescription: serviceRawData?.descriptionEn,
+                                      cardMetaLines:
+                                          metaCard.isEmpty ? const [] : [metaCard],
+                                      ratingValue: double.tryParse(
+                                            (serviceRawData?.averageRating ?? '')
+                                                .toString(),
+                                          ) ??
+                                          0,
+                                      ratingCount: serviceRawData?.reviewCount,
+                                    );
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColor.white,
+                                      border: Border.all(color: AppColor.white4),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    padding: const EdgeInsets.all(11.5),
+                                    child: const Icon(
+                                      Icons.share,
+                                      size: 18,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
                                 CommonContainer.gradientContainer(
                                   text:
                                       serviceRawData?.category
@@ -350,41 +450,94 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                           homeState.isEnquiryLoading)
                                         return;
 
-                                      setState(() {
-                                        _enquiryDisabled =
-                                            true; // lock UI + text
-                                      });
-                                      ref
-                                          .read(homeNotifierProvider.notifier)
-                                          .putEnquiry(
-                                            context: context,
-                                            serviceId: '',
-                                            productId: '',
-                                            message: '',
-                                            shopId:
-                                                serviceRawData?.id.toString() ??
-                                                '',
+                                      () async {
+                                        final enquiryMsg =
+                                            await showEnquiryBottomSheet(
+                                          context: context,
+                                          shopName:
+                                              serviceRawData?.englishName
+                                                      .toString() ??
+                                                  '',
+                                        );
+
+                                        if (!mounted) return;
+                                        if (enquiryMsg == null) return;
+                                        if (enquiryMsg.trim().isEmpty) {
+                                          AppSnackBar.error(
+                                            context,
+                                            'Please enter your message',
                                           );
+                                          return;
+                                        }
+
+                                        final ok = await ref
+                                            .read(
+                                              homeNotifierProvider.notifier,
+                                            )
+                                            .putEnquiry(
+                                              context: context,
+                                              serviceId: '',
+                                              productId: '',
+                                              message: enquiryMsg.trim(),
+                                              shopId:
+                                                  serviceRawData?.id.toString() ??
+                                                      '',
+                                            );
+
+                                        if (!mounted) return;
+                                        if (ok) {
+                                          setState(() {
+                                            _enquiryDisabled = true;
+                                          });
+                                        }
+                                      }();
                                     },
                                     mapOnTap: () {
                                       if (_enquiryDisabled ||
                                           homeState.isEnquiryLoading)
                                         return;
 
-                                      setState(() {
-                                        _enquiryDisabled = true;
-                                      });
-                                      ref
-                                          .read(homeNotifierProvider.notifier)
-                                          .putEnquiry(
-                                            context: context,
-                                            serviceId: '',
-                                            productId: '',
-                                            message: '',
-                                            shopId:
-                                                serviceRawData?.id.toString() ??
-                                                '',
+                                      () async {
+                                        final enquiryMsg =
+                                            await showEnquiryBottomSheet(
+                                          context: context,
+                                          shopName:
+                                              serviceRawData?.englishName
+                                                      .toString() ??
+                                                  '',
+                                        );
+
+                                        if (!mounted) return;
+                                        if (enquiryMsg == null) return;
+                                        if (enquiryMsg.trim().isEmpty) {
+                                          AppSnackBar.error(
+                                            context,
+                                            'Please enter your message',
                                           );
+                                          return;
+                                        }
+
+                                        final ok = await ref
+                                            .read(
+                                              homeNotifierProvider.notifier,
+                                            )
+                                            .putEnquiry(
+                                              context: context,
+                                              serviceId: '',
+                                              productId: '',
+                                              message: enquiryMsg.trim(),
+                                              shopId:
+                                                  serviceRawData?.id.toString() ??
+                                                      '',
+                                            );
+
+                                        if (!mounted) return;
+                                        if (ok) {
+                                          setState(() {
+                                            _enquiryDisabled = true;
+                                          });
+                                        }
+                                      }();
                                     },
                                     messageLoading: homeState.isEnquiryLoading,
                                     messageDisabled: _enquiryDisabled,
@@ -664,6 +817,16 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                     image:
                                         data?.primaryImageUrl.toString() ?? '',
                                     ratingStar: '0.0',
+                                    onImageTap: () {
+                                      final url = (data?.primaryImageUrl ?? '')
+                                          .toString()
+                                          .trim();
+                                      if (url.isEmpty) return;
+                                      FullScreenImageGallery.open(
+                                        context,
+                                        imageUrls: [url],
+                                      );
+                                    },
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -677,7 +840,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                     },
                                     ratingCount: '0',
                                     offAmound:
-                                        '₹${data?.startsAt.toString() ?? ''}',
+                                        '\u20B9${data?.startsAt.toString() ?? ''}',
                                     horizontalDivider: true,
                                   ),
 

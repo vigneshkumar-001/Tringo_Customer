@@ -49,12 +49,20 @@ class OtpData {
   }
 
   factory OtpData.fromJson(Map<String, dynamic> json) {
+    dynamic pickBool(String key) => json.containsKey(key) ? json[key] : null;
+    final rawReferralApplied =
+        pickBool('isReferralApplied') ??
+        pickBool('isReferal') ??
+        pickBool('isReferral') ??
+        false;
+
     return OtpData(
       accessToken: (json['accessToken'] ?? '').toString(),
       refreshToken: (json['refreshToken'] ?? '').toString(),
       role: (json['role'] ?? '').toString(),
       sessionToken: (json['sessionToken'] ?? '').toString(),
-      isReferralApplied: _toBool(json['isReferralApplied']), // ✅ FIX
+      // ✅ support backend key variants
+      isReferralApplied: _toBool(rawReferralApplied),
     );
   }
 

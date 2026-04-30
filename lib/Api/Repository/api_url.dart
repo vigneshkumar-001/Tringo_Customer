@@ -14,6 +14,7 @@ class ApiUrl {
   // static const String home = "${base}api/v1/public/home";
   static const String profile = "${base}api/v1/customer/profile";
   static const String version = "${base}api/v1/app/version";
+  static const String fcmToken = "${base}api/v1/auth/device-token";
   static const String mobileVerify = "${base}api/v1/auth/login-by-sim";
   static const String contactInfo = "${base}api/v1/contacts/sync";
   static const String editProfile = "${base}api/v1/customer/profile";
@@ -29,6 +30,24 @@ class ApiUrl {
   static const String referralHistory = "${base}api/v1/wallet/referral";
   static const String reviewHistory = "${base}api/v1/reviews/history";
   static const String reviewCreate = "${base}api/v1/reviews";
+  static const String smartConnectGuide = "${base}api/smart-connect/guide";
+  static const String smartConnect = "${base}api/smart-connect";
+
+  // Subscriptions
+  static const String subscriptionsBase = "${base}api/v1/subscriptions";
+  static const String subscriptionPlans = "$subscriptionsBase/plans";
+  static const String subscriptionCcavenueInit = "$subscriptionsBase/ccavenue/init";
+  static const String subscriptionCcavenueExtendInit =
+      "$subscriptionsBase/ccavenue/extend/init";
+  static const String subscriptionCcavenueConfirm =
+      "$subscriptionsBase/ccavenue/confirm";
+
+  static String subscriptionCurrent({String? businessProfileId}) {
+    final id = (businessProfileId ?? '').trim();
+    if (id.isEmpty) return "$subscriptionsBase/current";
+    return "$subscriptionsBase/current?businessProfileId=$id";
+  }
+
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";
@@ -58,6 +77,12 @@ class ApiUrl {
   static String markCallOrMapEnquiry({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/track";
   }
+  static String smartConnectHistory({required int page,required int limit,}) {
+    return "${base}api/smart-connect/history?page=$page&limit=$limit";
+  }
+  static String smartConnectDetails({required String requestId, }) {
+    return "${base}api/smart-connect/$requestId";
+  }
 
   static String surpriseStatusCheck({
     required double lng,
@@ -65,20 +90,31 @@ class ApiUrl {
     required double lat,
     String? offerId,
   }) {
-    return "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
+    final baseUrl =
+        "${base}api/v1/public/shops/$shopId/surprise/status?lat=$lat&lng=$lng";
+
+    if (offerId == null || offerId.isEmpty) return baseUrl;
+    return "$baseUrl&offerId=$offerId";
   }
 
   static String surpriseClaimed({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/surprise/claim";
   }
 
+  static String surpriseOfferDetails({
+    required String shopId,
+    required String offerId,
+  }) {
+    return "${base}api/v1/public/shops/$shopId/surprise/offers/$offerId";
+  }
+
   static String walletHistory({required String type}) {
     return "${base}api/v1/wallet/history?type=$type";
   }
 
-  // static String sendMessage({required String ticketId,  }) {
-  //   return "${base}api/v1/support/tickets/$ticketId/messages";
-  // }
+   static String smartConnectSearch({required String search,  }) {
+     return "${base}api/smart-connect/search?term=$search";
+   }
 
   static String shopList({required String kind, required String highlightId}) {
     return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";

@@ -6,9 +6,11 @@ import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/current_location_widget.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
@@ -99,6 +101,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
   Future<void> _handleShopEnquiry({
     required BuildContext context,
     required String? shopId,
+    required String shopName,
     required bool isThisCardLoading,
   }) async {
     if (shopId == null || shopId.isEmpty) return;
@@ -106,11 +109,23 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
     final hasMessaged = _disabledMessageShopIds.contains(shopId);
     if (hasMessaged || isThisCardLoading) return;
 
+    final enquiryMsg = await showEnquiryBottomSheet(
+      context: context,
+      shopName: shopName,
+    );
+
+    if (!mounted) return;
+    if (enquiryMsg == null) return;
+    if (enquiryMsg.trim().isEmpty) {
+      AppSnackBar.error(context, 'Please enter your message');
+      return;
+    }
+
     final ok = await ref.read(homeNotifierProvider.notifier).putEnquiry(
       context: context,
       serviceId: '',
       productId: '',
-      message: '',
+      message: enquiryMsg.trim(),
       shopId: shopId,
     );
 
@@ -226,14 +241,19 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               : null;
 
                           Widget card = CommonContainer.servicesContainer(
-                            whatsAppOnTap: () {
-                              MapUrls.openWhatsapp(
+                            whatsAppOnTap: () async {
+                              await MapUrls.openWhatsapp(
                                 message: 'hi',
                                 context: context,
-                                phone: data.primaryPhone,
+                                phone: data.primaryPhone.toString() ?? '',
+                              );
+                              await ref
+                                  .read(homeNotifierProvider.notifier)
+                                  .markCallOrLocation(
+                                type: 'WHATSAPP',
+                                shopId: data.id.toString(),
                               );
                             },
-
                             isMessageLoading: isThisCardLoading,
                             messageDisabled: hasMessaged,
 
@@ -242,6 +262,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               await _handleShopEnquiry(
                                 context: context,
                                 shopId: data.id,
+                                shopName: data.englishName.toString(),
                                 isThisCardLoading: isThisCardLoading,
                               );
                             },

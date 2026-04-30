@@ -1,8 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
+import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
+import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Core/Utility/deep_links.dart';
 import 'package:tringo_app/Core/Utility/map_urls.dart';
+import 'package:tringo_app/Core/Utility/share_helper.dart';
+import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Services%20Screen/Controller/service_data_notifier.dart';
 
@@ -26,13 +33,42 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
   // ✅ Disable only after SUCCESS
   bool _enquiryDisabled = false;
 
+  Future<void> _shareServiceLink({
+    required String serviceId,
+    String? shareText,
+    String? imageUrl,
+    String? cardTitle,
+    String? cardDescription,
+    List<String> cardMetaLines = const [],
+    String? badgeText,
+    double? ratingValue,
+    int? ratingCount,
+  }) async {
+    final text =
+        (shareText != null && shareText.trim().isNotEmpty)
+            ? shareText
+            : DeepLinks.serviceShareText(serviceId: serviceId);
+    await ShareHelper.shareTextWithImage(
+      text: text,
+      imageUrl: imageUrl,
+      cardTitle: cardTitle,
+      cardDescription: cardDescription,
+      cardMetaLines: cardMetaLines,
+      badgeText: badgeText,
+      ratingValue: ratingValue,
+      ratingCount: ratingCount,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final serviceId = (widget.serviceId ?? '').trim();
+      if (serviceId.isEmpty || serviceId == 'null') return;
       ref
           .read(serviceDataNotifierProvider.notifier)
-          .viewDetailServices(serviceId: widget.serviceId ?? '');
+          .viewDetailServices(serviceId: serviceId);
     });
   }
 
@@ -40,19 +76,34 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
     required BuildContext context,
     required String serviceId,
     required String shopId,
+    required String shopName,
   }) async {
     final homeState = ref.read(homeNotifierProvider);
 
     // ✅ prevent double tap
     if (_enquiryDisabled || homeState.isEnquiryLoading) return;
 
-    final ok = await ref.read(homeNotifierProvider.notifier).putEnquiry(
+    final enquiryMsg = await showEnquiryBottomSheet(
       context: context,
-      serviceId: serviceId,
-      productId: '',
-      message: '',
-      shopId: shopId,
+      shopName: shopName,
     );
+
+    if (!mounted) return;
+    if (enquiryMsg == null) return;
+    if (enquiryMsg.trim().isEmpty) {
+      AppSnackBar.error(context, 'Please enter your message');
+      return;
+    }
+
+    final ok = await ref
+        .read(homeNotifierProvider.notifier)
+        .putEnquiry(
+          context: context,
+          serviceId: serviceId,
+          productId: '',
+          message: enquiryMsg.trim(),
+          shopId: shopId,
+        );
 
     if (!mounted) return;
 
@@ -106,12 +157,98 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         horizontal: 15,
                         vertical: 16,
                       ),
-                      child: CommonContainer.leftSideArrow(
-                        onTap: () => Navigator.pop(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CommonContainer.leftSideArrow(
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(AppRoutes.homePath);
+                              }
+                            },
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(30),
+                            onTap: () {
+                              final serviceId =
+                                  (widget.serviceId?.isNotEmpty ?? false)
+                                      ? widget.serviceId!
+                                      : serviceDetailData.data.service.id;
+                              final apiShareText =
+                                  serviceDetailData.data.share?.shareText ??
+                                  serviceDetailData.data.service.share
+                                      ?.shareText;
+                              final img =
+                                  serviceDetailData.data.service.media.isNotEmpty
+                                      ? serviceDetailData
+                                          .data
+                                          .service
+                                          .media
+                                          .first
+                                          .url
+                                      : null;
+                              final metaLines = <String>[
+                                'Price: ₹${serviceDetailData.data.service.offerPrice}',
+                                'Duration: ${serviceDetailData.data.service.durationMinutes} mins',
+                              ];
+                              final metaCard =
+                                  metaLines
+                                      .where((e) => e.trim().isNotEmpty)
+                                      .join(' | ');
+                              _shareServiceLink(
+                                serviceId: serviceId,
+                                shareText: ShareHelper.buildAttractiveText(
+                                  baseText:
+                                      (apiShareText != null &&
+                                              apiShareText.trim().isNotEmpty)
+                                          ? apiShareText
+                                          : DeepLinks.serviceShareText(
+                                              serviceId: serviceId,
+                                            ),
+                                  title: serviceDetailData.data.service.englishName,
+                                  description:
+                                      serviceDetailData.data.service.description,
+                                  metaLines: metaLines,
+                                ),
+                                imageUrl: img,
+                                cardTitle: serviceDetailData.data.service.englishName,
+                                cardDescription:
+                                    serviceDetailData.data.service.description,
+                                cardMetaLines:
+                                    metaCard.isEmpty ? const [] : [metaCard],
+                                badgeText:
+                                    (serviceDetailData.data.service.offerPrice <
+                                            serviceDetailData.data.service.startsAt)
+                                        ? 'Limited time deal'
+                                        : null,
+                                ratingValue:
+                                    (serviceDetailData.data.service.rating)
+                                        .toDouble(),
+                                ratingCount:
+                                    serviceDetailData.data.service.reviewCount,
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColor.white,
+                                border: Border.all(color: AppColor.white4),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.all(11.5),
+                              child: const Icon(
+                                Icons.share,
+                                size: 18,
+                                color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(
-                      height: 215,
+                      height: 230,
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 15,
@@ -120,9 +257,12 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         scrollDirection: Axis.horizontal,
                         itemCount: serviceDetailData.data.service.media.length,
                         itemBuilder: (context, index) {
-                          final data = serviceDetailData.data.service.media[index];
+                          final data =
+                              serviceDetailData.data.service.media[index];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: CachedNetworkImage(
@@ -136,7 +276,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                   color: Colors.grey.withOpacity(0.2),
                                 ),
                                 errorWidget: (_, __, ___) =>
-                                const Icon(Icons.broken_image),
+                                    const Icon(Icons.broken_image),
                               ),
                             ),
                           );
@@ -147,7 +287,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                 ),
               ),
 
-              const SizedBox(height: 35),
+              const SizedBox(height: 30),
 
               // ---------------- SERVICE DETAILS ----------------
               Padding(
@@ -172,8 +312,10 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                     ),
                     const SizedBox(height: 9),
                     CommonContainer.greenStarRating(
-                      ratingCount: serviceDetailData.data.service.rating.toString(),
-                      ratingStar: serviceDetailData.data.service.reviewCount.toString(),
+                      ratingCount: serviceDetailData.data.service.rating
+                          .toString(),
+                      ratingStar: serviceDetailData.data.service.reviewCount
+                          .toString(),
                     ),
                     const SizedBox(height: 9),
                     Row(
@@ -203,10 +345,9 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                   callOnTap: () async {
                     MapUrls.openDialer(context, shopsData.primaryPhone);
 
-                    await ref.read(homeNotifierProvider.notifier).markCallOrLocation(
-                      type: 'CALL',
-                      shopId: shopsData.id,
-                    );
+                    await ref
+                        .read(homeNotifierProvider.notifier)
+                        .markCallOrLocation(type: 'CALL', shopId: shopsData.id);
                   },
                   mapBox: true,
                   mapOnTap: () async {
@@ -216,13 +357,15 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                       longitude: shopsData.coordinates.longitude.toString(),
                     );
 
-                    await ref.read(homeNotifierProvider.notifier).markCallOrLocation(
-                      type: 'MAP',
-                      shopId: shopsData.id,
-                    );
+                    await ref
+                        .read(homeNotifierProvider.notifier)
+                        .markCallOrLocation(type: 'MAP', shopId: shopsData.id);
                   },
                   mapText: 'Map',
-                  mapBoxPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  mapBoxPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   order: false,
                   callText: 'Call Now',
                   callImage: AppImages.callImage,
@@ -231,28 +374,42 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                   messagesIconSize: 23,
                   whatsAppIconSize: 23,
                   fireIconSize: 23,
-                  callNowPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  iconContainerPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                  callNowPadding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 12,
+                  ),
+                  iconContainerPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 13,
+                  ),
 
                   whatsAppIcon: true,
-                  whatsAppOnTap: () {
-                    MapUrls.openWhatsapp(
+                  whatsAppOnTap: () async {
+                    await MapUrls.openWhatsapp(
                       message: 'hi',
                       context: context,
                       phone: shopsData.primaryPhone,
                     );
+                    await ref
+                        .read(homeNotifierProvider.notifier)
+                        .markCallOrLocation(
+                          type: 'WHATSAPP',
+                          shopId: shopsData.id.toString(),
+                        );
                   },
 
                   // ✅ Message
                   messageContainer: true,
                   MessageIcon: true,
                   messageLoading: homeState.isEnquiryLoading,
-                  messageDisabled: _enquiryDisabled, // ✅ stays disabled after success
+                  messageDisabled:
+                      _enquiryDisabled, // ✅ stays disabled after success
                   messageOnTap: () async {
                     await _handleEnquiry(
                       context: context,
                       serviceId: serviceDetailData.data.service.id,
                       shopId: shopsData.id,
+                      shopName: shopsData.englishName.toString(),
                     );
                   },
                 ),
@@ -263,120 +420,152 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
               // ---------------- SHOP CARD ----------------
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.textWhite,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            shopsData.isTrusted == true
-                                ? CommonContainer.verifyTick()
-                                : const SizedBox.shrink(),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  shopsData.englishName,
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColor.darkBlue,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Image.asset(
-                                  AppImages.rightArrow,
-                                  height: 8,
-                                  color: AppColor.lightBlueCont,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Image.asset(
-                                  AppImages.locationImage,
-                                  height: 10,
-                                  color: AppColor.lightGray2,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    '${shopsData.city}, ${shopsData.state}, ${shopsData.country}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    final shopId = shopsData.id.toString().trim();
+                    if (shopId.isEmpty || shopId == 'null') return;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ServiceAndShopsDetails(
+                          shopId: shopId,
+                          initialIndex: 4,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColor.textWhite,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              shopsData.isTrusted == true
+                                  ? CommonContainer.verifyTick()
+                                  : const SizedBox.shrink(),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    shopsData.englishName,
                                     style: GoogleFont.Mulish(
-                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColor.darkBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Image.asset(
+                                    AppImages.rightArrow,
+                                    height: 8,
+                                    color: AppColor.lightBlueCont,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Image.asset(
+                                    AppImages.locationImage,
+                                    height: 10,
+                                    color: AppColor.lightGray2,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    flex: 7,
+                                    child: Text(
+                                      '${shopsData.city}, ${shopsData.state}, ${shopsData.country}',
+                                      softWrap: true,
+                                      style: GoogleFont.Mulish(
+                                        fontSize: 12,
+                                        color: AppColor.lightGray2,
+                                      ),
+                                    ),
+                                  ),
+                                  if ((shopsData.distanceLabel ?? '')
+                                      .trim()
+                                      .isNotEmpty) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(
+                                        shopsData.distanceLabel ?? '',
+                                        textAlign: TextAlign.end,
+                                        softWrap: true,
+                                        style: GoogleFont.Mulish(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                          color: AppColor.lightGray3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CommonContainer.greenStarRating(
+                                    ratingCount: shopsData.rating.toString(),
+                                    ratingStar: shopsData.ratingCount
+                                        .toString(),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Opens upto ',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
                                       color: AppColor.lightGray2,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  shopsData.distanceLabel ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: AppColor.lightGray3,
+                                  Text(
+                                    shopsData.closeTime ?? '',
+                                    style: GoogleFont.Mulish(
+                                      fontSize: 10,
+                                      color: AppColor.lightGray2,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                CommonContainer.greenStarRating(
-                                  ratingCount: shopsData.rating.toString(),
-                                  ratingStar: shopsData.ratingCount.toString(),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Opens upto ',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                  ),
-                                ),
-                                Text(
-                                  shopsData.closeTime ?? '',
-                                  style: GoogleFont.Mulish(
-                                    fontSize: 10,
-                                    color: AppColor.lightGray2,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: CachedNetworkImage(
-                          imageUrl: shopsData.primaryImageUrl,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
+                        const SizedBox(width: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: CachedNetworkImage(
+                            imageUrl: shopsData.primaryImageUrl,
                             height: 100,
                             width: 100,
-                            color: Colors.grey.withOpacity(0.2),
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              height: 100,
+                              width: 100,
+                              color: Colors.grey.withOpacity(0.2),
+                            ),
+                            errorWidget: (_, __, ___) =>
+                                const Icon(Icons.broken_image),
                           ),
-                          errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 60),
+              const SizedBox(height: 24),
               CommonContainer.horizonalDivider(),
               const SizedBox(height: 24),
 
@@ -393,56 +582,74 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                         color: AppColor.darkBlue,
                       ),
                     ),
-                    const Spacer(),
-                    CommonContainer.rightSideArrowButton(onTap: () {}),
+                    // const Spacer(),
+                    // CommonContainer.rightSideArrowButton(onTap: () {}),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
               (similarServices.items.isNotEmpty)
                   ? SizedBox(
-                height: 340,
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: similarServices.items.length,
-                  itemBuilder: (context, index) {
-                    final data = similarServices.items[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: CommonContainer.similarFoods(
-                        Verify: shopsData.isTrusted,
-                        image: data.primaryImageUrl,
-                        foodName: data.englishName,
-                        ratingStar: data.rating.toString(),
-                        ratingCount: data.ratingCount.toString(),
-                        offAmound: '₹${data.offerPrice}',
-                        oldAmound: '',
-                        km: data.distanceLabel ?? (shopsData.distanceLabel ?? ''),
-                        location: data.shopName ?? shopsData.englishName,
+                      height: 340,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: similarServices.items.length,
+                        itemBuilder: (context, index) {
+                          final data = similarServices.items[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                                 final serviceId = data.id.toString().trim();
+                                 if (serviceId.isEmpty || serviceId == 'null') return;
+ 
+                                 Navigator.pushReplacement(
+                                   context,
+                                   MaterialPageRoute(
+                                     builder: (_) =>
+                                         SearchServiceData(serviceId: serviceId),
+                                   ),
+                                 );
+                              },
+                              child: CommonContainer.similarFoods(
+                                Verify: shopsData.isTrusted,
+                                image: data.primaryImageUrl,
+                                foodName: data.englishName,
+                                ratingStar: data.rating.toString(),
+                                ratingCount: data.ratingCount.toString(),
+                                offAmound: '₹${data.offerPrice}',
+                                oldAmound: '',
+                                km:
+                                    data.distanceLabel ??
+                                    (shopsData.distanceLabel ?? ''),
+                                location:
+                                    data.shopName ?? shopsData.englishName,
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              )
+                    )
                   : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Center(
-                  child: Text(
-                    'No Similar Services',
-                    style: GoogleFont.Mulish(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
+                      padding: const EdgeInsets.all(16.0),
+                      child: Center(
+                        child: Text(
+                          'No Similar Services',
+                          style: GoogleFont.Mulish(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               CommonContainer.horizonalDivider(),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
               // ---------------- HIGHLIGHTS ----------------
               Padding(
@@ -478,22 +685,43 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                             decoration: BoxDecoration(
                               color: AppColor.whiteSmoke,
                               borderRadius: BorderRadius.only(
-                                topLeft: index == 0 ? const Radius.circular(16) : Radius.zero,
-                                topRight: index == 0 ? const Radius.circular(16) : Radius.zero,
-                                bottomLeft: index == lastIndex ? const Radius.circular(16) : Radius.zero,
-                                bottomRight: index == lastIndex ? const Radius.circular(16) : Radius.zero,
+                                topLeft: index == 0
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
+                                topRight: index == 0
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
+                                bottomLeft: index == lastIndex
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
+                                bottomRight: index == lastIndex
+                                    ? const Radius.circular(16)
+                                    : Radius.zero,
                               ),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 12,
+                            ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  data.label,
-                                  style: GoogleFont.Mulish(color: AppColor.lightGray3),
+                                Flexible(
+                                  flex: 2,
+                                  child: Text(
+                                    data.label,
+                                    softWrap: true,
+                                    style: GoogleFont.Mulish(
+                                      color: AppColor.lightGray3,
+                                    ),
+                                  ),
                                 ),
+                                const SizedBox(width: 11),
                                 Expanded(
+                                  flex: 3,
                                   child: Text(
                                     data.value,
+                                    softWrap: true,
                                     textAlign: TextAlign.center,
                                     style: GoogleFont.Mulish(
                                       fontWeight: FontWeight.w700,
@@ -531,7 +759,6 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
     );
   }
 }
-
 
 // import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:flutter/material.dart';

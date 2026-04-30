@@ -1,18 +1,25 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
+import 'package:tringo_app/Core/Widgets/caller_id_role_helper.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_snackbar.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
+import '../../../../Core/Widgets/full_screen_image_gallery.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../Edit Profile/Screens/edit_profile.dart';
 import '../Login Screen/Screens/login_mobile_number.dart';
@@ -21,7 +28,9 @@ import '../Privacy Policy/screens/privacy_policy.dart';
 import '../Support/Screens/support_screen.dart';
 import '../wallet/Screens/referral_screen.dart';
 import '../wallet/Screens/wallet_screens.dart';
+import 'caller_id_setup_screen.dart';
 import 'Controller/profile_notifier.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String? url;
@@ -46,7 +55,221 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with WidgetsBindingObserver {
+  bool _callerIdOverlayEnabled = false;
+  bool _callerIdOverlayPrefLoaded = false;
+  bool _awaitingOverlaySettings = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadCallerIdOverlayPref();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state != AppLifecycleState.resumed) return;
+    if (!_awaitingOverlaySettings) return;
+    _awaitingOverlaySettings = false;
+    await _onReturnedFromOverlaySettings();
+  }
+
+  Future<void> _onReturnedFromOverlaySettings() async {
+    if (!_callerIdOverlayEnabled) return;
+    final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+    if (!overlayOk) {
+      if (mounted) {
+        AppSnackBar.error(
+          context,
+          'Overlay permission not enabled yet. Turn on “Appear on top / Overlay”.',
+        );
+      }
+      if (mounted) setState(() => _callerIdOverlayEnabled = false);
+      await AppPrefs.setCallerIdOverlayEnabled(false);
+      await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
+      return;
+    }
+
+    // System caller-id role prompt (optional; opens Android role UI).
+    await CallerIdRoleHelper.maybeAskOnce(ref: ref, force: true);
+
+    // Truecaller-style low-friction UX:
+    // Don't auto-prompt for battery settings. Show battery guidance only in the dedicated setup screen.
+  }
+
+  Future<void> _loadCallerIdOverlayPref() async {
+    final enabled = await AppPrefs.getCallerIdOverlayEnabled();
+
+    // Keep the toggle honest: if required permissions are missing, force-disable the feature.
+    var effectiveEnabled = enabled && Platform.isAndroid;
+    if (effectiveEnabled) {
+      try {
+        final phoneOk = await Permission.phone.status.isGranted;
+        final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+        if (!phoneOk || !overlayOk) {
+          effectiveEnabled = false;
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
+        }
+      } catch (_) {
+        // If we can't check, keep the stored value.
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _callerIdOverlayEnabled = effectiveEnabled;
+      _callerIdOverlayPrefLoaded = true;
+    });
+  }
+
+  Future<void> _setCallerIdOverlayEnabled(bool enabled) async {
+    if (!_callerIdOverlayPrefLoaded) return;
+
+    // If not Android, keep it disabled (feature is Android-only).
+    if (!Platform.isAndroid) {
+      if (mounted) {
+        setState(() {
+          _callerIdOverlayEnabled = false;
+        });
+      }
+      return;
+    }
+
+    if (!enabled) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: AppColor.white,
+            surfaceTintColor: AppColor.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Turn off Caller ID?',
+              style: GoogleFont.Mulish(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: AppColor.darkBlue,
+              ),
+            ),
+            content: Text(
+              'You’ll miss deals & Free TCoins if Caller ID is OFF',
+              style: GoogleFont.Mulish(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColor.lightGray2,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Keep ON',
+                  style: GoogleFont.Mulish(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.darkBlue,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Turn OFF',
+                  style: GoogleFont.Mulish(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.lightRed,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (!mounted) return;
+      if (confirm != true) {
+        // Keep it ON.
+        setState(() => _callerIdOverlayEnabled = true);
+        return;
+      }
+    }
+
+    setState(() {
+      _callerIdOverlayEnabled = enabled;
+    });
+
+    await AppPrefs.setCallerIdOverlayEnabled(enabled);
+
+    if (!enabled) {
+      await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
+      await CallerIdRoleHelper.stopOverlayService();
+      return;
+    }
+
+    final phoneStatus = await Permission.phone.status;
+    if (!phoneStatus.isGranted) {
+      final phoneReq = await Permission.phone.request();
+      if (!phoneReq.isGranted && mounted) {
+        AppSnackBar.error(
+          context,
+          'Phone permission is needed for Caller ID overlay',
+        );
+        setState(() => _callerIdOverlayEnabled = false);
+        await AppPrefs.setCallerIdOverlayEnabled(false);
+        return;
+      }
+    }
+
+    // Notifications (Android 13+) improve reliability on restricted devices.
+    // Best-effort only; do not block if user denies.
+    try {
+      final notifStatus = await Permission.notification.status;
+      if (!notifStatus.isGranted) {
+        await Permission.notification.request();
+      }
+    } catch (_) {}
+
+    // Open overlay permission settings directly (easy UX).
+    final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
+    if (!overlayOk) {
+      _awaitingOverlaySettings = true;
+      await CallerIdRoleHelper.requestOverlayPermission();
+      return;
+    }
+
+    await _onReturnedFromOverlaySettings();
+  }
+
+  void _setupCallerId() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CallerIdSetupScreen()),
+    );
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    final Uri url = Uri.parse('https://bknd.tringobiz.com/privacy-policy.html');
+
+    final launched = await launchUrl(url, mode: LaunchMode.inAppWebView);
+
+    if (!launched && mounted) {
+      AppSnackBar.error(context, 'Could not open privacy policy');
+    }
+  }
+
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -441,25 +664,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           horizontal: 10,
                           vertical: 12,
                         ),
-                        child: ClipRRect(
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          child: CachedNetworkImage(
-                            imageUrl: widget.url ?? '',
-                            height: 120,
-                            width: 120,
-                            fit: BoxFit.cover,
-
-                            placeholder: (context, url) => Container(
-                              height: 120,
-                              width: 120,
-                              color: Colors.grey.withOpacity(0.2),
-                            ),
-
-                            errorWidget: (context, url, error) => Container(
-                              height: 120,
-                              width: 120,
-                              color: Colors.grey.withOpacity(0.2),
-                              child: const Icon(Icons.broken_image, size: 28),
+                          onTap: () {
+                            final url = (widget.url ?? '').trim();
+                            if (url.isEmpty) return;
+                            FullScreenImageGallery.open(
+                              context,
+                              imageUrls: [url],
+                              heroTagPrefix: 'profile_avatar',
+                            );
+                          },
+                          child: Hero(
+                            tag: 'profile_avatar_0',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: CachedNetworkImage(
+                                imageUrl: widget.url ?? '',
+                                height: 120,
+                                width: 120,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  height: 120,
+                                  width: 120,
+                                  color: Colors.grey.withOpacity(0.2),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  height: 120,
+                                  width: 120,
+                                  color: Colors.grey.withOpacity(0.2),
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 28,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -515,7 +754,76 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   iconHeight: 25,
                   iconWidth: 19,
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 15),
+                InkWell(
+                  onTap: () =>
+                      _setCallerIdOverlayEnabled(!_callerIdOverlayEnabled),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColor.brightGray,
+                            ),
+                            child: Center(
+                              child: Image.asset(
+                                AppImages.callImage,
+                                height: 25,
+                                width: 19,
+                                   color: AppColor.darkBlue,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Caller ID Overlay',
+                            style: GoogleFont.Mulish(
+                              fontSize: 16,
+                              color: AppColor.darkBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch.adaptive(
+                        value: _callerIdOverlayEnabled,
+                        onChanged: _callerIdOverlayPrefLoaded
+                            ? _setCallerIdOverlayEnabled
+                            : null,
+                        activeColor: AppColor.darkBlue,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 15),
+                // CommonContainer.profileList(
+                //   onTap: _setupCallerId,
+                //   label: 'Caller ID Setup',
+                //   iconPath: AppImages.support,
+                //   iconHeight: 25,
+                //   iconWidth: 19,
+                // ),
+
+                // SizedBox(height: 20),
+                // CommonContainer.profileList(
+                //   onTap: () {
+                //     Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //         builder: (context) => SmartConnectHistory(),
+                //       ),
+                //     );
+                //   },
+                //   label: 'Smart Connect History',
+                //   iconPath: AppImages.ai,
+                //   iconHeight: 25,
+                //   iconWidth: 25  ,
+                // ),
+                // SizedBox(height: 20),
                 CommonContainer.horizonalDivider(),
                 SizedBox(height: 20),
                 CommonContainer.profileList(
@@ -535,14 +843,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // ),
                 SizedBox(height: 15),
                 CommonContainer.profileList(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            PrivacyPolicy(showAcceptReject: false),
-                      ),
-                    );
+                  onTap: () async {
+                    await _openPrivacyPolicy();
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) =>
+                    //         PrivacyPolicy(showAcceptReject: false),
+                    //   ),
+                    // );
                   },
                   label: 'Privacy Policy',
                   iconPath: AppImages.privacyPolicy,

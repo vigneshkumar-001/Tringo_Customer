@@ -42,6 +42,13 @@ class SearchNotifier extends Notifier<SearchState> {
   Timer? _debounce;
   int _requestSeq = 0;
 
+  static const Set<String> _mobileTypes = {
+    'OWNER_SHOP',
+    'CUSTOMER',
+    'VENDOR',
+    'EMPLOYEE',
+  };
+
   @override
   SearchState build() {
     api = ref.read(apiDataSourceProvider);
@@ -52,8 +59,8 @@ class SearchNotifier extends Notifier<SearchState> {
   }
 
   bool _isDigitsOnly(String s) => RegExp(r'^\d+$').hasMatch(s);
+  bool _isMobileNumber(String q) => _isDigitsOnly(q) && q.length == 10;
 
-  /// Call this from UI on each key press
   void onQueryChanged(String raw) {
     final q = raw.trim();
 
@@ -64,7 +71,6 @@ class SearchNotifier extends Notifier<SearchState> {
   }
 
   Future<void> _runSearch(String q) async {
-    // Empty -> clear results
     if (q.isEmpty) {
       state = state.copyWith(
         isLoading: false,
@@ -74,19 +80,7 @@ class SearchNotifier extends Notifier<SearchState> {
       return;
     }
 
-    final isPhoneTyping = _isDigitsOnly(q);
-
-    // ✅ Phone rule: ONLY search when exactly 10 digits
-    if (isPhoneTyping && q.length != 10) {
-      // Don’t call API for 1..9 digits (avoid SERVICE_SHOP mixed response)
-      state = state.copyWith(
-        isLoading: false,
-        error: null,
-        searchSuggestionResponse: null,
-      );
-      return;
-    }
-
+    final isMobileQuery = _isMobileNumber(q);
     final int mySeq = ++_requestSeq;
 
     state = state.copyWith(
@@ -97,24 +91,48 @@ class SearchNotifier extends Notifier<SearchState> {
 
     final result = await api.searchSuggestions(searchWords: q, query: q);
 
-    // Ignore stale results (race condition fix)
     if (mySeq != _requestSeq) return;
 
     result.fold(
-          (failure) {
+      (failure) {
         state = state.copyWith(
           isLoading: false,
           error: failure.toString(),
           searchSuggestionResponse: null,
         );
       },
-          (response) {
+      (response) {
+        final shouldFilterMobileHits = _isDigitsOnly(q) && !isMobileQuery;
+        final filteredResponse = shouldFilterMobileHits
+            ? _filterOutMobileOnlyItems(response)
+            : response;
+
         state = state.copyWith(
           isLoading: false,
           error: null,
-          searchSuggestionResponse: response,
+          searchSuggestionResponse: filteredResponse,
         );
       },
+    );
+  }
+
+  SearchSuggestionResponse _filterOutMobileOnlyItems(
+    SearchSuggestionResponse response,
+  ) {
+    final data = response.data;
+    if (data == null) return response;
+
+    final filteredItems = data.items
+        .where(
+          (e) =>
+              !_mobileTypes.contains(e.type) &&
+              e.target.kind != 'MOBILENO_USER_DETAIL',
+        )
+        .toList();
+
+    return SearchSuggestionResponse(
+      status: response.status,
+      data: SearchSuggestionData(query: data.query, items: filteredItems),
     );
   }
 
@@ -147,100 +165,3 @@ class SearchNotifier extends Notifier<SearchState> {
 final searchNotifierProvider = NotifierProvider<SearchNotifier, SearchState>(
   SearchNotifier.new,
 );
-
-
-///old///
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:tringo_app/Api/DataSource/api_data_source.dart';
-// import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Controller/login_notifier.dart';
-// import 'package:tringo_app/Presentation/OnBoarding/Screens/Search%20Screen/Model/search_suggestion_response.dart';
-//
-// class SearchState {
-//   final bool isLoading;
-//   final String? error;
-//   final SearchSuggestionResponse? searchSuggestionResponse;
-//   final List<SearchItem> recentItems;
-//
-//   const SearchState({
-//     this.isLoading = false,
-//     this.error,
-//     this.recentItems = const [],
-//     this.searchSuggestionResponse,
-//   });
-//   factory SearchState.initial() => const SearchState();
-//   SearchState copyWith({
-//     bool? isLoading,
-//     String? error,
-//     SearchSuggestionResponse? searchSuggestionResponse,
-//     List<SearchItem>? recentItems,
-//   }) {
-//     return SearchState(
-//       isLoading: isLoading ?? this.isLoading,
-//       error: error,
-//       searchSuggestionResponse:
-//           searchSuggestionResponse ?? this.searchSuggestionResponse,
-//
-//       recentItems: recentItems ?? this.recentItems,
-//     );
-//   }
-// }
-//
-// class SearchNotifier extends Notifier<SearchState> {
-//   late final ApiDataSource api;
-//
-//   @override
-//   SearchState build() {
-//     api = ref.read(apiDataSourceProvider);
-//     return SearchState.initial();
-//   }
-//
-//   Future<void> searchSuggestion({
-//     required String searchWords,
-//     required String query,
-//     bool force = false,
-//   }) async {
-//     state = state.copyWith(isLoading: true, searchSuggestionResponse: null);
-//
-//     final result = await api.searchSuggestions(
-//       searchWords: searchWords,
-//       query: query,
-//     );
-//
-//     result.fold(
-//       (failure) {
-//         state = state.copyWith(
-//           isLoading: false,
-//           searchSuggestionResponse: null,
-//         );
-//       },
-//       (response) {
-//         state = state.copyWith(
-//           isLoading: false,
-//           searchSuggestionResponse: response,
-//         );
-//       },
-//     );
-//   }
-//
-//   void addRecentItem(SearchItem item) {
-//     final current = List<SearchItem>.from(state.recentItems);
-//
-//     current.removeWhere((e) => e.id == item.id && e.type == item.type);
-//
-//     current.insert(0, item);
-//
-//     if (current.length > 10) current.removeLast();
-//
-//     state = state.copyWith(recentItems: current);
-//   }
-//
-//   void removeRecentItem(SearchItem item) {
-//     final current = List<SearchItem>.from(state.recentItems);
-//     current.removeWhere((e) => e.id == item.id && e.type == item.type);
-//     state = state.copyWith(recentItems: current);
-//   }
-// }
-//
-// final searchNotifierProvider = NotifierProvider<SearchNotifier, SearchState>(
-//   SearchNotifier.new,
-// );

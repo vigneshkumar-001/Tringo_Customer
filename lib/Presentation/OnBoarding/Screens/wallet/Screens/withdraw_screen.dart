@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,7 +41,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
     super.dispose();
   }
 
-  // ✅ extract number from "₹120" or "120"
+  // âœ… extract number from "\u20B9120" or "120"
   double _parseRateToNumber(String rateText) {
     final cleaned = rateText.replaceAll(RegExp(r'[^0-9.]'), '');
     return double.tryParse(cleaned) ?? 0;
@@ -83,7 +83,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
     if (wr != null && wr.status == true && wr.data.success == true) {
       AppSnackBar.success(
         context,
-        "Withdraw request raised ✅\nRequestId: ${wr.data.requestId}",
+        "Withdraw request raised âœ…\nRequestId: ${wr.data.requestId}",
       );
       _amountController.clear();
     } else {
@@ -109,11 +109,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
         : 0;
 
     final leftTcoinText = typedTcoin > 0 ? "$typedTcoin" : "";
-    final rightRateText = typedTcoin > 0 ? "₹${calculatedInr.round()}" : "0";
+    final rightRateText = typedTcoin > 0 ? "\u20B9${calculatedInr.round()}" : "0";
 
     final btnText = typedTcoin <= 0
         ? "Withdraw Request"
-        : "₹${calculatedInr.round()} Withdraw Request";
+        : "\u20B9${calculatedInr.round()} Withdraw Request";
 
     if (walletState.isLoading) {
       return Scaffold(
@@ -154,7 +154,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
               ),
               const SizedBox(height: 41),
 
-              // ✅ HEADER
+              // âœ… HEADER
               Container(
                 decoration: BoxDecoration(
                   image: DecorationImage(
@@ -217,7 +217,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                       child: Row(
                         children: [
                           Text(
-                            wallet?.uid ?? "—",
+                            wallet?.uid ?? "â€”",
                             style: GoogleFont.Mulish(
                               fontSize: 13,
                               color: AppColor.darkBlue,
@@ -247,7 +247,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 
               const SizedBox(height: 32),
 
-              // ✅ FORM
+              // âœ… FORM
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Column(
@@ -289,7 +289,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (_) {
-                        setState(() {}); // ✅ live update row + button
+                        setState(() {}); // âœ… live update row + button
                       },
                       decoration: InputDecoration(
                         hintText: "",
@@ -304,11 +304,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 
                     const SizedBox(height: 15),
 
-                    // ✅ DYNAMIC RATE ROW (your requested change)
+                    // âœ… DYNAMIC RATE ROW (your requested change)
                     Row(
                       children: [
                         Text(
-                          '$leftTcoinText TCoin → ',
+                          '$leftTcoinText TCoin â†’ ',
                           style: GoogleFont.Mulish(
                             fontSize: 14,
                             color: AppColor.darkGrey,
@@ -327,7 +327,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 
                     const SizedBox(height: 25),
 
-                    // ✅ BUTTON also show same rate
+                    // âœ… BUTTON also show same rate
                     CommonContainer.button(
                       buttonColor: AppColor.darkBlue,
                       onTap: walletState.isLoading
@@ -373,7 +373,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 //         final v = _amountController.text.trim();
 //         _btnAmountText = v.isEmpty
 //             ? "Withdraw Request"
-//             : "₹$v Withdraw Request";
+//             : "\u20B9$v Withdraw Request";
 //       });
 //     });
 //
@@ -418,7 +418,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 //
 //     final st = ref.read(walletNotifier);
 //
-//     // ✅ API error message show
+//     // âœ… API error message show
 //     if (st.error != null && st.error!.trim().isNotEmpty) {
 //       AppSnackBar.error(context, st.error!);
 //       return;
@@ -428,7 +428,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 //     if (wr != null && wr.status == true && wr.data.success == true) {
 //       AppSnackBar.success(
 //         context,
-//         "Withdraw request raised ✅\nRequestId: ${wr.data.requestId}",
+//         "Withdraw request raised âœ…\nRequestId: ${wr.data.requestId}",
 //       );
 //
 //       _amountController.clear();
@@ -539,7 +539,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 //                       child: Row(
 //                         children: [
 //                           Text(
-//                             wallet?.uid ?? "—",
+//                             wallet?.uid ?? "â€”",
 //                             style: GoogleFont.Mulish(
 //                               fontSize: 13,
 //                               color: AppColor.darkBlue,
@@ -607,7 +607,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 //                       keyboardType:
 //                           TextInputType.number, // mobile number keypad
 //                       inputFormatters: [
-//                         FilteringTextInputFormatter.digitsOnly, // ✅ only 0-9
+//                         FilteringTextInputFormatter.digitsOnly, // âœ… only 0-9
 //                       ],
 //                       decoration: InputDecoration(
 //                         hintText: "",
@@ -625,14 +625,14 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
 //                     Row(
 //                       children: [
 //                         Text(
-//                           '15TCoin → ',
+//                           '15TCoin â†’ ',
 //                           style: GoogleFont.Mulish(
 //                             fontSize: 14,
 //                             color: AppColor.darkGrey,
 //                           ),
 //                         ),
 //                         Text(
-//                           '₹10',
+//                           '\u20B910',
 //                           style: GoogleFont.Mulish(
 //                             fontSize: 14,
 //                             fontWeight: FontWeight.w700,

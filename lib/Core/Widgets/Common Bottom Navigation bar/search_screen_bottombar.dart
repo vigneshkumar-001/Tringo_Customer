@@ -6,8 +6,8 @@ import '../../../Presentation/OnBoarding/Screens/Search Screen/Screens/search_sc
 import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Smart Connect/Smart_connect_search.dart';
-import '../../../Presentation/OnBoarding/Screens/Smart Connect/smart_connect_details.dart';
+import '../../../Presentation/OnBoarding/Screens/Smart Connect/Screens/Smart_connect_search.dart';
+import '../../../Presentation/OnBoarding/Screens/Smart Connect/Screens/smart_connect_details.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
 import '../../Utility/google_font.dart';
@@ -87,8 +87,7 @@ class _SearchScreenBottombarState extends State<SearchScreenBottombar> {
   // }
 
   void _pushCategory(String name) {
-    // Just go back to previous screen (which is HomeScreen)
-    Navigator.of(context).pop();
+    _goTo(0);
   }
 
   // map taps from the bar

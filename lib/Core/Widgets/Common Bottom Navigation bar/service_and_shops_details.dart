@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../app_go_routes.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
 import 'package:tringo_app/Core/Widgets/sortby_popup_screen.dart';
-import '../../../Presentation/OnBoarding/Screens/Food Screen/food_list.dart';
-import '../../../Presentation/OnBoarding/Screens/Products/Screens/product_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Search Screen/Screens/search_screen.dart';
 import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/Service_details.dart';
-import '../../../Presentation/OnBoarding/Screens/Services Screen/Screens/service_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_details.dart';
-import '../../../Presentation/OnBoarding/Screens/Shop Screen/Screens/shops_listing.dart';
 import '../../../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../../Utility/app_Images.dart';
 import '../../Utility/app_color.dart';
@@ -47,7 +45,7 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
     _pages = [
       HomeScreen(), // 0
       SearchScreen(), // 1
-      // _ExploreScreenStub(), // 2
+       // _ExploreScreenStub(), // 2
       ServiceDetails(serviceID: widget.shopId), // 3
       ShopsDetails(shopId: widget.shopId, page: widget.type), // 4
     ];
@@ -91,19 +89,11 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
 
   /*
   void _pushCategory(String name) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(), // add this param to your page
-      ),
-
-    );
+    if (mounted) context.go(AppRoutes.homeShellPath);
   }
 */
   void _pushCategory(String name) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => HomeScreen()),
-      (route) => false, // remove everything below
-    );
+    if (mounted) context.go(AppRoutes.homeShellPath);
   }
 
   void openSearchShell(BuildContext context) {
@@ -156,18 +146,18 @@ class _ServiceAndShopsDetailsState extends State<ServiceAndShopsDetails> {
   }
 }
 
-// class _ExploreScreenStub extends StatelessWidget {
-//   const _ExploreScreenStub();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Scaffold(
-//       body: Center(
-//         child: Text('Explore Screen', style: TextStyle(fontSize: 20)),
-//       ),
-//     );
-//   }
-// }
+class _ExploreScreenStub extends StatelessWidget {
+  const _ExploreScreenStub();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('Explore Screen', style: TextStyle(fontSize: 20)),
+      ),
+    );
+  }
+}
 
 /// ------------------- BOTTOM BAR (Figma-style) -----------------------------------
 
@@ -451,3 +441,6 @@ class FigmaBottomNavBar extends StatelessWidget {
     );
   }
 }
+
+
+

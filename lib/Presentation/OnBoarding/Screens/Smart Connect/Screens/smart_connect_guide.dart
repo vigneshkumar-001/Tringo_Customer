@@ -1,20 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
-import '../../../../Core/Widgets/common_container.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
+import '../../../../../Core/Widgets/common_container.dart';
 import 'Smart_connect_search.dart';
 
-class SmartConnectGuide extends StatefulWidget {
+class SmartConnectGuide extends ConsumerStatefulWidget {
   const SmartConnectGuide({super.key});
 
   @override
-  State<SmartConnectGuide> createState() => _SmartConnectGuideState();
+  ConsumerState<SmartConnectGuide> createState() => _SmartConnectGuideState();
 }
 
-class _SmartConnectGuideState extends State<SmartConnectGuide> {
+class _SmartConnectGuideState extends ConsumerState<SmartConnectGuide> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   Timer? _debounce;
@@ -32,6 +34,9 @@ class _SmartConnectGuideState extends State<SmartConnectGuide> {
   @override
   void initState() {
     super.initState();
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   ref.read(smartConnectNotifierProvider.notifier).fetchSmartConnectGuide();
+    // });
     _focusNode.addListener(() => setState(() {})); // to redraw focus border
   }
 
@@ -62,6 +67,7 @@ class _SmartConnectGuideState extends State<SmartConnectGuide> {
 
   @override
   Widget build(BuildContext context) {
+    final guide = ref.watch(smartConnectNotifierProvider).smartConnectResponse;
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -141,7 +147,7 @@ class _SmartConnectGuideState extends State<SmartConnectGuide> {
 
                   const SizedBox(height: 27),
                   Text(
-                    '1. Search Your Need & Click',
+                    '1. ${guide?.data.steps[0]}',
                     style: GoogleFont.Mulish(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -190,6 +196,15 @@ class _SmartConnectGuideState extends State<SmartConnectGuide> {
                               Expanded(
                                 child: TextField(
                                   controller: _controller,
+                                  readOnly: true,
+                                  onTap: (){
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SmartConnectSearch(),
+                                      ),
+                                    );
+                                  },
                                   focusNode: _focusNode,
                                   onChanged: _onChanged,
                                   textAlignVertical: TextAlignVertical.center,
@@ -234,38 +249,38 @@ class _SmartConnectGuideState extends State<SmartConnectGuide> {
                         const SizedBox(height: 12),
 
                         // suggestions: show ONLY when typing; exactly two rows with light "in fan"
-                        if (typing) ...[
-                          for (int i = 0; i < _view.length; i++) ...[
-                            _SuggestionRow(item: _view[i]),
-                            if (i != _view.length - 1)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                child: CommonContainer.horizonalDivider(),
-                              ),
-                          ],
-                          if (_view.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: 10,
-                                bottom: 4,
-                              ),
-                              child: Text(
-                                'No results',
-                                style: GoogleFont.Mulish(
-                                  color: AppColor.lightGray2,
-                                ),
-                              ),
-                            ),
-                        ],
+                        // if (typing) ...[
+                        //   for (int i = 0; i < _view.length; i++) ...[
+                        //     _SuggestionRow(item: _view[i]),
+                        //     if (i != _view.length - 1)
+                        //       Padding(
+                        //         padding: const EdgeInsets.symmetric(
+                        //           vertical: 10,
+                        //         ),
+                        //         child: CommonContainer.horizonalDivider(),
+                        //       ),
+                        //   ],
+                        //   if (_view.isEmpty)
+                        //     Padding(
+                        //       padding: const EdgeInsets.only(
+                        //         top: 10,
+                        //         bottom: 4,
+                        //       ),
+                        //       child: Text(
+                        //         'No results',
+                        //         style: GoogleFont.Mulish(
+                        //           color: AppColor.lightGray2,
+                        //         ),
+                        //       ),
+                        //     ),
+                        // ],
                       ],
                     ),
                   ),
 
                   SizedBox(height: 35),
                   Text(
-                    '2. Get Reply from Shops within Minutes',
+                    '2. ${guide?.data.steps[1]}',
                     style: GoogleFont.Mulish(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -274,7 +289,7 @@ class _SmartConnectGuideState extends State<SmartConnectGuide> {
                   ),
                   SizedBox(height: 20),
                   Text(
-                    '3. Pick your favorite shop & Connect',
+                    '3. ${guide?.data.steps[2]}',
                     style: GoogleFont.Mulish(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,

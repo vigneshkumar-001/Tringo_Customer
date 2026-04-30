@@ -1,10 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Api/api_providers.dart';
 import 'package:tringo_app/Core/contacts/contacts_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tringo_app/Api/DataSource/api_data_source.dart';
-
-import '../../Presentation/OnBoarding/Screens/Login Screen/Controller/login_notifier.dart';
 
 class ContactsSyncHelper {
   static Future<void> syncOnce(Ref ref) async {

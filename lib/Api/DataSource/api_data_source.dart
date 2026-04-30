@@ -16,6 +16,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/n
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/login_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/otp_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/whatsapp_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/device_token_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/referral_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_detail_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_list_response.dart';
@@ -27,6 +28,11 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/f
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/product_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shop_details_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Model/shops_model.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_create_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_details_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_history_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Model/smart_connect_search_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Support/Model/support_list_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Model/surprise_offer_response.dart';
@@ -34,7 +40,6 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Mode
 import '../../Core/Utility/app_prefs.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_otp_response.dart';
 import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_number_verify_response.dart';
-import '../../Presentation/OnBoarding/Screens/Edit Profile/Model/edit_profile_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/app_version_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/contact_response.dart';
 import '../../Presentation/OnBoarding/Screens/Login Screen/Model/login_new_response.dart';
@@ -42,7 +47,6 @@ import '../../Presentation/OnBoarding/Screens/Mobile Nomber Verify/Model/sim_ver
 import '../../Presentation/OnBoarding/Screens/Privacy Policy/model/terms_and_condition_model.dart';
 import '../../Presentation/OnBoarding/Screens/Profile Screen/Model/delete_response.dart';
 import '../../Presentation/OnBoarding/Screens/Services Screen/Models/service_data_response.dart';
-import '../../Presentation/OnBoarding/Screens/Support/Model/chat_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/create_support_response.dart';
 import '../../Presentation/OnBoarding/Screens/Support/Model/send_message_response.dart';
 import '../../Presentation/OnBoarding/Screens/fill_profile/Model/update_profile_response.dart'
@@ -56,6 +60,10 @@ import '../../Presentation/OnBoarding/Screens/wallet/Model/uid_name_response.dar
 import '../../Presentation/OnBoarding/Screens/wallet/Model/wallet_history_response.dart';
 import '../../Presentation/OnBoarding/Screens/wallet/Model/wallet_qr_response.dart';
 import '../../Presentation/OnBoarding/Screens/wallet/Model/withdraw_request_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/ccavenue_confirm_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/ccavenue_init_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/subscription_current_response.dart';
+import '../../Presentation/OnBoarding/Screens/Subscription/Model/subscription_plans_response.dart';
 import '../Repository/api_url.dart';
 import '../Repository/failure.dart';
 import '../Repository/request.dart';
@@ -338,7 +346,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -436,7 +444,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -719,9 +727,9 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e,st) {
+    } catch (e, st) {
       AppLogger.log.e('$e/n$st');
-      print('$e/n$st');
+      AppLogger.log.e('$e/n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -754,8 +762,7 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
-    } catch (e,st) {
-      print('$e\n$st');
+    } catch (e, st) {
       AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
@@ -837,8 +844,6 @@ class ApiDataSource extends BaseApiDataSource {
     } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
-      print(e);
-      print(st);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1226,7 +1231,6 @@ class ApiDataSource extends BaseApiDataSource {
     } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
-      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1307,7 +1311,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1387,7 +1391,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
-      print(e);
+      AppLogger.log.e(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1428,9 +1432,9 @@ class ApiDataSource extends BaseApiDataSource {
 
       return Left(ServerFailure("Request failed"));
     } catch (e, st) {
-      AppLogger.log.e('${e}\n\n${st}');
+      AppLogger.log.e('$e\n\n$st');
 
-      print('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
 
       return Left(ServerFailure(e.toString()));
     }
@@ -1800,8 +1804,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
-      print('${e}\n${st}');
-      AppLogger.log.e('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1813,11 +1816,16 @@ class ApiDataSource extends BaseApiDataSource {
     required String offerId,
   }) async {
     try {
-      final url = ApiUrl.surpriseClaimed(shopId: shopId, );
+      final url = ApiUrl.surpriseClaimed(shopId: shopId);
 
+      final trimmedOfferId = offerId.trim();
       final response = await Request.sendRequest(
         url,
-        {"lat": lat, "lng": lng,"offerId" :offerId },
+        {
+          "lat": lat,
+          "lng": lng,
+          if (trimmedOfferId.isNotEmpty) "offerId": trimmedOfferId,
+        },
         'Post',
         true,
       );
@@ -1842,8 +1850,41 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
-      print('${e}\n${st}');
-      AppLogger.log.e('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SurpriseStatusResponse>> surpriseOfferDetails({
+    required String shopId,
+    required String offerId,
+  }) async {
+    try {
+      final url = ApiUrl.surpriseOfferDetails(shopId: shopId, offerId: offerId);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SurpriseStatusResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Request failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e, st) {
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1874,8 +1915,7 @@ class ApiDataSource extends BaseApiDataSource {
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
-      print('${e}\n${st}');
-      AppLogger.log.e('${e}\n${st}');
+      AppLogger.log.e('$e\n$st');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -1965,7 +2005,6 @@ class ApiDataSource extends BaseApiDataSource {
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e) {
       AppLogger.log.e(e);
-      print(e);
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -2048,6 +2087,393 @@ class ApiDataSource extends BaseApiDataSource {
       }
     } catch (e) {
       AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectResponse>> getSmartConnectGuide() async {
+    try {
+      final url = ApiUrl.smartConnectGuide;
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectSearchResponse>> getSmartConnectSearch({
+    required String search,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnectSearch(search: search);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectSearchResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectCreateResponse>> createSmartConnect({
+    required String listingId,
+    required String listingType,
+    required String shopId,
+    required String description,
+    required List<Map<String, String>> attachments,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnect;
+      final body = {
+        "listingId": listingId,
+        "listingType": listingType,
+        "shopId": shopId,
+        "description": description,
+        "attachments": attachments,
+      };
+      final response = await Request.sendRequest(url, body, 'POST', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectCreateResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectHistoryResponse>> getSmartConnectHistory({
+    required int page,
+    required int limit,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnectHistory(limit: 0, page: 0);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectHistoryResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SmartConnectDetailsResponse>> getSmartConnectDetails({
+    required String requestId,
+  }) async {
+    try {
+      final url = ApiUrl.smartConnectDetails(requestId: requestId);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      AppLogger.log.i(response);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          return Right(SmartConnectDetailsResponse.fromJson(data));
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Login failed"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      AppLogger.log.e(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, DeviceTokenResponse>> fcmTokenSend({
+    required String fcmToken,
+    required String platform,
+    required String deviceId,
+  }) async {
+    try {
+      final url = ApiUrl.fcmToken;
+
+      dynamic response = await Request.sendRequest(
+        url,
+        {
+          "fcmToken": fcmToken,
+          "platform": "android",
+          if (deviceId.trim().isNotEmpty) "deviceId": deviceId,
+        },
+        'POST',
+        true,
+      );
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(DeviceTokenResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Login failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  // ==========================================================
+  // Subscriptions
+  // ==========================================================
+
+  Future<Either<Failure, SubscriptionPlansResponse>> getSubscriptionPlans() async {
+    try {
+      final response = await Request.sendRequest(
+        ApiUrl.subscriptionPlans,
+        const {},
+        'GET',
+        false, // public
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(SubscriptionPlansResponse.fromJson(response.data));
+          }
+          return Left(
+            ServerFailure(response.data['message'] ?? 'Failed to load plans'),
+          );
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, SubscriptionCurrentResponse>> getCurrentSubscription({
+    String? businessProfileId,
+  }) async {
+    try {
+      final url =
+          ApiUrl.subscriptionCurrent(businessProfileId: businessProfileId);
+      final response = await Request.sendRequest(
+        url,
+        const {},
+        'GET',
+        true, // x-session-token required
+        sendBearerToken: false,
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(SubscriptionCurrentResponse.fromJson(response.data));
+          }
+          return Left(
+            ServerFailure(
+              response.data['message'] ?? 'Failed to load subscription',
+            ),
+          );
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, CcavenueInitResponse>> initCcavenueCheckout({
+    required String planId,
+    String? businessProfileId,
+    String? shopId,
+    required bool extend,
+  }) async {
+    try {
+      final url = extend
+          ? ApiUrl.subscriptionCcavenueExtendInit
+          : ApiUrl.subscriptionCcavenueInit;
+
+      final body = <String, dynamic>{
+        'planId': planId,
+        if ((businessProfileId ?? '').trim().isNotEmpty)
+          'businessProfileId': businessProfileId!.trim(),
+        if ((shopId ?? '').trim().isNotEmpty) 'shopId': shopId!.trim(),
+      };
+
+      final response = await Request.sendRequest(
+        url,
+        body,
+        'POST',
+        true,
+        sendBearerToken: false,
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(CcavenueInitResponse.fromJson(response.data));
+          }
+          return Left(
+            ServerFailure(
+              response.data['message'] ?? 'Failed to initialize payment',
+            ),
+          );
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, CcavenueConfirmResponse>> confirmCcavenuePayment({
+    required String encResp,
+  }) async {
+    try {
+      final response = await Request.sendRequest(
+        ApiUrl.subscriptionCcavenueConfirm,
+        {'encResp': encResp},
+        'POST',
+        true,
+        sendBearerToken: false,
+      );
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          // NOTE: top-level `status` can be false even though paymentStatus exists.
+          return Right(CcavenueConfirmResponse.fromJson(response.data));
+        }
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Something went wrong'),
+        );
+      }
+
+      final errorData = response.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(response.message ?? 'Network error'));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
       return Left(ServerFailure(e.toString()));
     }
   }

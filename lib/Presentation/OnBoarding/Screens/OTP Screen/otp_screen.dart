@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Utility/device_helper.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Controller/app_version_notifier.dart';
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_loader.dart';
@@ -14,6 +17,7 @@ import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
 import '../../../../Core/contacts/contacts_service.dart';
+import '../Contacts Sync/contacts_consent_gate.dart';
 import '../Login Screen/Controller/login_notifier.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -30,7 +34,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   String? otpError;
   String verifyCode = '';
-
+  bool _fcmSent = false;
   Timer? _timer;
   int _secondsRemaining = 30;
   bool _canResend = false;
@@ -78,6 +82,36 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     });
   }
 
+  Future<void> _sendFcmAfterLogin() async {
+    if (_fcmSent) return;
+    _fcmSent = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final fcmToken = prefs.getString('fcmToken') ?? '';
+
+      if (fcmToken.isEmpty) {
+        AppLogger.log.w("⚠️ FCM token empty after login");
+        return;
+      }
+
+      final deviceId = await DeviceIdHelper.getDeviceId();
+      final platform = Platform.isAndroid ? "android" : "ios";
+
+      await ref
+          .read(appVersionNotifierProvider.notifier)
+          .fcmTokenSend(
+            fcmToken: fcmToken,
+            platform: platform,
+            deviceId: deviceId,
+          );
+
+      AppLogger.log.i("✅ FCM token sent after OTP login");
+    } catch (e) {
+      AppLogger.log.e("❌ FCM send failed: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(loginNotifierProvider);
@@ -88,13 +122,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
       // Error case
       if (next.error != null) {
-        AppSnackBar.error(context, next.error!);
+        AppSnackBar.error(context, next.error ?? '');
         notifier.resetState();
       }
       // OTP verified
       else if (next.otpResponse != null) {
         AppSnackBar.success(context, 'OTP verified successfully!');
 
+        Future(() => _sendFcmAfterLogin());
         // final prefs = await SharedPreferences.getInstance();
         // final alreadySynced = prefs.getBool('contacts_synced') ?? false;
         //
@@ -116,11 +151,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         //     AppLogger.log.e("❌ Contact sync failed: $e");
         //   }
         // }
-        if (next.otpResponse?.data?.isReferralApplied == true) {
-          context.goNamed(AppRoutes.privacyPolicy);
-        } else {
-          context.goNamed(AppRoutes.referralScreen);
-        }
+        final nextRoute =
+            next.otpResponse?.data?.isReferralApplied == true
+                ? AppRoutes.privacyPolicy
+                : AppRoutes.referralScreen;
+
+        context.goNamed(
+          AppRoutes.contactsConsentGate,
+          extra: ContactsConsentGateArgs(nextRouteName: nextRoute),
+        );
 
         notifier.resetState();
       }
@@ -232,7 +271,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
                         // OTP fields
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 35),
+                          padding: const EdgeInsets.symmetric(horizontal: 25),
                           child: PinCodeTextField(
                             appContext: context,
                             length: 4,

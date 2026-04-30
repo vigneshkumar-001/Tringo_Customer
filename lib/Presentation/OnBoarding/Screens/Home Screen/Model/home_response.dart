@@ -1,6 +1,8 @@
 // home_response.dart
 // NOTE: Do NOT add `part` or `part of` here.
 
+import 'package:tringo_app/Core/Models/share_info.dart';
+
 class HomeResponse {
   final bool status;
   final HomeData data;
@@ -26,6 +28,7 @@ class HomeData {
   final AppUser user;
   final String? city;
   final GeoPoint coordinates;
+  final bool scFlag;
 
   final List<ShopCategory> shopCategories;
   final List<CategoryItem> categories;
@@ -44,6 +47,7 @@ class HomeData {
     required this.user,
     required this.city,
     required this.coordinates,
+    required this.scFlag,
     required this.shopCategories,
     required this.categories,
     required this.banners,
@@ -60,7 +64,7 @@ class HomeData {
       user: AppUser.fromJson(_asMap(json['user'])),
       city: json['city'] as String?,
       coordinates: GeoPoint.fromJson(_asMap(json['coordinates'])),
-
+      scFlag: _parseBool(json['scFlag']) ?? false,
       shopCategories: (_asList(
         json['shopCategories'],
       )).map((e) => ShopCategory.fromJson(_asMap(e))).toList(),
@@ -100,6 +104,7 @@ class HomeData {
     'user': user.toJson(),
     'city': city,
     'coordinates': coordinates.toJson(),
+    'scFlag': scFlag,
     'shopCategories': shopCategories.map((e) => e.toJson()).toList(),
     'categories': categories.map((e) => e.toJson()).toList(),
     'banners': banners.map((e) => e.toJson()).toList(),
@@ -243,7 +248,6 @@ class CategoryItem {
   Map<String, dynamic> toJson() => {'slug': slug, 'name': name, 'count': count};
 }
 
-
 // -----------------------------------------------------------------------------
 // BANNERS
 // -----------------------------------------------------------------------------
@@ -289,7 +293,7 @@ class HomeBanner {
       city: json['city'] as String?,
       isActive: json['isActive'] == true,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
-      shopId: json['shopId'] as String?,
+      shopId: json['shopId']?.toString(),
       type: (json['type'] ?? '').toString().toUpperCase(),
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
@@ -312,7 +316,6 @@ class HomeBanner {
     'updatedAt': updatedAt.toIso8601String(),
   };
 }
-
 
 // class HomeBanner {
 //   final String id;
@@ -408,6 +411,13 @@ class Offer {
   final String? distanceLabel;
   final String? closeTime;
 
+  final bool? isTrusted;
+  final bool? isClaimed;
+  final bool? claimed;
+  final String? claimStatus;
+
+  final ShareInfo? share;
+
   const Offer({
     required this.id,
     required this.createdAt,
@@ -430,6 +440,11 @@ class Offer {
     this.distanceKm,
     this.distanceLabel,
     this.closeTime,
+    this.isTrusted,
+    this.isClaimed,
+    this.claimed,
+    this.claimStatus,
+    this.share,
   });
 
   factory Offer.fromJson(Map<String, dynamic> json) {
@@ -476,6 +491,12 @@ class Offer {
       distanceKm: (json['distanceKm'] as num?)?.toDouble(),
       distanceLabel: json['distanceLabel']?.toString(),
       closeTime: json['closeTime']?.toString(),
+      isTrusted: _parseBool(json['isTrusted']),
+      isClaimed: _parseBool(json['isClaimed']),
+      claimed: _parseBool(json['claimed']),
+      claimStatus: json['claimStatus']?.toString(),
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(_asMap(json['share'])) : null,
     );
   }
 
@@ -503,6 +524,11 @@ class Offer {
     'distanceKm': distanceKm,
     'distanceLabel': distanceLabel,
     'closeTime': closeTime,
+    'isTrusted': isTrusted,
+    'isClaimed': isClaimed,
+    'claimed': claimed,
+    'claimStatus': claimStatus,
+    'share': share?.toJson(),
   };
 }
 
@@ -912,5 +938,3 @@ bool? _parseBool(dynamic value) {
 
   return null;
 }
-
-

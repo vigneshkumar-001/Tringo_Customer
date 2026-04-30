@@ -10,6 +10,7 @@ class Request {
     Map<String, dynamic> body,
     String? method,
     bool isTokenRequired,
+    {bool sendBearerToken = true, bool sendSessionToken = true}
   ) async {
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
@@ -63,8 +64,9 @@ class Request {
     try {
       final headers = <String, dynamic>{
         "Content-Type": "application/json",
-        if (token != null && isTokenRequired) "Authorization": "Bearer $token",
-        if (sessionToken != null && isTokenRequired)
+        if (sendBearerToken && token != null && isTokenRequired)
+          "Authorization": "Bearer $token",
+        if (sendSessionToken && sessionToken != null && isTokenRequired)
           "x-session-token": sessionToken,
       };
 
@@ -208,6 +210,7 @@ class Request {
       throw e;
     } catch (e) {
       print(e);
+      AppLogger.log.e("$e");
       // Throw clean exception
       throw Exception(e.toString());
     }

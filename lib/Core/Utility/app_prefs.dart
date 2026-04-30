@@ -9,6 +9,10 @@ class AppPrefs {
   static const String _sessionToken = 'sessionToken';
   static const String _role = 'role';
   static const String _isProfileCompleted = 'isProfileCompleted';
+  static const String _callerIdOverlayEnabled = 'caller_id_overlay_enabled';
+  static const String _overlaySettingsAutoOpenedOnce =
+      'overlay_settings_auto_opened_once';
+  static const String _pendingReferralCode = 'pending_referral_code';
 
   static Future<void> setVerificationToken(String token) async {
     final sp = await SharedPreferences.getInstance();
@@ -84,5 +88,49 @@ class AppPrefs {
     await prefs.remove(_sessionToken);
     await prefs.remove(_refreshToken);
     // _cachedVerificationToken = null;
+  }
+
+  // Caller ID / Overlay feature toggle
+  static Future<void> setCallerIdOverlayEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_callerIdOverlayEnabled, value);
+  }
+
+  static Future<bool> getCallerIdOverlayEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Default ON (user can disable from Profile).
+    return prefs.getBool(_callerIdOverlayEnabled) ?? true;
+  }
+
+  static Future<bool> getOverlaySettingsAutoOpenedOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_overlaySettingsAutoOpenedOnce) ?? false;
+  }
+
+  static Future<void> setOverlaySettingsAutoOpenedOnce(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_overlaySettingsAutoOpenedOnce, value);
+  }
+
+  // Referral deep link / onboarding helper
+  static Future<void> setPendingReferralCode(String code) async {
+    final v = code.trim();
+    final prefs = await SharedPreferences.getInstance();
+    if (v.isEmpty) {
+      await prefs.remove(_pendingReferralCode);
+      return;
+    }
+    await prefs.setString(_pendingReferralCode, v);
+  }
+
+  static Future<String?> getPendingReferralCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final v = (prefs.getString(_pendingReferralCode) ?? '').trim();
+    return v.isEmpty ? null : v;
+  }
+
+  static Future<void> clearPendingReferralCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pendingReferralCode);
   }
 }

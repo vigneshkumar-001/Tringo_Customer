@@ -1,4 +1,6 @@
 /// ================= ROOT RESPONSE =================
+import 'package:tringo_app/Core/Models/share_info.dart';
+
 class ShopDetailsResponse {
   final bool status;
   final ShopData? data;
@@ -51,6 +53,7 @@ class ShopData {
   final String alternatePhone;
 
   final String contactEmail;
+  final String upiId;
   final String ownerImageUrl;
 
   final bool doorDelivery;
@@ -87,6 +90,7 @@ class ShopData {
 
   final bool isFollowing;
   final int followerCount;
+  final ShareInfo? share;
 
   ShopData({
     required this.id,
@@ -106,6 +110,7 @@ class ShopData {
     required this.primaryPhone,
     required this.alternatePhone,
     required this.contactEmail,
+    required this.upiId,
     required this.ownerImageUrl,
     required this.doorDelivery,
     required this.isTrusted,
@@ -132,9 +137,17 @@ class ShopData {
     required this.surprise,
     required this.isFollowing,
     required this.followerCount,
+    this.share,
   });
 
   factory ShopData.fromJson(Map<String, dynamic> json) {
+    final contactEmailRaw = (json['contactEmail'] ?? '').toString().trim();
+    final contactEmail =
+        contactEmailRaw.toLowerCase() == 'null' ? '' : contactEmailRaw;
+
+    final upiIdRaw = (json['upiId'] ?? '').toString().trim();
+    final upiId = upiIdRaw.toLowerCase() == 'null' ? '' : upiIdRaw;
+
     return ShopData(
       id: json['id'].toString(),
       createdAt: json['createdAt'].toString(),
@@ -159,7 +172,8 @@ class ShopData {
       primaryPhone: json['primaryPhone'].toString(),
       alternatePhone: json['alternatePhone'].toString(),
 
-      contactEmail: json['contactEmail'].toString(),
+      contactEmail: contactEmail,
+      upiId: upiId,
       ownerImageUrl: json['ownerImageUrl'].toString(),
 
       doorDelivery: json['doorDelivery'] == true,
@@ -233,6 +247,8 @@ class ShopData {
 
       isFollowing: json['isFollowing'] == true,
       followerCount: (json['followerCount'] as num?)?.toInt() ?? 0,
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -254,6 +270,7 @@ class ShopData {
     "primaryPhone": primaryPhone,
     "alternatePhone": alternatePhone,
     "contactEmail": contactEmail,
+    "upiId": upiId,
     "ownerImageUrl": ownerImageUrl,
     "doorDelivery": doorDelivery,
     "isTrusted": isTrusted,
@@ -282,6 +299,7 @@ class ShopData {
     "surprise": surprise?.toJson(),
     "isFollowing": isFollowing,
     "followerCount": followerCount,
+    "share": share?.toJson(),
   };
 }
 
@@ -568,22 +586,26 @@ class Review {
 class Surprise {
   final bool hasOffer;
   final bool isClaimed;
+  final String? offerId;
 
   Surprise({
     required this.hasOffer,
     required this.isClaimed,
+    this.offerId,
   });
 
   factory Surprise.fromJson(Map<String, dynamic> json) {
     return Surprise(
       hasOffer: json['hasOffer'] == true,
       isClaimed: json['isClaimed'] == true,
+      offerId: (json['offerId'] ?? json['id'] ?? json['offer_id'])?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     "hasOffer": hasOffer,
     "isClaimed": isClaimed,
+    "offerId": offerId,
   };
 }
 

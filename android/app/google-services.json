@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "172945260896",
+    "project_id": "tringocustomer-4ec71",
+    "storage_bucket": "tringocustomer-4ec71.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:172945260896:android:6fcee69ace73dcb3fcde05",
+        "android_client_info": {
+          "package_name": "com.feni.tringo.tringo_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAK67AN8VvxioT-DfK3k3cg79GdBl77gZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

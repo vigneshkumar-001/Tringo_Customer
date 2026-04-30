@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.telephony.SubscriptionInfo
@@ -26,6 +27,12 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "sim_info"
     private val TAG = "TRINGO_NATIVE"
 
+    private val OVERLAY_NAV_CHANNEL = "tringo_overlay_nav"
+    private var overlayNavChannel: MethodChannel? = null
+    private var pendingOverlayShopId: String? = null
+    private var pendingOverlayTab: Int = 4
+
+
     private val REQ_ROLE_CALL_SCREENING = 9001
     private var pendingRoleResult: MethodChannel.Result? = null
 
@@ -38,6 +45,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        overlayNavChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OVERLAY_NAV_CHANNEL)
+        deliverPendingOverlayNav()
+
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -112,14 +123,18 @@ class MainActivity : FlutterActivity() {
                     }
 
                     "requestOverlayPermission" -> {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                            val intent = Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:$packageName")
-                            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                            startActivity(intent)
-                        }
+                        openOverlayPermissionSettingsBestEffort()
                         result.success(true)
+                    }
+
+                    "stopOverlayService" -> {
+                        try {
+                            stopService(Intent(this, TringoOverlayService::class.java))
+                            result.success(true)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "stopOverlayService failed: ${e.message}", e)
+                            result.success(false)
+                        }
                     }
 
                     "isIgnoringBatteryOptimizations" -> {
@@ -129,11 +144,15 @@ class MainActivity : FlutterActivity() {
                     "requestIgnoreBatteryOptimization" -> {
                         try {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                    data = Uri.parse("package:$packageName")
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                // Keep UX simple: don't show a permission-style prompt here.
+                                // Open settings so user can change it only if they want.
+                                if (isIgnoringBatteryOptimizations()) {
+                                    result.success(true)
+                                    return@setMethodCallHandler
                                 }
-                                startActivity(intent)
+
+                                val opened = tryStart(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                if (!opened) openBatteryUnrestrictedSettingsBestEffort()
                                 result.success(true)
                             } else {
                                 openAppDetails()
@@ -141,7 +160,7 @@ class MainActivity : FlutterActivity() {
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "requestIgnoreBatteryOptimization failed: ${e.message}", e)
-                            openAppDetails()
+                            openBatteryUnrestrictedSettingsBestEffort()
                             result.success(false)
                         }
                     }
@@ -317,6 +336,94 @@ class MainActivity : FlutterActivity() {
         tryStart(Intent(Settings.ACTION_SETTINGS))
     }
 
+    private fun openOverlayPermissionSettingsBestEffort() {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                openAppDetails()
+                return
+            }
+
+            if (Settings.canDrawOverlays(this)) return
+
+            // Standard Android overlay settings for this package
+            if (tryStart(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    data = Uri.parse("package:$packageName")
+                })) return
+
+            // MIUI / Xiaomi
+            if (isPackageInstalled("com.miui.securitycenter")) {
+                if (tryStart(Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                        setClassName(
+                            "com.miui.securitycenter",
+                            "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                        )
+                        putExtra("extra_pkgname", packageName)
+                    })) return
+
+                if (tryStart(Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                        setClassName(
+                            "com.miui.securitycenter",
+                            "com.miui.permcenter.permissions.AppPermissionsEditorActivity"
+                        )
+                        putExtra("extra_pkgname", packageName)
+                    })) return
+            }
+
+            // OPPO / Realme (ColorOS)
+            if (isPackageInstalled("com.coloros.safecenter")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.coloros.safecenter",
+                            "com.coloros.safecenter.permission.floatwindow.FloatWindowListActivity"
+                        )
+                    })) return
+            }
+            if (isPackageInstalled("com.oppo.safe")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.oppo.safe",
+                            "com.oppo.safe.permission.floatwindow.FloatWindowListActivity"
+                        )
+                    })) return
+            }
+
+            // Vivo / iQOO
+            if (isPackageInstalled("com.iqoo.secure")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.iqoo.secure",
+                            "com.iqoo.secure.ui.phoneoptimize.FloatWindowManager"
+                        )
+                    })) return
+            }
+            if (isPackageInstalled("com.vivo.permissionmanager")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.vivo.permissionmanager",
+                            "com.vivo.permissionmanager.activity.SoftPermissionDetailActivity"
+                        )
+                        putExtra("packagename", packageName)
+                    })) return
+            }
+
+            // Huawei
+            if (isPackageInstalled("com.huawei.systemmanager")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.huawei.systemmanager",
+                            "com.huawei.permissionmanager.ui.MainActivity"
+                        )
+                    })) return
+            }
+
+            // Fallback: app details page
+            openAppDetails()
+        } catch (e: Exception) {
+            Log.e(TAG, "openOverlayPermissionSettingsBestEffort failed: ${e.message}", e)
+            openAppDetails()
+        }
+    }
+
     private fun openAppDetails(): Boolean {
         return tryStart(
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -390,6 +497,62 @@ class MainActivity : FlutterActivity() {
             )
         }
     }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        handleOverlayNavIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleOverlayNavIntent(intent)
+    }
+
+    private fun handleOverlayNavIntent(intent: Intent?) {
+        try {
+            if (intent == null) return
+            val action = intent.getStringExtra("overlay_action") ?: return
+            if (action != "open_shop_details") return
+
+            val shopId = intent.getStringExtra("shopId")?.trim().orEmpty()
+            val tab = intent.getIntExtra("tab", 4)
+            if (shopId.isBlank()) return
+
+            dispatchOverlayOpenShopDetails(shopId, tab)
+        } catch (e: Exception) {
+            Log.e(TAG, "handleOverlayNavIntent failed: ${e.message}", e)
+        }
+    }
+
+    private fun dispatchOverlayOpenShopDetails(shopId: String, tab: Int) {
+        val ch = overlayNavChannel
+        if (ch == null) {
+            pendingOverlayShopId = shopId
+            pendingOverlayTab = tab
+            return
+        }
+
+        try {
+            ch.invokeMethod(
+                "openShopDetails",
+                hashMapOf(
+                    "shopId" to shopId,
+                    "tab" to tab
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "dispatchOverlayOpenShopDetails failed: ${e.message}", e)
+        }
+    }
+
+    private fun deliverPendingOverlayNav() {
+        val id = pendingOverlayShopId ?: return
+        val tab = pendingOverlayTab
+        pendingOverlayShopId = null
+        dispatchOverlayOpenShopDetails(id, tab)
+    }
+
 }
 
 //package com.feni.tringo.tringo_app
@@ -403,6 +566,7 @@ class MainActivity : FlutterActivity() {
 //import android.content.pm.PackageManager
 //import android.net.Uri
 //import android.os.Build
+//import android.os.Bundle
 //import android.os.PowerManager
 //import android.provider.Settings
 //import android.telephony.SubscriptionInfo

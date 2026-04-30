@@ -1,4 +1,6 @@
 // ✅ Helpers (keep at TOP of this file)
+import 'package:tringo_app/Core/Models/share_info.dart';
+
 int _toInt(dynamic v, {int def = 0}) {
   if (v == null) return def;
   if (v is int) return v;
@@ -48,6 +50,7 @@ class ServiceDetailsData {
   final SimilarServices similarServices;
   final List<SimilarServiceItem> peopleAlsoViewed;
   final ServiceReviews reviews;
+  final ShareInfo? share;
 
   ServiceDetailsData({
     required this.service,
@@ -55,6 +58,7 @@ class ServiceDetailsData {
     required this.similarServices,
     required this.peopleAlsoViewed,
     required this.reviews,
+    this.share,
   });
 
   factory ServiceDetailsData.fromJson(Map<String, dynamic> json) {
@@ -81,6 +85,8 @@ class ServiceDetailsData {
       reviews: ServiceReviews.fromJson(
         (json['reviews'] as Map?)?.cast<String, dynamic>() ?? {},
       ),
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -91,6 +97,7 @@ class ServiceDetailsData {
       'similarServices': similarServices.toJson(),
       'peopleAlsoViewed': peopleAlsoViewed.map((e) => e.toJson()).toList(),
       'reviews': reviews.toJson(),
+      'share': share?.toJson(),
     };
   }
 }
@@ -111,6 +118,7 @@ class Service {
   final List<ServiceHighlight> highlights;
   final int rating;
   final int reviewCount;
+  final ShareInfo? share;
 
   Service({
     required this.id,
@@ -128,6 +136,7 @@ class Service {
     required this.highlights,
     required this.rating,
     required this.reviewCount,
+    this.share,
   });
 
   factory Service.fromJson(Map<String, dynamic> json) {
@@ -177,6 +186,8 @@ class Service {
       // ✅ rating sometimes 0.0
       rating: _toInt(json['rating']),
       reviewCount: _toInt(json['reviewCount']),
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -197,6 +208,7 @@ class Service {
       'highlights': highlights.map((e) => e.toJson()).toList(),
       'rating': rating,
       'reviewCount': reviewCount,
+      'share': share?.toJson(),
     };
   }
 }
@@ -275,6 +287,7 @@ class ServiceShop {
   final bool isOpen;
   final String primaryImageUrl;
   final String? closeTime;
+  final ShareInfo? share;
 
   ServiceShop({
     required this.id,
@@ -298,6 +311,7 @@ class ServiceShop {
     required this.isOpen,
     required this.primaryImageUrl,
     this.closeTime,
+    this.share,
   });
 
   factory ServiceShop.fromJson(Map<String, dynamic> json) {
@@ -348,6 +362,8 @@ class ServiceShop {
       isOpen: json['isOpen'] == true,
       primaryImageUrl: (json['primaryImageUrl'] ?? '').toString(),
       closeTime: json['closeTime']?.toString(),
+      share:
+          json['share'] is Map ? ShareInfo.fromJson(json['share'] ?? {}) : null,
     );
   }
 
@@ -374,6 +390,7 @@ class ServiceShop {
       'isOpen': isOpen,
       'primaryImageUrl': primaryImageUrl,
       'closeTime': closeTime,
+      'share': share?.toJson(),
     };
   }
 }

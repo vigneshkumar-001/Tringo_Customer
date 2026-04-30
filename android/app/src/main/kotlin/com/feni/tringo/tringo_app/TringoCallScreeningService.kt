@@ -1,49 +1,62 @@
 package com.feni.tringo.tringo_app
 
-import android.net.Uri
+import android.content.Context
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.util.Log
 
 class TringoCallScreeningService : CallScreeningService() {
 
-    private val TAG = "TRINGO_SCREEN"
+    companion object {
+        private const val TAG = "TRINGO_SCREENING"
+        private const val PREF = "tringo_call_state"
+        private const val KEY_LAST_NUMBER = "last_number"
+        private const val KEY_LAST_NUMBER_AT = "last_number_at"
+    }
 
     override fun onScreenCall(callDetails: Call.Details) {
+        val phoneRaw = try {
+            callDetails.handle?.schemeSpecificPart?.trim().orEmpty()
+        } catch (_: Throwable) {
+            ""
+        }
+
+        val phone = normalizePhoneForPhoneInfo(phoneRaw)
+
+        if (phone.isNotBlank() && !phone.equals("UNKNOWN", true)) {
+            try {
+                applicationContext
+                    .getSharedPreferences(PREF, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_LAST_NUMBER, phone)
+                    .putLong(KEY_LAST_NUMBER_AT, System.currentTimeMillis())
+                    .apply()
+            } catch (_: Throwable) {}
+        }
+
         try {
-            val handle: Uri? = callDetails.handle // tel:9876543210
-            val number = handle?.schemeSpecificPart?.trim().orEmpty()
-
-            Log.d(TAG, "onScreenCall number=$number")
-
-            // ✅ IMPORTANT:
-            // CallScreeningService mainly works for INCOMING screening.
-            // Outgoing trigger-க்கு InCallService தான் reliable.
-            // But compile error fix + optional incoming hook:
-            if (number.isNotBlank()) {
-                // If you want immediate overlay on incoming:
-                // TringoOverlayService.start(this, number, "", showOnCallEnd = false)
-
-                // If you want after call ends for incoming:
-                TringoOverlayService.start(this, number, "", showOnCallEnd = true)
-            }
-
-            // ✅ MUST respond, otherwise system treats as not handled
-            val response = CallResponse.Builder()
+            val response = CallScreeningService.CallResponse.Builder()
                 .setDisallowCall(false)
                 .setRejectCall(false)
                 .setSkipCallLog(false)
                 .setSkipNotification(false)
                 .build()
-
             respondToCall(callDetails, response)
+        } catch (t: Throwable) {
+            Log.e(TAG, "respondToCall failed: ${t.message}", t)
+        }
+    }
 
-        } catch (e: Exception) {
-            Log.e(TAG, "onScreenCall error: ${e.message}", e)
-
-            // safe default response
-            val response = CallResponse.Builder().build()
-            respondToCall(callDetails, response)
+    private fun normalizePhoneForPhoneInfo(raw: String): String {
+        val t = raw.trim()
+        if (t.isBlank() || t.equals("UNKNOWN", true)) return ""
+        val digits = t.filter { it.isDigit() }
+        return when {
+            t.startsWith("+") && digits.length >= 10 -> "+$digits"
+            digits.length == 10 -> "+91$digits"
+            digits.length == 12 && digits.startsWith("91") -> "+$digits"
+            digits.isNotBlank() -> digits
+            else -> t
         }
     }
 }

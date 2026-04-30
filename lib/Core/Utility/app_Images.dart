@@ -34,6 +34,9 @@ class AppImages {
   static String messageImage = 'Assets/Images/Message_Image.png';
   static String messageImageWhite = 'Assets/Images/Message_Image_White.png';
   static String whatsappImage = 'Assets/Images/Whatsapp_Image.png';
+  static String gmailImage = 'Assets/Images/gmail.png';
+  static String upiImage = 'Assets/Images/QR_Code.png';
+  static String upi = 'Assets/Images/upi.png';
   static String fireImage = 'Assets/Images/Fire_Image.png';
   static String addImage = 'Assets/Images/Add_Image_1.png';
   static String servicesContainer1 = 'Assets/Images/Services_Container_1.png';
@@ -153,4 +156,5 @@ class AppImages {
   static String qrCodeLogo = 'Assets/Images/qr_code_Logo.png';
   static String unfollow = 'Assets/Images/unFollow.png';
   static String follow = 'Assets/Images/follow.png';
+  static String ai = 'Assets/Images/ai.png';
 }

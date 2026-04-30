@@ -5,6 +5,7 @@ import 'package:tringo_app/Api/DataSource/api_data_source.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Screens/edit_profile.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
@@ -83,6 +84,15 @@ class homeState {
 
 class HomeNotifier extends Notifier<homeState> {
   late final ApiDataSource api;
+  static bool _profileNavInProgress = false;
+
+  static bool _needsProfileUpdateForEnquiry(String message) {
+    final m = message.toLowerCase();
+    return m.contains('update your profile') &&
+        m.contains('before submitting an enquiry');
+  }
+
+  static const String _enquirySuccessToast = 'Enquiry sent successfully';
 
   @override
   homeState build() {
@@ -142,18 +152,90 @@ class HomeNotifier extends Notifier<homeState> {
       shopId: shopId,
     );
 
-    return result.fold(
-      (failure) {
+    return result.fold<Future<bool>>(
+      (failure) async {
+        final msg = failure.message;
+        final needsProfileUpdate = _needsProfileUpdateForEnquiry(msg);
+
         state = state.copyWith(
           isEnquiryLoading: false,
           activeEnquiryId: null,
-          enquiryError: failure.message, // ✅ API failure message
+          enquiryError: msg,
           error: state.error,
         );
-        AppSnackBar.error(context, failure.message); // ✅ API msg only
-        return false; // ✅ do NOT disable
+
+        if (!context.mounted) return false;
+
+        if (!needsProfileUpdate) {
+          AppSnackBar.error(context, msg);
+          return false;
+        }
+
+        if (_profileNavInProgress) return false;
+        _profileNavInProgress = true;
+
+        AppSnackBar.info(context, msg);
+
+        final bool? updated;
+        try {
+          updated = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => const EditProfile(popOnSuccess: true),
+            ),
+          );
+        } finally {
+          _profileNavInProgress = false;
+        }
+
+        if (updated != true || !context.mounted) return false;
+
+        // Retry enquiry once after profile update.
+        state = state.copyWith(
+          isEnquiryLoading: true,
+          enquiryError: null,
+          activeEnquiryId: shopId,
+          error: state.error,
+        );
+
+        final retry = await api.putEnquiry(
+          serviceId: serviceId,
+          productId: productId,
+          message: message,
+          shopId: shopId,
+        );
+
+        return retry.fold<Future<bool>>(
+          (retryFailure) async {
+            state = state.copyWith(
+              isEnquiryLoading: false,
+              activeEnquiryId: null,
+              enquiryError: retryFailure.message,
+              error: state.error,
+            );
+            if (context.mounted) {
+              AppSnackBar.error(context, retryFailure.message);
+            }
+            return false;
+          },
+          (retryResponse) async {
+            state = state.copyWith(
+              isEnquiryLoading: false,
+              enquiryError: null,
+              activeEnquiryId: null,
+              enquiryResponse: retryResponse,
+              error: state.error,
+            );
+            if (context.mounted) {
+              AppSnackBar.success(
+                context,
+                _enquirySuccessToast,
+              );
+            }
+            return true;
+          },
+        );
       },
-      (response) {
+      (response) async {
         state = state.copyWith(
           isEnquiryLoading: false,
           enquiryError: null,
@@ -162,9 +244,13 @@ class HomeNotifier extends Notifier<homeState> {
           error: state.error,
         );
 
-        // ✅ success msg from API
-        AppSnackBar.success(context, response.data.message);
-        return true; // ✅ success -> disable
+        if (context.mounted) {
+          AppSnackBar.success(
+            context,
+            _enquirySuccessToast,
+          );
+        }
+        return true;
       },
     );
   }

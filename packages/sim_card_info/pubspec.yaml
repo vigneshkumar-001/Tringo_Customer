@@ -1,0 +1,38 @@
+name: sim_card_info
+description: "Flutter plugin for accessing SIM card details like carrier name, phone number, and country code, ideal for telecom-related apps."
+version: 1.0.2
+homepage: https://github.com/FadyFouad/sim_card_info
+
+environment:
+  sdk: '>=3.1.5 <4.0.0'
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.wsc.sim_card_info
+        pluginClass: SimCardInfoPlugin
+      ios:
+        pluginClass: SimCardInfoPlugin
+        fileName: sim_card_info_ios.dart
+      linux:
+        pluginClass: SimCardInfoPlugin
+      macos:
+        pluginClass: SimCardInfoPlugin
+      windows:
+        pluginClass: SimCardInfoPluginCApi
+      web:
+        pluginClass: SimCardInfoWeb
+        fileName: sim_card_info_web.dart

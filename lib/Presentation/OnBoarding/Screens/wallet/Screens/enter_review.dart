@@ -9,8 +9,6 @@ import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../Shop Screen/Controller/shops_notifier.dart';
-import '../../Shop Screen/Model/shop_details_response.dart';
-import '../../Shop Screen/Screens/shops_details.dart';
 import '../Controller/wallet_notifier.dart';
 
 class EnterReview extends ConsumerStatefulWidget {
@@ -67,6 +65,8 @@ class _EnterReviewState extends ConsumerState<EnterReview>
   @override
   void dispose() {
     _controller.dispose();
+    _headingController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -84,39 +84,6 @@ class _EnterReviewState extends ConsumerState<EnterReview>
         : "";
 
     final isSubmitting = walletState.isMsgSendingLoading;
-
-    ref.listen<WalletState>(walletNotifier, (prev, next) {
-      // ✅ success response வந்தா
-      final res = next.reviewCreateResponse;
-
-      if (res != null && res.status == true) {
-        AppSnackBar.success(
-          context,
-          next.reviewCreateResponse?.data.note ==
-                  "ALREADY_REVIEWED_UPDATED_ONLY"
-              ? "Review updated"
-              : "Review submitted",
-        );
-
-        // ✅ clear
-        _headingController.clear();
-        _descriptionController.clear();
-        setState(() => _rating = 0);
-
-        // ✅ go back
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ShopsDetails(shopId: widget.shopId),
-          ),
-        );
-      }
-
-      // ✅ failure
-      if (next.error != null && next.error!.isNotEmpty) {
-        AppSnackBar.error(context, next.error!);
-      }
-    });
 
     return Scaffold(
       body: SafeArea(
@@ -277,33 +244,44 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                               ],
                                             ),
                                             const SizedBox(height: 10),
-                                            Row(
+                                            Wrap(
+                                              spacing: 10,
+                                              runSpacing: 6,
+                                              crossAxisAlignment:
+                                                  WrapCrossAlignment.center,
                                               children: [
                                                 CommonContainer.greenStarRating(
                                                   ratingStar:
                                                       shop?.averageRating
-                                                          ?.toString() ??
-                                                      "0",
+                                                              ?.toString() ??
+                                                          "0",
                                                   ratingCount:
                                                       shop?.reviewCount
-                                                          ?.toString() ??
-                                                      "0",
+                                                              ?.toString() ??
+                                                          "0",
                                                 ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  'Opens Upto ',
-                                                  style: GoogleFont.Mulish(
-                                                    fontSize: 9,
-                                                    color: AppColor.lightGray2,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  shop?.closeTime ?? "",
-                                                  style: GoogleFont.Mulish(
-                                                    fontSize: 9,
-                                                    color: AppColor.lightGray2,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      'Opens Upto ',
+                                                      style: GoogleFont.Mulish(
+                                                        fontSize: 9,
+                                                        color:
+                                                            AppColor.lightGray2,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      shop?.closeTime ?? "",
+                                                      style: GoogleFont.Mulish(
+                                                        fontSize: 9,
+                                                        color:
+                                                            AppColor.lightGray2,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),

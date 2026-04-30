@@ -1,19 +1,62 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Firebase_service/firebase_service.dart';
+import 'package:tringo_app/Core/Firebase_service/push_notification_handler.dart';
 import 'Core/Utility/app_color.dart';
 import 'Core/app_go_routes.dart';
-import 'Presentation/OnBoarding/Screens/Login Screen/Screens/login_mobile_number.dart';
-import 'Presentation/OnBoarding/Screens/Splash_screen.dart';
-import 'Presentation/OnBoarding/Screens/fill_profile/Screens/fill_profile.dart';
+import 'Core/overlay_nav_bridge.dart';
 
-void main() {
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Must initialize Firebase in background isolate too
+  await Firebase.initializeApp();
+  AppLogger.log.i('🔕 [BG] messageId=${message.messageId}');
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  OverlayNavBridge.init();
+
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
   };
+
+  // Optional: lock orientation
+  // await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  await Firebase.initializeApp();
+
+  // Background handler must be registered early
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  final firebaseService = FirebaseService();
+  await firebaseService.initializeFirebase();
+  await firebaseService.fetchFCMTokenIfNeeded();
+
+  // ✅ Register listeners (no need for postFrame)
+  firebaseService.listenToMessages(
+    onMessage: (msg) async {
+      AppLogger.log.i('📩 [FG] ${msg.messageId}');
+      await firebaseService.showNotification(msg);
+    },
+    onMessageOpenedApp: (msg) {
+      AppLogger.log.i('📬 [OPENED] ${msg.messageId}');
+      PushNotificationHandler.handleData(msg.data);
+    },
+  );
+
+  // ✅ Handle "terminated -> opened by tap"
+  final initialMsg = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMsg != null) {
+    AppLogger.log.i('🚀 [TERMINATED OPEN] ${initialMsg.messageId}');
+    PushNotificationHandler.handleData(initialMsg.data);
+  }
+
   runApp(const ProviderScope(child: MyApp()));
 }
 

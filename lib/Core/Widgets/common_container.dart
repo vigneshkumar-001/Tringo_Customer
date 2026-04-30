@@ -1,10 +1,6 @@
 import 'dart:io';
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -12,8 +8,6 @@ import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 
 import '../Utility/google_font.dart';
-
-Set<int> selectedIndexes = {};
 
 class CommonContainer {
   static rightSideArrowButton({VoidCallback? onTap}) {
@@ -236,6 +230,7 @@ class CommonContainer {
     bool verify = false,
     VoidCallback? onTap,
     String? heroTag,
+    String? badgeText,
   }) {
     return InkWell(
       onTap: onTap,
@@ -407,6 +402,29 @@ class CommonContainer {
               ),
             ),
           ),
+          if (badgeText != null && badgeText.trim().isNotEmpty)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColor.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Text(
+                  badgeText,
+                  style: GoogleFont.Mulish(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    color: AppColor.white,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -498,6 +516,8 @@ class CommonContainer {
     VoidCallback? mapOnTap,
     VoidCallback? messageOnTap,
     VoidCallback? whatsAppOnTap,
+    VoidCallback? mailOnTap,
+    VoidCallback? upiOnTap,
     VoidCallback? fireOnTap,
     VoidCallback? followButtonOnTap,
 
@@ -506,6 +526,8 @@ class CommonContainer {
     bool canFollow = false,
     bool fullEnquiry = false,
     bool whatsAppIcon = false,
+    bool mailIcon = false,
+    bool upiIcon = false,
     bool MessageIcon = false,
     bool FireIcon = false,
     bool order = false,
@@ -527,6 +549,8 @@ class CommonContainer {
     double? mapTextSize,
     double? messagesIconSize,
     double? whatsAppIconSize,
+    double? mailIconSize,
+    double? upiIconSize,
     double? fireIconSize,
 
     Color? callImageColor,
@@ -548,81 +572,82 @@ class CommonContainer {
     final safeMapImage = mapImage ?? AppImages.locationImage;
     final safeMapText = mapText ?? "Map";
 
-    return Row(
-      children: [
-        if (order)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: InkWell(
-              onTap: orderOnTap,
-              child: Container(
-                padding:
-                    callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColor.blueGradient1,
-                  borderRadius: BorderRadius.circular(15),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bounded =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
+
+        final callBtn = InkWell(
+          onTap: callOnTap,
+          child: Container(
+            padding:
+                callNowPadding ??
+                const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColor.blue,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  safeCallImage,
+                  height: callIconSize ?? 16,
+                  color: callImageColor,
                 ),
-                child: Row(
-                  children: [
-                    Image.asset(safeOrderImage, height: callIconSize ?? 16),
-                    const SizedBox(width: 7),
-                    Text(
-                      safeOrderText,
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.bold,
-                        fontSize: callTextSize ?? 16,
-                        color: AppColor.white,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 7),
+                Text(
+                  safeCallText,
+                  style: GoogleFont.Mulish(
+                    fontWeight: FontWeight.bold,
+                    fontSize: callTextSize ?? 14,
+                    color: AppColor.white,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
+        );
 
-        // CALL BUTTON
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final bounded =
-                constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
-
-            final callBtn = InkWell(
-              onTap: callOnTap,
-              child: Container(
-                padding:
-                    callNowPadding ??
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColor.blue,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      safeCallImage,
-                      height: callIconSize ?? 16,
-                      color: callImageColor,
+        return Row(
+          // When used inside a horizontal scroll view, keep size minimal so
+          // additional actions (Map / Follow / icons) are reachable.
+          mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            if (order)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: InkWell(
+                  onTap: orderOnTap,
+                  child: Container(
+                    padding:
+                        callNowPadding ??
+                        const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColor.blueGradient1,
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    const SizedBox(width: 7),
-                    Text(
-                      safeCallText,
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.bold,
-                        fontSize: callTextSize ?? 14,
-                        color: AppColor.white,
-                      ),
+                    child: Row(
+                      children: [
+                        Image.asset(safeOrderImage, height: callIconSize ?? 16),
+                        const SizedBox(width: 7),
+                        Text(
+                          safeOrderText,
+                          style: GoogleFont.Mulish(
+                            fontWeight: FontWeight.bold,
+                            fontSize: callTextSize ?? 16,
+                            color: AppColor.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            );
 
-            return bounded ? Expanded(child: callBtn) : callBtn;
-          },
-        ),
+            // CALL BUTTON
+            if (bounded) Expanded(child: callBtn) else callBtn,
 
         if (fullEnquiry)
           Padding(
@@ -651,7 +676,7 @@ class CommonContainer {
                             ),
                           )
                         : Row(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisSize: MainAxisSize.max,
                             children: [
                               Image.asset(
                                 safeMapImage,
@@ -659,12 +684,16 @@ class CommonContainer {
                                 color: AppColor.blue,
                               ),
                               const SizedBox(width: 5),
-                              Text(
-                                safeMapText,
-                                style: GoogleFont.Mulish(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: mapTextSize ?? 16,
-                                  color: AppColor.blue,
+                              Expanded(
+                                child: Text(
+                                  safeMapText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFont.Mulish(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: mapTextSize ?? 16,
+                                    color: AppColor.blue,
+                                  ),
                                 ),
                               ),
                             ],
@@ -720,10 +749,12 @@ class CommonContainer {
                 onTap: followButtonOnTap ?? () {},
               )
             : SizedBox.shrink(),
-        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
+        if (messageContainer &&
+            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || FireIcon))
           const SizedBox(width: 9),
 
-        if (messageContainer && (MessageIcon || whatsAppIcon || FireIcon))
+        if (messageContainer &&
+            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || FireIcon))
           Container(
             padding:
                 iconContainerPadding ??
@@ -732,10 +763,11 @@ class CommonContainer {
               color: AppColor.white2,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Wrap(
-              spacing: 16,
-              alignment: WrapAlignment.center,
-              children: [
+             child: Wrap(
+               spacing: 16,
+               alignment: WrapAlignment.center,
+               crossAxisAlignment: WrapCrossAlignment.center,
+               children: [
                 if (MessageIcon)
                   GestureDetector(
                     // ❌ disable tap when loading OR already clicked once
@@ -782,9 +814,43 @@ class CommonContainer {
                 if (whatsAppIcon)
                   GestureDetector(
                     onTap: whatsAppOnTap,
-                    child: Image.asset(
-                      AppImages.whatsappImage,
+                    child: SizedBox(
                       height: whatsAppIconSize ?? 19,
+                      width: whatsAppIconSize ?? 19,
+                      child: Center(
+                        child: Image.asset(
+                          AppImages.whatsappImage,
+                          height: whatsAppIconSize ?? 19,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (mailIcon)
+                  GestureDetector(
+                    onTap: mailOnTap,
+                    child: SizedBox(
+                      height: mailIconSize ?? 22,
+                      width: mailIconSize ?? 22,
+                      child: Center(
+                        child: Image.asset(
+                          AppImages.gmailImage,
+                          height: mailIconSize ?? 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (upiIcon)
+                  GestureDetector(
+                    onTap: upiOnTap,
+                    child: SizedBox(
+                      height: upiIconSize ?? 26,
+                      width: upiIconSize ?? 26,
+                      child: Center(
+                        child: Image.asset(
+                          AppImages.upi,
+                          height: upiIconSize ?? 26,
+                        ),
+                      ),
                     ),
                   ),
                 if (FireIcon)
@@ -802,6 +868,8 @@ class CommonContainer {
             ),
           ),
       ],
+        );
+      },
     );
   }
 
@@ -1061,6 +1129,7 @@ class CommonContainer {
 
   static serviceDetails({
     VoidCallback? onTap,
+    VoidCallback? onImageTap,
     required String filedName,
     required String image,
     required String ratingStar,
@@ -1079,29 +1148,33 @@ class CommonContainer {
             padding: const EdgeInsets.symmetric(vertical: 20.0),
             child: Row(
               children: [
-                ClipRRect(
+                InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    height: 130,
-                    width: 130,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: image, // your network image URL
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Center(
-                        child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                  onTap: onImageTap ?? onTap,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      height: 130,
+                      width: 130,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      errorWidget: (context, url, error) => Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          size: 40, // reduce icon size
-                          color: Colors.grey,
+                      child: CachedNetworkImage(
+                        imageUrl: image, // your network image URL
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Center(
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 40, // reduce icon size
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                     ),
@@ -1393,6 +1466,7 @@ class CommonContainer {
     bool weight = false,
     bool Ad = false,
     VoidCallback? onTap,
+    VoidCallback? onImageTap,
     bool horizontalDivider = false,
 
     // List<String> weightOptions = const ['300Gm', '500Gm'],
@@ -1405,45 +1479,51 @@ class CommonContainer {
     //   ...weightOptions.where((w) => w.toLowerCase().endsWith('gm')).take(2),
     // ];
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
-            child: Row(
-              children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        height: 130,
-                        width: 130,
-                        decoration: BoxDecoration(
+     return InkWell(
+       borderRadius: BorderRadius.circular(16),
+       onTap: onTap,
+       child: Column(
+         children: [
+           Padding(
+             padding: const EdgeInsets.symmetric(vertical: 20.0),
+             child: Row(
+               children: [
+                 Stack(
+                   children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: onImageTap ?? onTap,
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: CachedNetworkImage(
-                          imageUrl: image, // your network image URL
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Center(
-                            child: SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                          child: Container(
+                            height: 130,
+                            width: 130,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 40, // reduce icon size
-                              color: Colors.grey,
+                            child: CachedNetworkImage(
+                              imageUrl: image, // your network image URL
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Center(
+                                child: SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 40, // reduce icon size
+                                  color: Colors.grey,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
                     // ClipRRect(
                     //   borderRadius: BorderRadius.circular(16),
@@ -1804,10 +1884,11 @@ class CommonContainer {
             ],
           ),
           SizedBox(height: 20),
-          Row(
+          Wrap(
+            spacing: 5,
+            runSpacing: 4,
             children: [
               if (Verify) CommonContainer.verifyTick(),
-              SizedBox(width: 5),
               if (doorDelivery) CommonContainer.doorDelivery(),
             ],
           ),
@@ -2715,7 +2796,7 @@ class CommonContainer {
                 children: [
                   Text(
                     productName,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFont.Mulish(
                       fontWeight: FontWeight.w700,
@@ -2737,26 +2818,26 @@ class CommonContainer {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          Showrooms,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFont.Mulish(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: AppColor.blue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Image.asset(
-                        AppImages.rightArrow,
-                        height: 9,
-                        width: 11,
-                        color: AppColor.darkBlue,
-                      ),
-                      const SizedBox(width: 2),
+                      // Flexible(
+                      //   child: Text(
+                      //     Showrooms,
+                      //     maxLines: 1,
+                      //     overflow: TextOverflow.ellipsis,
+                      //     style: GoogleFont.Mulish(
+                      //       fontWeight: FontWeight.w700,
+                      //       fontSize: 12,
+                      //       color: AppColor.blue,
+                      //     ),
+                      //   ),
+                      // ),
+                      // const SizedBox(width: 2),
+                      // Image.asset(
+                      //   AppImages.rightArrow,
+                      //   height: 9,
+                      //   width: 11,
+                      //   color: AppColor.darkBlue,
+                      // ),
+                      // const SizedBox(width: 2),
                       Flexible(
                         child: Text(
                           productCategories,
