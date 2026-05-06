@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
@@ -146,10 +147,10 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
     final state = ref.watch(serviceNotifierProvider);
     final homeState = ref.watch(homeNotifierProvider);
 
-    final ads = homeState.advertisementResponse;
-    final addsBanner = (ads != null && ads.data.isNotEmpty)
-        ? ads.data.first
-        : null;
+    final ads =
+        homeState.adsByPlacement['SHOP_LIST'] ?? homeState.advertisementResponse;
+    final adBanners = ads?.data ?? const [];
+    final bannersToShow = adBanners.take(3).toList();
 
     if (state.isLoading) {
       return Scaffold(
@@ -163,6 +164,58 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
     }
 
     final servicesData = serviceRawData.data;
+    List<int> defaultInsertAfterItemNumbers({
+      required int itemCount,
+      required int adCount,
+    }) {
+      if (itemCount <= 0 || adCount <= 0) return const [];
+
+      final cappedAds = adCount.clamp(1, 3);
+      if (itemCount <= 3) return [itemCount];
+
+      int clampPos(int p) => p.clamp(1, itemCount);
+
+      final picks = <int>[];
+      final first = clampPos((itemCount * 0.25).round());
+      picks.add(first.clamp(3, itemCount));
+
+      if (cappedAds >= 2) {
+        picks.add(clampPos((itemCount * 0.60).round()));
+      }
+      if (cappedAds >= 3) {
+        picks.add(clampPos((itemCount * 0.82).round()));
+      }
+
+      final unique = <int>[];
+      for (final raw in picks) {
+        var pos = raw;
+        while (unique.contains(pos) && pos < itemCount) {
+          pos++;
+        }
+        unique.add(pos);
+      }
+
+      return unique.toSet().toList()..sort();
+    }
+
+    final insertAfterItemNumbers = defaultInsertAfterItemNumbers(
+      itemCount: servicesData.length,
+      adCount: bannersToShow.length,
+    );
+    final adPositions = <int>[];
+    var adsAdded = 0;
+    final insertAfterSorted = insertAfterItemNumbers.toSet().toList()..sort();
+    for (final after in insertAfterSorted) {
+      if (adsAdded >= bannersToShow.length) break;
+      if (after <= 0) continue;
+      if (after > servicesData.length) continue;
+      adPositions.add(after + adsAdded);
+      adsAdded++;
+    }
+    if (adPositions.isEmpty && bannersToShow.isNotEmpty) {
+      adPositions.add(servicesData.length);
+      adsAdded = 1;
+    }
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -226,9 +279,42 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                         shrinkWrap: true,
                         primary: false,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: servicesData.length,
+                        itemCount: servicesData.length + adsAdded,
                         itemBuilder: (context, index) {
-                          final data = servicesData[index];
+                          if (adPositions.contains(index)) {
+                            final adIndex = adPositions.indexOf(index);
+                            final banner = bannersToShow[adIndex];
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: DismissibleAdBanner(
+                                imageUrl: banner.imageUrl.toString(),
+                                onTap: () {
+                                  final shopId = (banner.shopId ?? '').trim();
+                                  if (shopId.isEmpty) {
+                                    AppSnackBar.error(
+                                      context,
+                                      'Offer not available',
+                                    );
+                                    return;
+                                  }
+                                  context.push(
+                                    Uri(
+                                      path: '/shop/details',
+                                      queryParameters: {
+                                        'shopId': shopId,
+                                        'tab': '3',
+                                      },
+                                    ).toString(),
+                                  );
+                                },
+                              ),
+                            );
+                          }
+
+                          final adsBefore =
+                              adPositions.where((p) => p < index).length;
+                          final itemIndex = index - adsBefore;
+                          final data = servicesData[itemIndex];
 
                           // If your API uses shop/service id here, keep consistent
                           final String? id = data.id;
@@ -241,7 +327,7 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                               (id != null &&
                               _disabledMessageServiceIds.contains(id));
 
-                          final anim = aServices[index % aServices.length];
+                          final anim = aServices[itemIndex % aServices.length];
 
                           final card = CommonContainer.servicesContainer(
                             whatsAppOnTap: () async {
@@ -313,15 +399,6 @@ class _ServiceListingState extends ConsumerState<ServiceListing>
                           );
                         },
                       ),
-
-                      const SizedBox(height: 6),
-
-                      addsBanner == null
-                          ? const SizedBox.shrink()
-                          : DismissibleAdBanner(
-                              imageUrl: addsBanner.imageUrl?.toString() ?? '',
-                              onTap: () {},
-                            ),
                     ],
                   ),
                 ),

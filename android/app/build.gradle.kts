@@ -14,6 +14,17 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+val googleMapsApiKey =
+    (localProperties.getProperty("GOOGLE_MAPS_API_KEY")
+        ?: System.getenv("GOOGLE_MAPS_API_KEY")
+        ?: "").trim()
+
 android {
     namespace = "com.feni.tringo.tringo_app"
     compileSdk = 36
@@ -36,20 +47,32 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+        val hasSigningConfig =
+            keystorePropertiesFile.exists() &&
+                listOf("keyAlias", "keyPassword", "storeFile", "storePassword").all {
+                    !keystoreProperties.getProperty(it).isNullOrBlank()
+                }
+
+        if (hasSigningConfig) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (signingConfigs.names.contains("release")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             isShrinkResources = false
         }

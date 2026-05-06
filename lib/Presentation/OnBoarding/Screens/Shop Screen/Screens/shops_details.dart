@@ -422,16 +422,77 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     ref.invalidate(shopServicesProvider(widget.shopId ?? ''));
   }
 
+  List<int> _defaultInsertAfterItemNumbers({
+    required int itemCount,
+    required int adCount,
+  }) {
+    if (itemCount <= 0 || adCount <= 0) return const [];
+
+    final cappedAds = adCount.clamp(1, 3);
+    if (itemCount <= 3) return [itemCount];
+
+    int clampPos(int p) => p.clamp(1, itemCount);
+
+    final picks = <int>[];
+    final first = clampPos((itemCount * 0.25).round());
+    picks.add(first.clamp(3, itemCount));
+
+    if (cappedAds >= 2) {
+      picks.add(clampPos((itemCount * 0.60).round()));
+    }
+    if (cappedAds >= 3) {
+      picks.add(clampPos((itemCount * 0.82).round()));
+    }
+
+    final unique = <int>[];
+    for (final raw in picks) {
+      var pos = raw;
+      while (unique.contains(pos) && pos < itemCount) {
+        pos++;
+      }
+      unique.add(pos);
+    }
+
+    return unique.toSet().toList()..sort();
+  }
+
+  ({List<int> adPositions, int adsAdded}) _adPositionsForList({
+    required int itemCount,
+    required int adCount,
+  }) {
+    final insertAfterItemNumbers = _defaultInsertAfterItemNumbers(
+      itemCount: itemCount,
+      adCount: adCount,
+    );
+
+    final adPositions = <int>[];
+    var adsAdded = 0;
+    for (final after in insertAfterItemNumbers) {
+      if (adsAdded >= adCount) break;
+      if (after <= 0) continue;
+      if (after > itemCount) continue;
+      adPositions.add(after + adsAdded);
+      adsAdded++;
+    }
+
+    if (adPositions.isEmpty && adCount > 0 && itemCount > 0) {
+      adPositions.add(itemCount);
+      adsAdded = 1;
+    }
+
+    return (adPositions: adPositions, adsAdded: adsAdded);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(shopsNotifierProvider);
     final notifier = ref.watch(shopsNotifierProvider.notifier);
     final stateS = ref.watch(homeNotifierProvider);
-    final ads = stateS.advertisementResponse;
+    final ads =
+        stateS.adsByPlacement['SHOP_DETAIL'] ?? stateS.advertisementResponse;
 
-    final addsBanner = (ads != null && ads.data.isNotEmpty)
-        ? ads.data.first
-        : null;
+    final adBanners = ads?.data ?? const [];
+    final bannersToShow = adBanners.take(3).toList();
     final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
 
     if (state.isLoading) {
@@ -1441,18 +1502,61 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         subCat == selectedSlug;
                                   }).toList();
 
+                            final meta = _adPositionsForList(
+                              itemCount: filteredServices.length,
+                              adCount: bannersToShow.length,
+                            );
+
                             return Stack(
                               children: [
                                 ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: filteredServices.length + 1,
+                                  itemCount:
+                                      filteredServices.length + meta.adsAdded + 1,
                                   itemBuilder: (context, index) {
-                                    if (index == filteredServices.length) {
+                                    if (index ==
+                                        filteredServices.length + meta.adsAdded) {
                                       return const SizedBox(height: 100);
                                     }
 
-                                    final data = filteredServices[index];
+                                    if (meta.adPositions.contains(index)) {
+                                      final adIndex =
+                                          meta.adPositions.indexOf(index);
+                                      final banner = bannersToShow[adIndex];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: DismissibleAdBanner(
+                                          imageUrl: banner.imageUrl,
+                                          onTap: () {
+                                            final shopId =
+                                                (banner.shopId ?? '').trim();
+                                            if (shopId.isEmpty) {
+                                              AppSnackBar.error(
+                                                context,
+                                                'Offer not available',
+                                              );
+                                              return;
+                                            }
+                                            context.push(
+                                              Uri(
+                                                path: '/shop/details',
+                                                queryParameters: {
+                                                  'shopId': shopId,
+                                                  'tab': '3',
+                                                },
+                                              ).toString(),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }
+
+                                    final adsBefore = meta.adPositions
+                                        .where((p) => p < index)
+                                        .length;
+                                    final itemIndex = index - adsBefore;
+                                    final data = filteredServices[itemIndex];
 
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
@@ -1589,14 +1693,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                           },
                         ),
                       ),
-                      addsBanner == null
-                          ? const SizedBox.shrink()
-                          : DismissibleAdBanner(
-                              imageUrl: addsBanner.imageUrl,
-                              onTap: () {
-                                // open banner.ctaUrl if needed
-                              },
-                            ),
                       const SizedBox(height: 20),
                       _staggerFromTop(
                         aHorizonalDivider,
@@ -1965,14 +2061,55 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         subCat == selectedSlug;
                                   }).toList();
 
+                            final meta = _adPositionsForList(
+                              itemCount: filteredProducts.length,
+                              adCount: bannersToShow.length,
+                            );
+
                             return Stack(
                               children: [
                                 ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: filteredProducts.length,
+                                  itemCount: filteredProducts.length + meta.adsAdded,
                                   itemBuilder: (context, index) {
-                                    final data = filteredProducts[index];
+                                    if (meta.adPositions.contains(index)) {
+                                      final adIndex =
+                                          meta.adPositions.indexOf(index);
+                                      final banner = bannersToShow[adIndex];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: DismissibleAdBanner(
+                                          imageUrl: banner.imageUrl,
+                                          onTap: () {
+                                            final shopId =
+                                                (banner.shopId ?? '').trim();
+                                            if (shopId.isEmpty) {
+                                              AppSnackBar.error(
+                                                context,
+                                                'Offer not available',
+                                              );
+                                              return;
+                                            }
+                                            context.push(
+                                              Uri(
+                                                path: '/shop/details',
+                                                queryParameters: {
+                                                  'shopId': shopId,
+                                                  'tab': '4',
+                                                },
+                                              ).toString(),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    }
+
+                                    final adsBefore = meta.adPositions
+                                        .where((p) => p < index)
+                                        .length;
+                                    final itemIndex = index - adsBefore;
+                                    final data = filteredProducts[itemIndex];
 
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
@@ -2109,14 +2246,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                           },
                         ),
                       ),
-                      addsBanner == null
-                          ? const SizedBox.shrink()
-                          : DismissibleAdBanner(
-                              imageUrl: addsBanner.imageUrl,
-                              onTap: () {
-                                // open banner.ctaUrl if needed
-                              },
-                            ),
                       SizedBox(height: 40),
                     ],
 

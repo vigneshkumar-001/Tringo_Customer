@@ -31,6 +31,10 @@ class homeState {
   final EnquiryResponse? enquiryResponse;
   final AdvertisementResponse? advertisementResponse;
 
+  // ✅ Keep ads by placement so screens don't overwrite each other.
+  // Placements used: HOME_TOP / SHOP_LIST / SHOP_DETAIL (and future placements).
+  final Map<String, AdvertisementResponse> adsByPlacement;
+
   const homeState({
     this.isLoading = true,
     this.isEnquiryLoading = false,
@@ -42,6 +46,7 @@ class homeState {
     this.enquiryResponse,
     this.activeEnquiryId,
     this.advertisementResponse,
+    this.adsByPlacement = const {},
   });
 
   factory homeState.initial() => const homeState();
@@ -61,6 +66,7 @@ class homeState {
     HomeResponse? homeResponse,
     EnquiryResponse? enquiryResponse,
     AdvertisementResponse? advertisementResponse,
+    Map<String, AdvertisementResponse>? adsByPlacement,
   }) {
     return homeState(
       isLoading: isLoading ?? this.isLoading,
@@ -76,6 +82,7 @@ class homeState {
       enquiryResponse: enquiryResponse ?? this.enquiryResponse,
       advertisementResponse:
           advertisementResponse ?? this.advertisementResponse,
+      adsByPlacement: adsByPlacement ?? this.adsByPlacement,
 
       activeEnquiryId: activeEnquiryId ?? this.activeEnquiryId,
     );
@@ -272,16 +279,23 @@ class HomeNotifier extends Notifier<homeState> {
     result.fold(
       (failure) {
         // ❌ do not set state.error
-        state = state.copyWith(
-          isAdsLoading: false,
-          advertisementResponse: null,
-          error: state.error,
-        );
+        // Keep existing adsByPlacement entries; don't wipe other screens.
+        state = state.copyWith(isAdsLoading: false, error: state.error);
       },
       (response) {
+        final key = placement.trim().toUpperCase();
+        final nextMap = Map<String, AdvertisementResponse>.from(
+          state.adsByPlacement,
+        )..[key] = response;
+
+        // Backward-compat: keep advertisementResponse pointing to HOME_TOP
+        // so existing code paths still work until migrated.
+        final legacy = key == 'HOME_TOP' ? response : state.advertisementResponse;
+
         state = state.copyWith(
           isAdsLoading: false,
-          advertisementResponse: response,
+          adsByPlacement: nextMap,
+          advertisementResponse: legacy,
           error: state.error,
         );
       },

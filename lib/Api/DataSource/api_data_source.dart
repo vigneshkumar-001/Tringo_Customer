@@ -2277,14 +2277,12 @@ class ApiDataSource extends BaseApiDataSource {
         url,
         {
           "fcmToken": fcmToken,
-          "platform": "android",
+          "platform": platform,
           if (deviceId.trim().isNotEmpty) "deviceId": deviceId,
         },
         'POST',
         true,
       );
-
-      AppLogger.log.i(response);
 
       if (response is! DioException) {
         if (response.statusCode == 200 || response.statusCode == 201) {

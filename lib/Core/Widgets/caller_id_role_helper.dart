@@ -9,7 +9,8 @@ final callerIdAskedProvider = StateProvider<bool>((ref) => false);
 const MethodChannel _native = MethodChannel('sim_info');
 
 class CallerIdRoleHelper {
-  static const String callerIdOverlayEnabledPrefKey = 'caller_id_overlay_enabled';
+  static const String callerIdOverlayEnabledPrefKey =
+      'caller_id_overlay_enabled';
 
   static Future<bool> requestReadPhoneState() async {
     if (!Platform.isAndroid) return true;
@@ -99,11 +100,23 @@ class CallerIdRoleHelper {
     } catch (_) {}
   }
 
+  static Future<bool> startOverlayServiceKeepAlive() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final ok = await _native.invokeMethod<bool>('startOverlayServiceKeepAlive');
+      return ok ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Battery / settings
   static Future<bool> openBatteryUnrestrictedSettings() async {
     if (!Platform.isAndroid) return true;
     try {
-      final ok = await _native.invokeMethod<bool>('openBatteryUnrestrictedSettings');
+      final ok = await _native.invokeMethod<bool>(
+        'openBatteryUnrestrictedSettings',
+      );
       return ok ?? true;
     } catch (_) {
       return false;
@@ -113,7 +126,9 @@ class CallerIdRoleHelper {
   static Future<bool> isIgnoringBatteryOptimizations() async {
     if (!Platform.isAndroid) return true;
     try {
-      final ok = await _native.invokeMethod<bool>('isIgnoringBatteryOptimizations');
+      final ok = await _native.invokeMethod<bool>(
+        'isIgnoringBatteryOptimizations',
+      );
       return ok ?? false;
     } catch (_) {
       return false;
@@ -123,7 +138,9 @@ class CallerIdRoleHelper {
   static Future<bool> isBackgroundRestricted() async {
     if (!Platform.isAndroid) return false;
     try {
-      final restricted = await _native.invokeMethod<bool>('isBackgroundRestricted');
+      final restricted = await _native.invokeMethod<bool>(
+        'isBackgroundRestricted',
+      );
       return restricted ?? false;
     } catch (_) {
       return false;
@@ -145,7 +162,6 @@ class CallerIdRoleHelper {
     }
   }
 }
-
 
 /*class CallerIdRoleHelper {
   static Future<bool> requestReadPhoneState() async {
@@ -309,5 +325,3 @@ class CallerIdRoleHelper {
     } catch (_) {}
   }
 }*/
-
-

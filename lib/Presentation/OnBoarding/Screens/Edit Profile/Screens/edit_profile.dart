@@ -529,20 +529,36 @@ class _EditProfileState extends ConsumerState<EditProfile> {
 
                                 if (!context.mounted) return;
 
-                                if (err == null) {
-                                  await AppPrefs.setIsProfileCompleted(true);
-                                  AppPrefs.clearVerificationToken();
+                                 if (err == null) {
+                                   await AppPrefs.setIsProfileCompleted(true);
+                                   AppPrefs.clearVerificationToken();
 
-                                  if (!context.mounted) return;
+                                   if (!context.mounted) return;
 
-                                  if (widget.popOnSuccess) {
-                                    Navigator.pop(context, true);
-                                  } else {
-                                    context.go(AppRoutes.homePath);
-                                  }
-                                } else {
-                                  AppSnackBar.error(
-                                    context,
+                                   AppSnackBar.success(
+                                     context,
+                                     'Profile updated successfully',
+                                   );
+
+                                   if (widget.popOnSuccess) {
+                                     Navigator.pop(context, true);
+                                   } else {
+                                     final router = GoRouter.of(context);
+                                     final nav = Navigator.of(
+                                       context,
+                                       rootNavigator: true,
+                                     );
+
+                                     if (nav.canPop()) {
+                                       nav.popUntil((route) => route.isFirst);
+                                     }
+
+                                     // Ensure we land on Home even if the first route isn't Home.
+                                     router.go(AppRoutes.homePath);
+                                   }
+                                 } else {
+                                   AppSnackBar.error(
+                                     context,
                                     err,
                                   ); // ✅ current error
                                 }

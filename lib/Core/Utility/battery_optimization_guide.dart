@@ -23,6 +23,30 @@ class BatteryOptimizationGuide {
     );
   }
 
+  // Heuristic: OEMs that are known to aggressively restrict background work,
+  // full-screen intents, and floating windows. Use this to decide whether to
+  // ask optional permissions (like Notifications) proactively.
+  static bool isLikelyRestrictiveOverlayOem({
+    required String manufacturer,
+    required String brand,
+    required String model,
+  }) {
+    final combined =
+        '${manufacturer.toLowerCase()} ${brand.toLowerCase()} ${model.toLowerCase()}';
+
+    return combined.contains('xiaomi') ||
+        combined.contains('redmi') ||
+        combined.contains('poco') ||
+        combined.contains('vivo') ||
+        combined.contains('iqoo') ||
+        combined.contains('oppo') ||
+        combined.contains('realme') ||
+        combined.contains('oneplus') ||
+        combined.contains('oplus') ||
+        combined.contains('huawei') ||
+        combined.contains('honor');
+  }
+
   static BatteryGuide? forAndroid({
     required String manufacturer,
     required String brand,
@@ -85,4 +109,3 @@ class BatteryOptimizationGuide {
     );
   }
 }
-

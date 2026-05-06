@@ -1,5 +1,5 @@
-import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class SimpleContact {
@@ -9,38 +9,16 @@ class SimpleContact {
 }
 
 class ContactsService {
-  static Future<List<SimpleContact>> getAllContacts() async {
-    // ✅ Request using permission_handler (reliable)
-    var status = await Permission.contacts.status;
-    debugPrint("📛 Contacts permission status: $status");
-
-    if (!status.isGranted) {
-      status = await Permission.contacts.request();
-      debugPrint("📛 Contacts permission after request: $status");
-    }
-
-    // If permanently denied -> open settings
-    if (status.isPermanentlyDenied) {
-      debugPrint("❌ Permanently denied. Opening app settings...");
-      await openAppSettings();
-      return [];
-    }
-
-    if (!status.isGranted) {
-      debugPrint("❌ Permission not granted.");
-      return [];
-    }
-
-    // ✅ Now fetch contacts
+  static Future<List<SimpleContact>> _fetchContacts() async {
     final contacts = await FlutterContacts.getContacts(withProperties: true);
-    debugPrint("📒 Raw contacts count = ${contacts.length}");
+    debugPrint("Contacts raw count=${contacts.length}");
 
     final out = <SimpleContact>[];
 
-    for (final c in contacts) {
-      final name = (c.displayName).trim();
-      for (final p in c.phones) {
-        final phone = normalizePhone(p.number);
+    for (final contact in contacts) {
+      final name = contact.displayName.trim();
+      for (final phoneEntry in contact.phones) {
+        final phone = normalizePhone(phoneEntry.number);
         if (phone.isNotEmpty) {
           out.add(
             SimpleContact(
@@ -52,14 +30,45 @@ class ContactsService {
       }
     }
 
-    // remove duplicates by phone
+    // Remove duplicates by phone.
     final map = <String, SimpleContact>{};
     for (final item in out) {
       map[item.phone] = item;
     }
 
-    debugPrint("✅ Parsed phone entries count = ${map.length}");
+    debugPrint("Contacts parsed unique phones=${map.length}");
     return map.values.toList();
+  }
+
+  // Requests permission if needed (may prompt UI) then returns contacts.
+  static Future<List<SimpleContact>> getAllContacts() async {
+    var status = await Permission.contacts.status;
+    debugPrint("Contacts permission status=$status");
+
+    if (!status.isGranted) {
+      status = await Permission.contacts.request();
+      debugPrint("Contacts permission after request=$status");
+    }
+
+    if (status.isPermanentlyDenied) {
+      debugPrint("Contacts permission permanently denied; opening settings");
+      await openAppSettings();
+      return [];
+    }
+
+    if (!status.isGranted) {
+      debugPrint("Contacts permission not granted");
+      return [];
+    }
+
+    return _fetchContacts();
+  }
+
+  // Silent: DOES NOT request permission / open settings. Returns empty if not granted.
+  static Future<List<SimpleContact>> getAllContactsIfPermitted() async {
+    final status = await Permission.contacts.status;
+    if (!status.isGranted) return [];
+    return _fetchContacts();
   }
 
   static String normalizePhone(String raw) {
@@ -72,25 +81,3 @@ class ContactsService {
   }
 }
 
-// import 'package:flutter_contacts/flutter_contacts.dart';
-//
-// class ContactsService {
-//   static Future<List<String>> getAllNumbers() async {
-//     if (!await FlutterContacts.requestPermission()) return [];
-//
-//     final contacts = await FlutterContacts.getContacts(withProperties: true);
-//     final nums = <String>[];
-//
-//     for (final c in contacts) {
-//       for (final p in c.phones) {
-//         final n = normalizePhone(p.number);
-//         if (n.isNotEmpty) nums.add(n);
-//       }
-//     }
-//     return nums.toSet().toList();
-//   }
-//
-//   static String normalizePhone(String raw) {
-//     return raw.replaceAll(RegExp(r'[^0-9+]'), '');
-//   }
-// }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -5,15 +6,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tringo_app/Api/api_providers.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/device_helper.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../Core/Widgets/common_container.dart';
 import '../../../Core/app_go_routes.dart';
+import '../../../Core/Contacts Sync Helper/contacts_sync_helpers.dart';
 import '../../../Core/permissions/permission_service.dart';
 import 'Login Screen/Controller/app_version_notifier.dart';
 
@@ -26,7 +30,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with WidgetsBindingObserver {
-  String appVersion = '1.0.1';
+  String appVersion = '1.0.3';
 
   bool _navigated = false;
   bool _tokenSent = false;
@@ -40,13 +44,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!ok) return;
 
       // ✅ only after all permissions ok
+      final openedOverlaySettings =
+          await PermissionService.syncCallerIdOverlayStateAtStartup();
+      if (openedOverlaySettings) return;
+
       await checkNavigation();
     });
 
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
     //   // ✅ 1) MUST request Phone/CallLog/Contacts first
     //   final ok = await PermissionService.requestCorePermissionsWithDialog(
-    //     context,
+    //     context, 
     //   );
     //   if (!ok) return;
     //   // final nativeOk = await CallerIdRoleHelper.debugPhonePerm();
@@ -73,20 +81,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // ✅ Only check again if still on splash (not navigated)
     if (state == AppLifecycleState.resumed && !_navigated) {
-      // Don't ask battery optimization on app start/resume.
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final opened =
+            await PermissionService.syncCallerIdOverlayStateAtStartup();
+        if (opened) return;
+        await checkNavigation();
+      });
     }
   }
-  Future<void> _sendDeviceTokenIfNeeded() async {
+Future<void> _sendDeviceTokenIfNeeded() async {
     if (_tokenSent) return;
-    _tokenSent = true;
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final fcmToken = prefs.getString('fcmToken') ?? '';
-      AppLogger.log.i(fcmToken);
+      final authToken = (prefs.getString('token') ?? '').trim();
+      final fcmToken = (prefs.getString('fcmToken') ?? '').trim();
+
+      // Backend endpoint requires auth; don't attempt before login.
+      if (authToken.isEmpty) return;
 
       if (fcmToken.isEmpty) {
         AppLogger.log.w("⚠️ No fcmToken in prefs yet");
+        return;
+      }
+
+      final lastSent = await AppPrefs.getLastSentFcmToken();
+      if (lastSent != null && lastSent == fcmToken) {
+        _tokenSent = true;
         return;
       }
 
@@ -101,6 +122,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             deviceId: deviceId,
           );
 
+      final st2 = ref.read(appVersionNotifierProvider);
+      if (st2.deviceTokenResponse?.status == true) {
+        await AppPrefs.setLastSentFcmToken(fcmToken);
+        _tokenSent = true;
+      } else {
+        _tokenSent = false;
+      }
+
       final st = ref.read(appVersionNotifierProvider);
       AppLogger.log.i(
         "✅ device-token api response: ${st.deviceTokenResponse?.status}",
@@ -108,6 +137,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     } catch (e, st) {
       AppLogger.log.e("❌ sendDeviceToken failed: $e");
       AppLogger.log.e(st);
+      _tokenSent = false;
     }
   }
 
@@ -117,6 +147,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final token = prefs.getString('token');
     final bool isProfileCompleted =
         prefs.getBool("isProfileCompleted") ?? false;
+
+    // Fire-and-forget: no UI messages, don't block navigation.
+    if (token != null) {
+      unawaited(
+        ContactsSyncHelper.syncOnceInBackground(ref.read(apiDataSourceProvider)),
+      );
+    }
 
     // 1) Version check
     await ref
