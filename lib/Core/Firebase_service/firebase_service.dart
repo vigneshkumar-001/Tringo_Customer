@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Firebase_service/push_notification_handler.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 
 class FirebaseService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -57,6 +58,20 @@ class FirebaseService {
 
     await _requestNotificationPermission();
 
+    // Keep local token in sync. We don't call the backend from here because it may
+    // require auth; instead we clear the "last sent" marker so the next
+    // authenticated flow can re-send.
+    FirebaseMessaging.instance.onTokenRefresh.listen((token) async {
+      try {
+        final t = token.trim();
+        if (t.isEmpty) return;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcmToken', t);
+        await AppPrefs.setLastSentFcmToken('');
+        _fcmToken = t;
+      } catch (_) {}
+    });
+
     // iOS foreground presentation (harmless on Android)
     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
       alert: true,
@@ -107,7 +122,9 @@ class FirebaseService {
     _fcmToken = prefs.getString('fcmToken');
 
     if (_fcmToken != null && _fcmToken!.isNotEmpty) {
-      AppLogger.log.i('ℹ️ Existing FCM Token: $_fcmToken');
+      AppLogger.log.i(
+        'ℹ️ Existing FCM Token: ${AppLogger.redact(_fcmToken, showLast: 6)}',
+      );
       return;
     }
 
@@ -116,7 +133,7 @@ class FirebaseService {
 
     if (token != null && token.isNotEmpty) {
       await prefs.setString('fcmToken', token);
-      AppLogger.log.i('✅ FCM Token: $token');
+      AppLogger.log.i('✅ FCM Token: ${AppLogger.redact(token, showLast: 6)}');
     } else {
       AppLogger.log.w('⚠️ No FCM token (device/config/network). Will retry later.');
     }

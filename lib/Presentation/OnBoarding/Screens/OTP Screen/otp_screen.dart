@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/device_helper.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Controller/app_version_notifier.dart';
 import '../../../../Core/Utility/app_Images.dart';
@@ -84,14 +85,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   Future<void> _sendFcmAfterLogin() async {
     if (_fcmSent) return;
-    _fcmSent = true;
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final fcmToken = prefs.getString('fcmToken') ?? '';
 
       if (fcmToken.isEmpty) {
         AppLogger.log.w("⚠️ FCM token empty after login");
+        return;
+      }
+
+      final lastSent = await AppPrefs.getLastSentFcmToken();
+      if (lastSent != null && lastSent == fcmToken) {
+        _fcmSent = true;
         return;
       }
 
@@ -105,6 +110,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             platform: platform,
             deviceId: deviceId,
           );
+
+      await AppPrefs.setLastSentFcmToken(fcmToken);
+      _fcmSent = true;
 
       AppLogger.log.i("✅ FCM token sent after OTP login");
     } catch (e) {

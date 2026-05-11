@@ -126,7 +126,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       (response) async {
         final token = response.data?.verificationToken ?? '';
         if (token.isNotEmpty) {
-          AppLogger.log.i("Token => $token");
+          AppLogger.log.i("Token => ${AppLogger.redact(token, showLast: 6)}");
           await AppPrefs.setVerificationToken(token);
         }
 

@@ -15,7 +15,6 @@ class Request {
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
     final String? sessionToken = prefs.getString('sessionToken');
-    final String? userId = prefs.getString('userId'); // (currently unused)
 
     final dio = Dio(
       BaseOptions(
@@ -31,12 +30,10 @@ class Request {
         },
         onResponse:
             (Response<dynamic> response, ResponseInterceptorHandler handler) {
-              AppLogger.log.i(body);
               AppLogger.log.i(
                 "sendRequest \n"
                 " API: $url \n"
-                " Token : $token \n"
-                " RESPONSE: ${response.toString()}",
+                " STATUS: ${response.statusCode}",
               );
               return handler.next(response);
             },
@@ -72,19 +69,20 @@ class Request {
 
       final httpMethod = (method ?? 'POST').toUpperCase();
 
+      final safeHeaders = Map<String, dynamic>.from(headers);
+      if (safeHeaders.containsKey("Authorization")) {
+        safeHeaders["Authorization"] = "Bearer ${AppLogger.redact(token, showLast: 6)}";
+      }
+      if (safeHeaders.containsKey("x-session-token")) {
+        safeHeaders["x-session-token"] = AppLogger.redact(sessionToken, showLast: 6);
+      }
+
       AppLogger.log.i(
         "REQUEST \n"
         " METHOD: $httpMethod \n"
         " API   : $url \n"
         " BODY  : $body \n"
-        " HEADERS: $headers",
-      );
-      print(
-        "REQUEST \n"
-        " METHOD: $httpMethod \n"
-        " API   : $url \n"
-        " BODY  : $body \n"
-        " HEADERS: $headers",
+        " HEADERS: $safeHeaders",
       );
 
       late Response response;
@@ -187,29 +185,14 @@ class Request {
       AppLogger.log.i(
         "RESPONSE \n"
         " API: $url \n"
-        " Token : $token \n"
-        " session Token : $sessionToken \n"
-        " Headers : $headers \n"
-        " RESPONSE: ${response.toString()}",
+        " STATUS: ${response.statusCode}",
       );
-      print(
-        "RESPONSE \n"
-        " API: $url \n"
-        " Token : $token \n"
-        " session Token : $sessionToken \n"
-        " Headers : $headers \n"
-        " RESPONSE: ${response.toString()}",
-      );
-
-      AppLogger.log.i("$body");
 
       return response;
     } on DioException catch (e) {
-      print(e);
       // THROW the DioException, do not return it
       throw e;
     } catch (e) {
-      print(e);
       AppLogger.log.e("$e");
       // Throw clean exception
       throw Exception(e.toString());
@@ -315,7 +298,6 @@ class Request {
   ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
-    String? userId = prefs.getString('userId');
 
     // AuthController authController = getx.Get.find();
     // // OtpController otpController = getx.Get.find();
@@ -328,7 +310,7 @@ class Request {
         onResponse:
             (Response<dynamic> response, ResponseInterceptorHandler handler) {
               AppLogger.log.i(
-                "sendPostRequest \n API: $url \n RESPONSE: ${response.toString()}",
+                "sendPostRequest \n API: $url \n STATUS: ${response.statusCode}",
               );
               return handler.next(response);
             },
@@ -371,15 +353,11 @@ class Request {
       );
 
       AppLogger.log.i(
-        "RESPONSE \n API: $url \n RESPONSE: ${response.toString()}",
+        "RESPONSE \n API: $url \n STATUS: ${response.statusCode}",
       );
-      print("RESPONSE \n API: $url \n RESPONSE: ${response.toString()}");
-      AppLogger.log.i("$token");
-      AppLogger.log.i("$body");
 
       return response;
     } catch (e) {
-      print(e);
       AppLogger.log.e('API: $url \n ERROR: $e ');
 
       return e;
@@ -398,7 +376,6 @@ class Request {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
     String? sessionToken = prefs.getString('sessionToken');
-    String? userId = prefs.getString('userId');
 
     Dio dio = Dio(
       BaseOptions(
@@ -414,9 +391,8 @@ class Request {
         },
         onResponse:
             (Response<dynamic> response, ResponseInterceptorHandler handler) {
-              AppLogger.log.i(queryParams);
               AppLogger.log.i(
-                "RESPONSE \n API: $url \n Token : $token \n session Token : $sessionToken \n Headers : headers \n RESPONSE: ${response.toString()}",
+                "RESPONSE \n API: $url \n STATUS: ${response.statusCode}",
               );
               return handler.next(response);
             },
@@ -457,15 +433,11 @@ class Request {
       );
 
       AppLogger.log.i(
-        "GET RESPONSE \n API: $url \nToken: $token\nSessionToken: $sessionToken\nRESPONSE: ${response.toString()}",
-      );
-      print(
-        "GET RESPONSE \n API: $url \nToken: $token\nSessionToken: $sessionToken\nRESPONSE: ${response.toString()}",
+        "GET RESPONSE \n API: $url \nSTATUS: ${response.statusCode}",
       );
       return response;
     } catch (e, st) {
       AppLogger.log.e('GET API: $url \n ERROR: $e\n\nStack Trace: $st');
-      print('GET API: $url \n ERROR: $e\n\nStack Trace: $st');
       return null;
     }
   }

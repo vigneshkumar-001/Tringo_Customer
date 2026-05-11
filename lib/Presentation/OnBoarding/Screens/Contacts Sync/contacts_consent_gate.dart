@@ -1,31 +1,49 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Api/api_providers.dart';
-import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
-import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
-import 'package:tringo_app/Core/contacts/contacts_service.dart';
+import 'package:tringo_app/Core/Contacts Sync Helper/contacts_sync_helpers.dart';
 
 class ContactsConsentGateArgs {
   final String nextRouteName;
-  const ContactsConsentGateArgs({required this.nextRouteName});
+  final bool forceShow;
+  final bool popOnDone;
+  final bool showTurnOffCallerIdPromptOnSkip;
+  const ContactsConsentGateArgs({
+    required this.nextRouteName,
+    this.forceShow = false,
+    this.popOnDone = false,
+    this.showTurnOffCallerIdPromptOnSkip = true,
+  });
 
   static ContactsConsentGateArgs? tryParse(Object? extra) {
     if (extra is ContactsConsentGateArgs) return extra;
     if (extra is Map) {
       final next = extra['nextRouteName'];
+      final force = extra['forceShow'];
+      final pop = extra['popOnDone'];
+      final prompt = extra['showTurnOffCallerIdPromptOnSkip'];
       if (next is String && next.isNotEmpty) {
-        return ContactsConsentGateArgs(nextRouteName: next);
+        return ContactsConsentGateArgs(
+          nextRouteName: nextRouteNameFrom(next),
+          forceShow: force == true,
+          popOnDone: pop == true,
+          showTurnOffCallerIdPromptOnSkip: prompt != false,
+        );
       }
     }
     return null;
   }
+
+  static String nextRouteNameFrom(String value) => value;
 }
 
 class ContactsConsentGate extends ConsumerStatefulWidget {
@@ -38,8 +56,60 @@ class ContactsConsentGate extends ConsumerStatefulWidget {
 
 class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
   bool _isWorking = false;
-  int _syncedCount = 0;
-  int _totalCount = 0;
+
+  static const _prefContactsSynced = 'contacts_synced';
+  static const _prefContactsSyncSkipped = 'contacts_sync_skipped';
+  static const _prefContactsSyncInProgress = 'contacts_sync_in_progress';
+
+  Future<bool?> _confirmTurnOffCallerIdPopup() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColor.white,
+          surfaceTintColor: AppColor.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Text(
+            'You’ll miss deals & Free TCoins.',
+            style: GoogleFont.Mulish(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColor.lightGray2,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Continue',
+                style: GoogleFont.Mulish(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.darkBlue,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: Text(
+                'Not now',
+                style: GoogleFont.Mulish(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.darkGrey,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirm;
+  }
 
   @override
   void initState() {
@@ -49,28 +119,45 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
 
   Future<void> _autoSkipIfNeeded() async {
     final prefs = await SharedPreferences.getInstance();
-    final alreadySynced = prefs.getBool('contacts_synced') ?? false;
-    final skipped = prefs.getBool('contacts_sync_skipped') ?? false;
+    final alreadySynced = prefs.getBool(_prefContactsSynced) ?? false;
+    final skipped = prefs.getBool(_prefContactsSyncSkipped) ?? false;
+    final inProgress = prefs.getBool(_prefContactsSyncInProgress) ?? false;
 
     if (!mounted) return;
-    if (alreadySynced || skipped) {
-      context.goNamed(widget.args.nextRouteName);
+    if (alreadySynced || (!widget.args.forceShow && (skipped || inProgress))) {
+      if (widget.args.popOnDone) {
+        Navigator.of(context).pop(true);
+      } else {
+        context.goNamed(widget.args.nextRouteName);
+      }
     }
   }
 
   Future<void> _skip() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('contacts_sync_skipped', true);
+    await prefs.setBool(_prefContactsSyncSkipped, true);
     if (!mounted) return;
-    context.goNamed(widget.args.nextRouteName);
+
+    if (widget.args.showTurnOffCallerIdPromptOnSkip) {
+      // UX requirement: when user skips contact sync, also offer to turn off Caller ID overlay.
+      final choice = await _confirmTurnOffCallerIdPopup();
+      if (!mounted) return;
+      // If user dismisses the popup (tap outside/back) or chooses "Not now", stay here.
+      if (choice == null) return;
+    }
+
+    if (!mounted) return;
+    if (widget.args.popOnDone) {
+      Navigator.of(context).pop(true);
+    } else {
+      context.goNamed(widget.args.nextRouteName);
+    }
   }
 
   Future<void> _requestPermissionAndSync() async {
     if (_isWorking) return;
     setState(() {
       _isWorking = true;
-      _syncedCount = 0;
-      _totalCount = 0;
     });
 
     try {
@@ -80,74 +167,29 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
       }
 
       if (!status.isGranted) {
-        if (!mounted) return;
-        AppSnackBar.info(
-          context,
-          'Contacts permission is required to sync. You can skip for now.',
-        );
+        // If user denies, treat it like "skip" and continue (smooth UX).
         setState(() => _isWorking = false);
+        if (!mounted) return;
+        await _skip();
         return;
       }
 
-      final contacts = await ContactsService.getAllContacts();
-      final limited = contacts.take(500).toList();
-      _totalCount = limited.length;
-
-      if (limited.isEmpty) {
-        if (!mounted) return;
-        AppSnackBar.info(context, 'No contacts found to sync.');
-        setState(() => _isWorking = false);
-        return;
-      }
-
+      // Allow -> fire-and-forget background sync -> go next screen immediately.
       final api = ref.read(apiDataSourceProvider);
-      final items =
-          limited.map((c) => {"name": c.name, "phone": "+91${c.phone}"}).toList();
-
-      const chunkSize = 200;
-      for (var i = 0; i < items.length; i += chunkSize) {
-        final chunk = items.sublist(
-          i,
-          (i + chunkSize > items.length) ? items.length : i + chunkSize,
-        );
-
-        final res = await api.syncContacts(items: chunk);
-        res.fold(
-          (l) {
-            throw Exception(l.message);
-          },
-          (r) {
-            AppLogger.log.i(
-              "✅ contacts sync batch ok total=${r.data.total} inserted=${r.data.inserted} touched=${r.data.touched} skipped=${r.data.skipped}",
-            );
-          },
-        );
-
-        if (!mounted) return;
-        setState(() => _syncedCount = (i + chunk.length));
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('contacts_synced', true);
-      await prefs.remove('contacts_sync_skipped');
-
+      unawaited(ContactsSyncHelper.syncOnceInBackground(api, ignoreSkipped: true));
       if (!mounted) return;
-      AppSnackBar.success(context, 'Contacts synced successfully!');
-      context.goNamed(widget.args.nextRouteName);
-    } catch (e) {
-      AppLogger.log.e("❌ contacts sync failed: $e");
-      if (mounted) {
-        AppSnackBar.error(context, 'Contact sync failed. You can try later.');
-        setState(() => _isWorking = false);
+      if (widget.args.popOnDone) {
+        Navigator.of(context).pop(true);
+      } else {
+        context.goNamed(widget.args.nextRouteName);
       }
+    } catch (_) {
+      setState(() => _isWorking = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        _totalCount == 0 ? null : (_syncedCount / _totalCount).clamp(0.0, 1.0);
-
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -175,9 +217,9 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
                   const SizedBox(height: 10),
                   Text(
                     'We will upload your phone contacts to help you find and connect faster.\n\n'
-                    '• We only use contacts for app features\n'
-                    '• You can skip now and sync later\n'
-                    '• We never message anyone without your action',
+                    '- We only use contacts for app features\n'
+                    '- You can skip now and sync later\n'
+                    '- We never message anyone without your action',
                     style: GoogleFont.Mulish(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -185,31 +227,36 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (_isWorking) ...[
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: Colors.white.withOpacity(0.6),
-                      color: AppColor.skyBlue,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _totalCount == 0
-                          ? 'Preparing…'
-                          : 'Synced $_syncedCount / $_totalCount',
-                      style: GoogleFont.Mulish(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColor.darkBlue,
+                  const Spacer(),
+                                 Align(
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      onPressed: _isWorking ? null : _skip,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColor.darkGrey.withValues(alpha: 0.55),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Skip',
+                        style: GoogleFont.Mulish(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColor.darkGrey.withValues(alpha: 0.55),
+                        ),
                       ),
                     ),
-                  ],
-                  const Spacer(),
+                  ),
+                  const SizedBox(height: 10),
                   CommonContainer.button(
                     buttonColor: AppColor.skyBlue,
                     onTap: _isWorking ? null : _requestPermissionAndSync,
                     text: Text(
-                      _isWorking ? 'Syncing…' : 'Allow & Sync',
+                      'Allow & Sync',
                       style: GoogleFont.Mulish(
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -217,20 +264,7 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  CommonContainer.button(
-                    hasBorder: true,
-                    buttonColor: Colors.white,
-                    borderColor: AppColor.skyBlue,
-                    onTap: _isWorking ? null : _skip,
-                    text: Text(
-                      'Skip for now',
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.w800,
-                        color: AppColor.skyBlue,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
+   
                 ],
               ),
             ),

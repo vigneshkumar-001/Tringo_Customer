@@ -1,10 +1,9 @@
 package com.feni.tringo.tringo_app
 
 import android.content.Context
-import android.content.Intent
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
+import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -24,7 +23,7 @@ class TringoInCallService : InCallService() {
 
         // IMPORTANT: channel importance cannot be upgraded once created on Android O+.
         // Use a versioned channel id so older installs with a low-importance channel still get full-screen behavior.
-        private const val OUTGOING_NOTIF_CH = "tringo_outgoing_overlay_v2"
+        private const val OUTGOING_NOTIF_CH = "tringo_outgoing_overlay_v3"
         private const val OUTGOING_NOTIF_ID = 303
     }
 
@@ -53,23 +52,23 @@ class TringoInCallService : InCallService() {
         // Outgoing calls often won't emit PHONE_STATE=RINGING. Show the overlay when the call is
         // added in a non-ringing state (dialing/connecting/active).
         if (call.state != Call.STATE_RINGING) {
-            // Use the same trampoline activity approach as receivers to avoid background start restrictions.
-            val i = Intent(applicationContext, TringoIncomingPopupActivity::class.java).apply {
-                putExtra("phone", if (phone.isNotBlank()) phone else "UNKNOWN")
-                putExtra("contactName", "")
-                putExtra("showOnCallEnd", false)
-                putExtra("outgoingOverlay", true)
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION or
-                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            // Prefer NOT opening the app. Start overlay service directly from InCallService context.
+            val started = try {
+                TringoOverlayService.start(
+                    ctx = applicationContext,
+                    phone = if (phone.isNotBlank()) phone else "UNKNOWN",
+                    contactName = "",
+                    showOnCallEnd = false,
+                    launchedByReceiver = false,
+                    outgoingOverlay = true,
+                    sessionStartedAtMs = System.currentTimeMillis()
                 )
+            } catch (_: Throwable) {
+                false
             }
 
             fun showOutgoingNotificationFallback() {
                 try {
-                    if (!NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()) return
-
                     val nm = applicationContext.getSystemService(NotificationManager::class.java)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val ch = NotificationChannel(
@@ -82,13 +81,6 @@ class TringoInCallService : InCallService() {
                         nm.createNotificationChannel(ch)
                     }
 
-                    val pi = PendingIntent.getActivity(
-                        applicationContext,
-                        OUTGOING_NOTIF_ID,
-                        i,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-
                     val n = NotificationCompat.Builder(applicationContext, OUTGOING_NOTIF_CH)
                         .setSmallIcon(android.R.drawable.ic_menu_call)
                         .setContentTitle("Calling...")
@@ -96,37 +88,33 @@ class TringoInCallService : InCallService() {
                         .setCategory(NotificationCompat.CATEGORY_CALL)
                         .setPriority(NotificationCompat.PRIORITY_MAX)
                         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                        .setColor(0xFF070A2A.toInt())
+                        .setColorized(true)
                         .setAutoCancel(true)
-                        .setFullScreenIntent(pi, true)
-                        .setContentIntent(pi)
-                        .build()
 
-                    NotificationManagerCompat.from(applicationContext).notify(OUTGOING_NOTIF_ID, n)
+                    NotificationManagerCompat.from(applicationContext).notify(
+                        OUTGOING_NOTIF_ID,
+                        n.build()
+                    )
                 } catch (t2: Throwable) {
                     Log.e(TAG, "outgoing notification fallback failed: ${t2.message}", t2)
                 }
             }
 
-            try {
-                applicationContext.startActivity(i)
-            } catch (t: Throwable) {
-                Log.e(TAG, "startActivity outgoing trampoline failed: ${t.message}", t)
+            fun startNoDisplayTrampolineFallback() {
+                // Never auto-open an Activity on calls.
+                // Use a heads-up CALL notification as fallback; user can tap if needed.
                 showOutgoingNotificationFallback()
             }
 
-            // Always post a full-screen notification as a safety net.
-            // If the activity starts successfully, it cancels this notification immediately.
-            if (!TringoOverlayService.isRunning) {
-                showOutgoingNotificationFallback()
+            if (started) {
+                // If the service fails to attach shortly (OEM restrictions), show a notification as fallback.
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (!TringoOverlayService.isRunning) startNoDisplayTrampolineFallback()
+                }, 600L)
+            } else {
+                startNoDisplayTrampolineFallback()
             }
-
-            // Some OEMs silently deny background activity starts (no exception thrown).
-            // If the overlay service doesn't come up shortly, use a full-screen notification trampoline.
-            Handler(Looper.getMainLooper()).postDelayed({
-                if (!TringoOverlayService.isRunning) {
-                    showOutgoingNotificationFallback()
-                }
-            }, 800L)
         }
     }
 

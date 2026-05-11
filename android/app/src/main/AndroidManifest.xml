@@ -45,13 +45,10 @@
 
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Required for full-screen call-style notifications on Android 10+ (esp. Android 14) -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Keep only base FGS permission if your service really runs in foreground -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
 
     <!-- Remove privileged permission if merged by dependency -->
     <uses-permission
@@ -67,7 +64,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAoOiPmmtlMJ7dqbk3yW13itbM1B5grOdc" />
+            android:value="${googleMapsApiKey}" />
 
         <meta-data
             android:name="flutter_deeplinking_enabled"
@@ -160,8 +157,10 @@
             android:name="com.feni.tringo.tringo_app.TringoIncomingPopupActivity"
             android:exported="false"
             android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.Tringo.Popup" />
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay" />
 
         <service
             android:name="com.feni.tringo.tringo_app.TringoCallScreeningService"
@@ -175,7 +174,7 @@
         <service
             android:name="com.feni.tringo.tringo_app.TringoOverlayService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|phoneCall" />
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name="com.feni.tringo.tringo_app.TringoInCallService"
@@ -203,6 +202,14 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.feni.tringo.tringo_app.TringoOverlayDismissReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.feni.tringo.tringo_app.ACTION_DISMISS_OVERLAY" />
             </intent-filter>
         </receiver>
 

@@ -10,8 +10,14 @@ class AppPrefs {
   static const String _role = 'role';
   static const String _isProfileCompleted = 'isProfileCompleted';
   static const String _callerIdOverlayEnabled = 'caller_id_overlay_enabled';
+  static const String _callerIdOverlayAutoDisabled =
+      'caller_id_overlay_auto_disabled';
   static const String _overlaySettingsAutoOpenedOnce =
       'overlay_settings_auto_opened_once';
+  static const String _defaultCallerIdRoleAskedOnce =
+      'default_caller_id_role_asked_once';
+  static const String _lastSentFcmToken = 'last_sent_fcm_token';
+  static const String _lastSentFcmAtMs = 'last_sent_fcm_at_ms';
   static const String _pendingReferralCode = 'pending_referral_code';
 
   static Future<void> setVerificationToken(String token) async {
@@ -102,6 +108,18 @@ class AppPrefs {
     return prefs.getBool(_callerIdOverlayEnabled) ?? true;
   }
 
+  // Whether the app disabled the overlay toggle due to missing permissions/settings.
+  // Used to auto-recover (turn ON) once all prerequisites are granted again.
+  static Future<void> setCallerIdOverlayAutoDisabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_callerIdOverlayAutoDisabled, value);
+  }
+
+  static Future<bool> getCallerIdOverlayAutoDisabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_callerIdOverlayAutoDisabled) ?? false;
+  }
+
   static Future<bool> getOverlaySettingsAutoOpenedOnce() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_overlaySettingsAutoOpenedOnce) ?? false;
@@ -110,6 +128,35 @@ class AppPrefs {
   static Future<void> setOverlaySettingsAutoOpenedOnce(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_overlaySettingsAutoOpenedOnce, value);
+  }
+
+  static Future<bool> getDefaultCallerIdRoleAskedOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_defaultCallerIdRoleAskedOnce) ?? false;
+  }
+
+  static Future<void> setDefaultCallerIdRoleAskedOnce(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_defaultCallerIdRoleAskedOnce, value);
+  }
+
+  // FCM sync bookkeeping (to avoid spamming the backend)
+  static Future<String?> getLastSentFcmToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final v = (prefs.getString(_lastSentFcmToken) ?? '').trim();
+    return v.isEmpty ? null : v;
+  }
+
+  static Future<void> setLastSentFcmToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    final v = token.trim();
+    if (v.isEmpty) {
+      await prefs.remove(_lastSentFcmToken);
+      await prefs.remove(_lastSentFcmAtMs);
+      return;
+    }
+    await prefs.setString(_lastSentFcmToken, v);
+    await prefs.setInt(_lastSentFcmAtMs, DateTime.now().millisecondsSinceEpoch);
   }
 
   // Referral deep link / onboarding helper

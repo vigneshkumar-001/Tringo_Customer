@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Contacts%20Sync/contacts_consent_gate.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
@@ -18,6 +19,7 @@ import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_snackbar.dart';
 import '../../../../Core/Utility/google_font.dart';
+import '../../../../Core/Utility/battery_optimization_guide.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/Widgets/full_screen_image_gallery.dart';
 import '../../../../Core/app_go_routes.dart';
@@ -94,6 +96,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       }
       if (mounted) setState(() => _callerIdOverlayEnabled = false);
       await AppPrefs.setCallerIdOverlayEnabled(false);
+      await AppPrefs.setCallerIdOverlayAutoDisabled(true);
       await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
       return;
     }
@@ -117,11 +120,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         if (!phoneOk || !overlayOk) {
           effectiveEnabled = false;
           await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setCallerIdOverlayAutoDisabled(true);
           await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
         }
       } catch (_) {
         // If we can't check, keep the stored value.
       }
+    }
+
+    // If user skipped contacts sync and contacts permission is still denied,
+    // keep the toggle OFF until they allow contacts (as requested).
+    if (effectiveEnabled || enabled) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final skippedContacts = prefs.getBool('contacts_sync_skipped') ?? false;
+        final contactsGranted = await Permission.contacts.status.isGranted;
+        if (skippedContacts && !contactsGranted) {
+          effectiveEnabled = false;
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setCallerIdOverlayAutoDisabled(false);
+        }
+      } catch (_) {}
     }
 
     if (!mounted) return;
@@ -212,12 +231,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     });
 
     await AppPrefs.setCallerIdOverlayEnabled(enabled);
+    await AppPrefs.setCallerIdOverlayAutoDisabled(false);
 
     if (!enabled) {
       await AppPrefs.setOverlaySettingsAutoOpenedOnce(false);
       await CallerIdRoleHelper.stopOverlayService();
       return;
     }
+
+    // If contacts sync was skipped earlier, require contacts permission on re-enable (as requested).
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final skippedContacts = prefs.getBool('contacts_sync_skipped') ?? false;
+      final contactsGranted = await Permission.contacts.status.isGranted;
+      if (skippedContacts && !contactsGranted && mounted) {
+        await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => const ContactsConsentGate(
+              args: ContactsConsentGateArgs(
+                nextRouteName: AppRoutes.home,
+                forceShow: true,
+                popOnDone: true,
+                showTurnOffCallerIdPromptOnSkip: false,
+              ),
+            ),
+          ),
+        );
+
+        final contactsNow = await Permission.contacts.status.isGranted;
+        if (!contactsNow) {
+          // User skipped/denied again -> keep toggle OFF.
+          if (mounted) setState(() => _callerIdOverlayEnabled = false);
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setCallerIdOverlayAutoDisabled(false);
+          return;
+        }
+      }
+    } catch (_) {}
 
     final phoneStatus = await Permission.phone.status;
     if (!phoneStatus.isGranted) {
@@ -229,6 +279,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         );
         setState(() => _callerIdOverlayEnabled = false);
         await AppPrefs.setCallerIdOverlayEnabled(false);
+        await AppPrefs.setCallerIdOverlayAutoDisabled(true);
         return;
       }
     }
@@ -236,9 +287,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     // Notifications (Android 13+) improve reliability on restricted devices.
     // Best-effort only; do not block if user denies.
     try {
-      final notifStatus = await Permission.notification.status;
-      if (!notifStatus.isGranted) {
-        await Permission.notification.request();
+      final label = await BatteryOptimizationGuide.deviceLabel();
+      final isRestrictive =
+          label != null &&
+          BatteryOptimizationGuide.isLikelyRestrictiveOverlayOem(
+            manufacturer: label.manufacturer,
+            brand: label.brand,
+            model: label.model,
+          );
+
+      if (isRestrictive) {
+        final notifStatus = await Permission.notification.status;
+        if (!notifStatus.isGranted) {
+          await Permission.notification.request();
+        }
       }
     } catch (_) {}
 

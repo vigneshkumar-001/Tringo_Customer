@@ -46,3 +46,5 @@ app.*.map.json
 
 # Keystore (do not commit)
 tringo_customer-keystore.jks
+android/key.properties
+**/*.jks

@@ -6,7 +6,6 @@ import android.content.Intent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.KeyguardManager
 import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyManager
@@ -16,14 +15,14 @@ import androidx.core.app.NotificationManagerCompat
 
 class TringoCallReceiver : BroadcastReceiver() {
 
-    companion object {
+        companion object {
         private const val TAG = "TRINGO_CALL_RX"
         private const val PREF = "tringo_call_state"
         private const val KEY_LAST_NUMBER = "last_number"
         private const val KEY_LAST_NUMBER_AT = "last_number_at"
         // IMPORTANT: channel importance cannot be upgraded once created on Android O+.
-        // Use a versioned channel id so older installs with a low-importance channel still get full-screen behavior.
-        private const val INCOMING_NOTIF_CH = "tringo_incoming_overlay_v2"
+        // Use a versioned channel id so older installs with a low-importance channel still get heads-up.
+        private const val INCOMING_NOTIF_CH = "tringo_incoming_overlay_v3"
         private const val INCOMING_NOTIF_ID = 301
     }
 
@@ -37,26 +36,20 @@ class TringoCallReceiver : BroadcastReceiver() {
 
         val numberFromBroadcast = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: ""
         val now = System.currentTimeMillis()
-        val (last, lastAt) = try {
-            val sp = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
-            val num = sp.getString(KEY_LAST_NUMBER, "")?.trim().orEmpty()
-            val at = sp.getLong(KEY_LAST_NUMBER_AT, 0L)
-            num to at
-        } catch (_: Throwable) {
-            "" to 0L
-        }
-        val lastFresh = last.isNotBlank() && !last.equals("UNKNOWN", true) && lastAt > 0L && (now - lastAt) <= 1500L
 
         val phone = normalizePhoneForPhoneInfo(
             when {
                 numberFromBroadcast.isNotBlank() -> numberFromBroadcast
-                lastFresh -> last
                 else -> "UNKNOWN"
             }
         )
 
         val finalPhone = if (phone.isBlank()) "UNKNOWN" else phone
         Log.d(TAG, "RINGING phone=$finalPhone")
+
+        // Always show a CALL category heads-up notification as a reliable fallback on OEM devices.
+        // If the overlay window is shown successfully, the service will cancel this notification.
+        showIncomingNotificationFallback(context, finalPhone)
 
         // Persist only real numbers (avoid storing UNKNOWN/blank).
         if (!finalPhone.equals("UNKNOWN", true)) {
@@ -69,120 +62,120 @@ class TringoCallReceiver : BroadcastReceiver() {
             } catch (_: Throwable) {}
         }
 
-        // Start a tiny foreground trampoline activity to reliably start the overlay service
-        // (Android blocks starting FGS directly from background receivers on newer versions).
-        launchIncomingTrampoline(context, finalPhone)
-    }
-
-    private fun launchIncomingTrampoline(context: Context, phone: String) {
-        val i = Intent(context, TringoIncomingPopupActivity::class.java).apply {
-            putExtra("phone", phone)
-            putExtra("contactName", "")
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_NO_ANIMATION or
-                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
-            )
-        }
-
-        // Best-effort: try starting overlay service directly as well (works on some devices/roles).
-        // If Android blocks it, TringoOverlayService.start() will fail safely and we’ll rely on the trampoline paths.
-        try {
+        // Never auto-open the app: always prefer starting the overlay service, and fall back to a heads-up notification.
+        val started = try {
             TringoOverlayService.start(
                 ctx = context.applicationContext,
-                phone = phone,
+                phone = finalPhone,
                 contactName = "",
                 showOnCallEnd = false,
                 launchedByReceiver = true,
-                outgoingOverlay = false
+                outgoingOverlay = false,
+                sessionStartedAtMs = now
             )
-        } catch (_: Throwable) {}
-
-        fun showIncomingNotificationFallback(fullScreen: Boolean) {
-            // Fallback: heads-up notification, and full-screen on lock screen when needed.
-            try {
-                if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
-
-                val nm = context.getSystemService(NotificationManager::class.java)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    val ch = NotificationChannel(
-                        INCOMING_NOTIF_CH,
-                        "Tringo Incoming Overlay",
-                        NotificationManager.IMPORTANCE_HIGH
-                    ).apply {
-                        lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-                    }
-                    nm.createNotificationChannel(ch)
-                }
-
-                val pi = PendingIntent.getActivity(
-                    context,
-                    INCOMING_NOTIF_ID,
-                    i,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-
-                val b = NotificationCompat.Builder(context, INCOMING_NOTIF_CH)
-                    .setSmallIcon(android.R.drawable.ic_menu_call)
-                    .setContentTitle("Incoming call")
-                    .setContentText("Tringo Caller ID")
-                    .setCategory(NotificationCompat.CATEGORY_CALL)
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
-                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                    .setAutoCancel(true)
-                    .setContentIntent(pi)
-                if (fullScreen) {
-                    b.setFullScreenIntent(pi, true)
-                }
-
-                val n = b.build()
-
-                NotificationManagerCompat.from(context).notify(INCOMING_NOTIF_ID, n)
-            } catch (t: Throwable) {
-                Log.e(TAG, "incoming notification fallback failed: ${t.message}", t)
-            }
-        }
-
-        val isLocked = try {
-            val km = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-            km?.isKeyguardLocked == true
         } catch (_: Throwable) {
             false
         }
 
-        // On many OEMs, starting an Activity from a background receiver while the device is locked is silently blocked.
-        // A full-screen notification is the most reliable way to show UI on the lock screen.
-        if (isLocked) {
-            showIncomingNotificationFallback(fullScreen = true)
-        }
-
-        try {
-            context.startActivity(i)
-        } catch (t: Throwable) {
-            Log.e(TAG, "startActivity trampoline failed: ${t.message}", t)
-            showIncomingNotificationFallback(fullScreen = isLocked)
+        if (started) {
             return
         }
 
-        // Some OEMs silently deny background activity starts (no exception thrown).
-        // If the overlay service doesn't come up shortly, use the full-screen notification trampoline.
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!TringoOverlayService.isRunning) showIncomingNotificationFallback(fullScreen = isLocked)
-        }, 500L)
+        // Some devices block background service starts; rely on the heads-up CALL notification fallback.
+        // Do NOT auto-start any Activity here (it brings the app to foreground / recents).
+    }
 
-        // Re-try once more in case the first notification was suppressed.
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!TringoOverlayService.isRunning) showIncomingNotificationFallback(fullScreen = isLocked)
-        }, 1200L)
+    private fun showIncomingNotificationFallback(context: Context, phone: String) {
+        try {
+            val nm = context.getSystemService(NotificationManager::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val ch = NotificationChannel(
+                    INCOMING_NOTIF_CH,
+                    "Tringo Incoming Overlay",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                nm.createNotificationChannel(ch)
+            }
 
-        // Additional retries for slower lock-screen / OEM pipelines.
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!TringoOverlayService.isRunning) showIncomingNotificationFallback(fullScreen = isLocked)
-        }, 2500L)
+            val openAppIntent = Intent(context, MainActivity::class.java).apply {
+                putExtra("overlay_action", "incoming_call")
+                putExtra("phone", phone)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!TringoOverlayService.isRunning) showIncomingNotificationFallback(fullScreen = isLocked)
-        }, 4500L)
+            val pi = PendingIntent.getActivity(
+                context,
+                INCOMING_NOTIF_ID,
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val dismissIntent = Intent(context, TringoOverlayDismissReceiver::class.java).apply {
+                action = TringoOverlayDismissReceiver.ACTION_DISMISS_OVERLAY
+            }
+
+            val dismissPi = PendingIntent.getBroadcast(
+                context,
+                INCOMING_NOTIF_ID + 1000,
+                dismissIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val b = NotificationCompat.Builder(context, INCOMING_NOTIF_CH)
+                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setContentTitle("Incoming call")
+                .setContentText("Tringo Caller ID")
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                // Dark, ad-style look where supported (OEMs may ignore).
+                .setColor(0xFF070A2A.toInt())
+                .setColorized(true)
+                .setAutoCancel(true)
+                .setContentIntent(pi)
+                .addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Dismiss",
+                    dismissPi
+                )
+
+            NotificationManagerCompat.from(context).notify(INCOMING_NOTIF_ID, b.build())
+        } catch (t: Throwable) {
+            Log.e(TAG, "incoming notification fallback failed: ${t.message}", t)
+        }
+    }
+
+    private fun startNoDisplayTrampoline(
+        context: Context,
+        phone: String,
+        showOnCallEnd: Boolean,
+        outgoingOverlay: Boolean,
+        sessionStartAt: Long = 0L
+    ) {
+        try {
+            val i = Intent(context, TringoIncomingPopupActivity::class.java).apply {
+                putExtra("phone", phone)
+                putExtra("contactName", "")
+                putExtra("showOnCallEnd", showOnCallEnd)
+                putExtra("outgoingOverlay", outgoingOverlay)
+                putExtra("sessionStartAt", sessionStartAt)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION or
+                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                )
+            }
+            context.startActivity(i)
+        } catch (t: Throwable) {
+            Log.e(TAG, "startNoDisplayTrampoline failed: ${t.message}", t)
+            showIncomingNotificationFallback(context, phone)
+        }
     }
 
     private fun normalizePhoneForPhoneInfo(raw: String): String {

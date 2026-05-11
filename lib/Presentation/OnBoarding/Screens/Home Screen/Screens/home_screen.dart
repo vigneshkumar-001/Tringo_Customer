@@ -9,10 +9,10 @@ import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
-import 'package:share_plus/share_plus.dart';
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -26,9 +26,9 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_guide.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_intro.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Controller/login_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/Opened_surprise_offer_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
@@ -150,12 +150,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     // Notifications (Android 13+) - best-effort reliability improvement.
-    try {
-      final notif = await ph.Permission.notification.status;
-      if (!notif.isGranted) {
-        await ph.Permission.notification.request();
-      }
-    } catch (_) {}
+    // NOTE: System permission dialogs can't be customized. Show a small in-app prompt first,
+    // and only trigger the Android dialog when the user explicitly agrees.
+    await _maybeRequestNotificationPermissionForCallerId();
 
     // Overlay is a settings toggle; auto-open once to make it easy.
     final overlayOk = await CallerIdRoleHelper.isOverlayGranted();
@@ -170,6 +167,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await AppPrefs.setOverlaySettingsAutoOpenedOnce(true);
     _awaitingOverlaySettings = true;
     await CallerIdRoleHelper.requestOverlayPermission();
+  }
+
+  Future<void> _maybeRequestNotificationPermissionForCallerId() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final notif = await ph.Permission.notification.status;
+      if (notif.isGranted) return;
+
+      if (!mounted) return;
+      final ok = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: AppColor.white,
+            surfaceTintColor: AppColor.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Enable notifications?',
+              style: GoogleFont.Mulish(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: AppColor.darkBlue,
+              ),
+            ),
+            content: Text(
+              'You’ll miss deals & Free TCoins.\nAllow notifications to get Caller ID offers and updates.',
+              style: GoogleFont.Mulish(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColor.lightGray2,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Not now',
+                  style: GoogleFont.Mulish(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.darkGrey,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Continue',
+                  style: GoogleFont.Mulish(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.darkBlue,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (ok != true) return;
+      // Do not block onboarding/navigation on the OS permission dialog result.
+      // Even if the user taps "Don't allow", the app should continue to the next step.
+      unawaited(ph.Permission.notification.request());
+    } catch (_) {}
   }
 
   @override
@@ -393,11 +458,113 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  List<Widget> _interleaveInlineAds({
+    required List<Widget> items,
+    required List<AdvertisementBanner> ads,
+    required int Function(AdvertisementBanner banner) tabForBanner,
+  }) {
+    if (items.isEmpty || ads.isEmpty) {
+      return items;
+    }
+
+    List<int> defaultInsertAfterItemNumbers({
+      required int itemCount,
+      required int adCount,
+    }) {
+      if (itemCount <= 0 || adCount <= 0) return const [];
+
+      final cappedAds = adCount.clamp(1, 3);
+
+      // Make sure user sees ads early (within first few items),
+      // then spread remaining ads across the list based on length.
+      //
+      // Heuristic targets:
+      // - 1 ad: around 25% (but not before 3rd item)
+      // - 2 ads: ~25% and ~60%
+      // - 3 ads: ~20%, ~50%, ~80%
+      if (itemCount <= 3) return [itemCount];
+
+      int clampPos(int p) => p.clamp(1, itemCount);
+
+      final picks = <int>[];
+
+      // First ad: keep within 3..6 range if possible so it’s noticeable.
+      final first = clampPos((itemCount * 0.25).round());
+      picks.add(first.clamp(3, itemCount));
+
+      if (cappedAds >= 2) {
+        picks.add(clampPos((itemCount * 0.60).round()));
+      }
+      if (cappedAds >= 3) {
+        picks.add(clampPos((itemCount * 0.82).round()));
+      }
+
+      // De-dup + sort; if collisions happen, nudge forward.
+      final unique = <int>[];
+      for (final raw in picks) {
+        var pos = raw;
+        while (unique.contains(pos) && pos < itemCount) {
+          pos++;
+        }
+        unique.add(pos);
+      }
+
+      return unique.toSet().toList()..sort();
+    }
+
+    final insertAfter = defaultInsertAfterItemNumbers(
+      itemCount: items.length,
+      adCount: ads.length,
+    );
+
+    if (insertAfter.isEmpty) return items;
+
+    final result = <Widget>[];
+    var adIndex = 0;
+
+    for (var i = 0; i < items.length; i++) {
+      result.add(items[i]);
+
+      final itemNumber = i + 1; // 1-based
+      if (!insertAfter.contains(itemNumber)) continue;
+      if (adIndex >= ads.length) continue;
+
+      final banner = ads[adIndex++];
+      result.add(
+        KeyedSubtree(
+          key: ValueKey('home-inline-ad-${banner.id}-$itemNumber'),
+          child: DismissibleAdBanner(
+            imageUrl: banner.imageUrl,
+            onTap: () {
+              final shopId = (banner.shopId ?? '').trim();
+              if (shopId.isEmpty) {
+                AppSnackBar.error(context, 'Offer not available');
+                return;
+              }
+              context.push(
+                Uri(
+                  path: '/shop/details',
+                  queryParameters: {
+                    'shopId': shopId,
+                    'tab': '${tabForBanner(banner)}',
+                  },
+                ).toString(),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    return result;
+  }
+
   List<Widget> _buildProductCards(
     List<dynamic> filteredShops,
     homeState state,
+    List<AdvertisementBanner> inlineAds,
   ) {
-    return List.generate(filteredShops.length, (index) {
+    final cards = List.generate(filteredShops.length, (index) {
       final shops = filteredShops[index];
 
       final isThisCardLoading =
@@ -491,13 +658,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       );
     });
+
+    return _interleaveInlineAds(
+      items: cards,
+      ads: inlineAds,
+      tabForBanner: (_) => 4, // products tab
+    );
   }
 
   List<Widget> _buildServiceCards(
     List<dynamic> filteredServiceShops,
     homeState state,
+    List<AdvertisementBanner> inlineAds,
   ) {
-    return List.generate(filteredServiceShops.length, (index) {
+    final cards = List.generate(filteredServiceShops.length, (index) {
       final services = filteredServiceShops[index];
 
       final isThisCardLoading =
@@ -593,17 +767,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       );
     });
+
+    return _interleaveInlineAds(
+      items: cards,
+      ads: inlineAds,
+      tabForBanner: (banner) => banner.shopKind == 'SERVICE' ? 3 : 4,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeNotifierProvider);
     final home = state.homeResponse;
-    final ads = state.advertisementResponse;
+    // Use placement-specific ads so other screens don't overwrite HOME ads.
+    final ads = state.adsByPlacement['HOME_TOP'] ?? state.advertisementResponse;
 
-    final addsBanner = (ads != null && ads.data.isNotEmpty)
-        ? ads.data.first
-        : null;
+    final adBanners = ads?.data ?? const <AdvertisementBanner>[];
+    // Home screen: show only first 2 ads (one in Products, one in Services).
+    final inlineAds = adBanners.take(2).toList();
+    final productInlineAds = inlineAds.isEmpty
+        ? const <AdvertisementBanner>[]
+        : <AdvertisementBanner>[inlineAds[0]];
+    final serviceInlineAds = inlineAds.length <= 1
+        ? const <AdvertisementBanner>[]
+        : <AdvertisementBanner>[inlineAds[1]];
 
     // ✅ Initial loading only
     if (state.isLoading && home == null) {
@@ -641,7 +828,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     final banners = home.data.banners;
-    final scFlag = home.data.scFlag;
     final surpriseOffers = home.data.surpriseOffers;
 
     final categories = home.data.shopCategories;
@@ -955,15 +1141,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                                           if (!mounted) return;
 
-                                          final route = scFlag
-                                              ? slideUpRoute(
-                                                  SmartConnectHistory(),
-                                                )
-                                              : slideUpRoute(
-                                                  SmartConnectGuide(),
-                                                );
-
-                                          await navigator.push(route);
+                                          await navigator.push(
+                                            slideUpRoute(
+                                              const SmartConnectIntro(),
+                                            ),
+                                          );
                                         },
                                         borderRadius: BorderRadius.circular(18),
                                         child: ConstrainedBox(
@@ -1282,7 +1464,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 if (!mounted) return;
                                 await Navigator.of(
                                   context,
-                                ).push(slideUpRoute(SmartConnectGuide()));
+                                ).push(slideUpRoute(const SmartConnectIntro()));
                               },
                               child: Image.asset(
                                 AppImages.aiGuideImage,
@@ -2084,6 +2266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                           children: _buildServiceCards(
                                             filteredServiceShops,
                                             state,
+                                            serviceInlineAds,
                                           ),
                                         ),
                                       ),
@@ -2127,14 +2310,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ],
                           ),
                         ),
-
-                        // ===== TOP AD BANNER (Dismissible) =====
-                        addsBanner == null
-                            ? const SizedBox.shrink()
-                            : DismissibleAdBanner(
-                                imageUrl: addsBanner.imageUrl,
-                                onTap: () {},
-                              ),
 
                         const SizedBox(height: 57),
 
@@ -2309,6 +2484,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         children: _buildProductCards(
                                           filteredShops,
                                           state,
+                                          productInlineAds,
                                         ),
                                       ),
                                     ),

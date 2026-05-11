@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
+import 'package:tringo_app/Core/Widgets/caller_id_role_helper.dart';
 
 class PermissionService {
   static Future<bool> ensureAllRequiredPermissions(BuildContext context) async {
@@ -21,17 +22,97 @@ class PermissionService {
       return false;
     }
 
-    // Ask phone permission only if user keeps Caller ID Overlay enabled.
-    final callerOverlayEnabled = await AppPrefs.getCallerIdOverlayEnabled();
-    if (callerOverlayEnabled) {
-      final phoneOk = await Permission.phone.request().isGranted;
-      if (!phoneOk) {
-        // Don't block app flow; overlay simply won't work until user enables it.
-        // Keep UX minimal here (toggle flow will guide user).
-      }
-    }
-
     return true;
+  }
+
+  static Future<bool> syncCallerIdOverlayStateAtStartup() async {
+    if (!Platform.isAndroid) return false;
+
+    try {
+      var openedOverlaySettings = false;
+      final enabled = await AppPrefs.getCallerIdOverlayEnabled();
+      final autoDisabled = await AppPrefs.getCallerIdOverlayAutoDisabled();
+
+      // If user has explicitly turned it off (and it wasn't auto-disabled), don't ask anything.
+      if (!enabled && !autoDisabled) return false;
+
+      // Optional: Notifications (Android 13+) can improve reliability on restrictive OEMs.
+      // Ask only when user currently wants the feature ON.
+      if (enabled) {
+        try {
+          final notifStatus = await Permission.notification.status;
+          if (!notifStatus.isGranted) {
+            await Permission.notification.request();
+          }
+        } catch (_) {}
+      }
+
+      // Phone permission is required for Caller ID overlay feature.
+      // Request only when user currently wants the feature ON.
+      var phoneGranted = await Permission.phone.status.isGranted;
+      if (enabled && !phoneGranted) {
+        final req = await Permission.phone.request();
+        phoneGranted = req.isGranted;
+      }
+
+      // Ask to become the default Caller ID app (role / default dialer-like prompt),
+      // only once and only when user wants the feature ON.
+      if (enabled) {
+        try {
+          final askedOnce = await AppPrefs.getDefaultCallerIdRoleAskedOnce();
+          if (!askedOnce) {
+            final isDefault = await CallerIdRoleHelper.isDefaultCallerIdApp();
+            if (!isDefault) {
+              await AppPrefs.setDefaultCallerIdRoleAskedOnce(true);
+              await CallerIdRoleHelper.requestDefaultCallerIdApp();
+              return true; // prompt shown; wait for resume
+            }
+            await AppPrefs.setDefaultCallerIdRoleAskedOnce(true);
+          }
+        } catch (_) {}
+      }
+
+      // Overlay special setting (SYSTEM_ALERT_WINDOW).
+      final overlayGranted = await CallerIdRoleHelper.isOverlayGranted();
+      final ready = phoneGranted && overlayGranted;
+
+      // If missing overlay setting and the user wanted the feature, open settings once.
+      if (enabled && !overlayGranted) {
+        final openedOnce = await AppPrefs.getOverlaySettingsAutoOpenedOnce();
+        if (!openedOnce) {
+          await AppPrefs.setOverlaySettingsAutoOpenedOnce(true);
+          await CallerIdRoleHelper.requestOverlayPermission();
+          openedOverlaySettings = true;
+        }
+      }
+
+      if (enabled) {
+        // User wanted it ON, but it's not ready => keep toggle OFF and prevent service attempts.
+        if (!ready) {
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setCallerIdOverlayAutoDisabled(true);
+        } else {
+          await AppPrefs.setCallerIdOverlayAutoDisabled(false);
+
+          // Start the overlay service while the app is in foreground.
+          // This avoids Android 12+ background restrictions on starting foreground services
+          // from call receivers (common on Realme/Oppo/OnePlus).
+          await CallerIdRoleHelper.startOverlayServiceKeepAlive();
+        }
+        return openedOverlaySettings;
+      }
+
+      // Auto-recover: if we auto-disabled earlier and now it's ready, turn it ON again.
+      if (autoDisabled && ready) {
+        await AppPrefs.setCallerIdOverlayEnabled(true);
+        await AppPrefs.setCallerIdOverlayAutoDisabled(false);
+      }
+
+      return openedOverlaySettings;
+    } catch (_) {
+      // Never crash app startup on permission reconciliation.
+      return false;
+    }
   }
 
   static Future<void> _showLocationSettingsDialog(BuildContext context) async {

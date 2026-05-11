@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -143,9 +144,11 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
   Widget build(BuildContext context) {
     final state = ref.watch(shopsNotifierProvider);
     final homeState = ref.watch(homeNotifierProvider);
-    final ads = homeState.advertisementResponse;
+    final ads =
+        homeState.adsByPlacement['SHOP_LIST'] ?? homeState.advertisementResponse;
 
-    final addsBanner = (ads != null && ads.data.isNotEmpty) ? ads.data.first : null;
+    final adBanners = ads?.data ?? const [];
+    final bannersToShow = adBanners.take(3).toList();
 
     if (state.isLoading) {
       return Scaffold(
@@ -159,6 +162,59 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
     }
 
     final shops = shopsData.data;
+    List<int> defaultInsertAfterItemNumbers({
+      required int itemCount,
+      required int adCount,
+    }) {
+      if (itemCount <= 0 || adCount <= 0) return const [];
+
+      final cappedAds = adCount.clamp(1, 3);
+      if (itemCount <= 3) return [itemCount];
+
+      int clampPos(int p) => p.clamp(1, itemCount);
+
+      final picks = <int>[];
+      final first = clampPos((itemCount * 0.25).round());
+      picks.add(first.clamp(3, itemCount));
+
+      if (cappedAds >= 2) {
+        picks.add(clampPos((itemCount * 0.60).round()));
+      }
+      if (cappedAds >= 3) {
+        picks.add(clampPos((itemCount * 0.82).round()));
+      }
+
+      final unique = <int>[];
+      for (final raw in picks) {
+        var pos = raw;
+        while (unique.contains(pos) && pos < itemCount) {
+          pos++;
+        }
+        unique.add(pos);
+      }
+
+      return unique.toSet().toList()..sort();
+    }
+
+    final insertAfterItemNumbers = defaultInsertAfterItemNumbers(
+      itemCount: shops.length,
+      adCount: bannersToShow.length,
+    );
+    final adPositions = <int>[];
+    var adsAdded = 0;
+    final insertAfterSorted = insertAfterItemNumbers.toSet().toList()..sort();
+    for (final after in insertAfterSorted) {
+      if (adsAdded >= bannersToShow.length) break;
+      if (after <= 0) continue;
+      if (after > shops.length) continue;
+      adPositions.add(after + adsAdded);
+      adsAdded++;
+    }
+    if (adPositions.isEmpty && bannersToShow.isNotEmpty) {
+      // If list is short, still show at least one ad at the end.
+      adPositions.add(shops.length);
+      adsAdded = 1;
+    }
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -222,9 +278,42 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: shops.length,
+                        itemCount: shops.length + adsAdded,
                         itemBuilder: (context, index) {
-                          final data = shops[index];
+                          if (adPositions.contains(index)) {
+                            final adIndex = adPositions.indexOf(index);
+                            final banner = bannersToShow[adIndex];
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: DismissibleAdBanner(
+                                imageUrl: banner.imageUrl,
+                                onTap: () {
+                                  final shopId = (banner.shopId ?? '').trim();
+                                  if (shopId.isEmpty) {
+                                    AppSnackBar.error(
+                                      context,
+                                      'Offer not available',
+                                    );
+                                    return;
+                                  }
+                                  context.push(
+                                    Uri(
+                                      path: '/shop/details',
+                                      queryParameters: {
+                                        'shopId': shopId,
+                                        'tab': '4',
+                                      },
+                                    ).toString(),
+                                  );
+                                },
+                              ),
+                            );
+                          }
+
+                          final adsBefore =
+                              adPositions.where((p) => p < index).length;
+                          final itemIndex = index - adsBefore;
+                          final data = shops[itemIndex];
 
                           final isThisCardLoading = homeState.isEnquiryLoading &&
                               homeState.activeEnquiryId == data.id;
@@ -233,7 +322,7 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                               data.id!.isNotEmpty &&
                               _disabledMessageShopIds.contains(data.id));
 
-                          final anim = aShops[index % aShops.length];
+                          final anim = aShops[itemIndex % aShops.length];
 
                           final String? heroTag =
                           (data.id != null && data.id!.isNotEmpty)
@@ -317,15 +406,6 @@ class _ShopsListingState extends ConsumerState<ShopsListing>
                             padding: const EdgeInsets.symmetric(vertical: 5),
                             child: _fadeSlide(anim, card),
                           );
-                        },
-                      ),
-
-                      addsBanner == null
-                          ? const SizedBox.shrink()
-                          : DismissibleAdBanner(
-                        imageUrl: addsBanner.imageUrl,
-                        onTap: () {
-                          // open banner.ctaUrl if needed
                         },
                       ),
                     ],

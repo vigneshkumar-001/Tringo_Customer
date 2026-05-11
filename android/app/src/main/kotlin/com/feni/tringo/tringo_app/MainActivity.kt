@@ -137,6 +137,25 @@ class MainActivity : FlutterActivity() {
                         }
                     }
 
+                    "startOverlayServiceKeepAlive" -> {
+                        try {
+                            val ok = TringoOverlayService.start(
+                                ctx = this,
+                                phone = "",
+                                contactName = "",
+                                showOnCallEnd = false,
+                                launchedByReceiver = false,
+                                outgoingOverlay = false,
+                                sessionStartedAtMs = 0L,
+                                keepAlive = true
+                            )
+                            result.success(ok)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "startOverlayServiceKeepAlive failed: ${e.message}", e)
+                            result.success(false)
+                        }
+                    }
+
                     "isIgnoringBatteryOptimizations" -> {
                         result.success(isIgnoringBatteryOptimizations())
                     }
@@ -202,6 +221,7 @@ class MainActivity : FlutterActivity() {
             Log.d(TAG, "READ_PHONE_STATE permission result => $granted")
             pendingPhonePermResult?.success(granted)
             pendingPhonePermResult = null
+            return
         }
     }
 
@@ -326,13 +346,58 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun openBatteryUnrestrictedSettingsBestEffort() {
+        // Prefer app details; all OEM flows usually link from here too.
         if (openAppDetails()) return
 
+        // Xiaomi / MIUI
         if (isPackageInstalled("com.miui.securitycenter")) {
             if (tryStart(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"))) return
             if (tryStart(ComponentName("com.miui.securitycenter", "com.miui.powercenter.PowerMainActivity"))) return
         }
 
+        // Oppo / Realme (ColorOS)
+        if (isPackageInstalled("com.coloros.safecenter")) {
+            if (tryStart(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"))) return
+            if (tryStart(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"))) return
+        }
+        if (isPackageInstalled("com.oppo.safe")) {
+            if (tryStart(ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"))) return
+        }
+        if (isPackageInstalled("com.realme.securitycenter")) {
+            if (tryStart(ComponentName("com.realme.securitycenter", "com.realme.securitycenter.permission.startup.StartupAppListActivity"))) return
+        }
+
+        // OnePlus / OPlus (OxygenOS/ColorOS variants)
+        if (isPackageInstalled("com.oneplus.security")) {
+            if (tryStart(ComponentName("com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"))) return
+            if (tryStart(ComponentName("com.oneplus.security", "com.oneplus.security.widget.OPApplicationLoader"))) return
+        }
+        if (isPackageInstalled("com.oplus.safecenter")) {
+            if (tryStart(ComponentName("com.oplus.safecenter", "com.oplus.safecenter.permission.startup.StartupAppListActivity"))) return
+            if (tryStart(ComponentName("com.oplus.safecenter", "com.oplus.safecenter.startupapp.StartupAppListActivity"))) return
+        }
+
+        // Vivo / iQOO
+        if (isPackageInstalled("com.iqoo.secure")) {
+            if (tryStart(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"))) return
+        }
+        if (isPackageInstalled("com.vivo.permissionmanager")) {
+            if (tryStart(ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"))) return
+        }
+
+        // Huawei
+        if (isPackageInstalled("com.huawei.systemmanager")) {
+            if (tryStart(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.power.ui.PowerSettingsActivity"))) return
+            if (tryStart(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"))) return
+            if (tryStart(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"))) return
+        }
+
+        // Samsung
+        if (isPackageInstalled("com.samsung.android.lool")) {
+            if (tryStart(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity"))) return
+        }
+
+        // Generic fallback
         tryStart(Intent(Settings.ACTION_SETTINGS))
     }
 
@@ -383,6 +448,24 @@ class MainActivity : FlutterActivity() {
                         setClassName(
                             "com.oppo.safe",
                             "com.oppo.safe.permission.floatwindow.FloatWindowListActivity"
+                        )
+                    })) return
+            }
+
+            // OnePlus / OPlus
+            if (isPackageInstalled("com.oneplus.security")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.oneplus.security",
+                            "com.oneplus.security.permission.FloatWindowListActivity"
+                        )
+                    })) return
+            }
+            if (isPackageInstalled("com.oplus.safecenter")) {
+                if (tryStart(Intent().apply {
+                        setClassName(
+                            "com.oplus.safecenter",
+                            "com.oplus.safecenter.permission.floatwindow.FloatWindowListActivity"
                         )
                     })) return
             }

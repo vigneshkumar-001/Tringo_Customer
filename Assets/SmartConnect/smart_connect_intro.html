@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tringo biz - Normal Laptop Price Flow</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Forward JS errors to the Flutter side (SmartConnectIntro listens on SmartConnect channel).
+        window.addEventListener('error', function (e) {
+            try {
+                if (window.SmartConnect && SmartConnect.postMessage) {
+                    SmartConnect.postMessage('js_error:' + (e && e.message ? e.message : 'unknown'));
+                }
+            } catch (_) {}
+        });
+
+        // In-app rendering (Flutter WebView):
+        // When SmartConnect JS channel exists, render full-bleed (no phone-frame border/shadow)
+        // so it looks like a real "video" instead of an embedded mock device.
+        try {
+            if (window.SmartConnect && SmartConnect.postMessage) {
+                document.documentElement.classList.add('in-app');
+            }
+        } catch (_) {}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Full-bleed mode used inside Flutter WebView (no border lines). */
+        html.in-app, html.in-app body {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+        }
+        html.in-app body {
+            justify-content: stretch;
+            align-items: stretch;
+        }
+        html.in-app #animation-container {
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            box-shadow: none;
+            border: 0;
+        }
+
+        #animation-container {
+            width: 360px; 
+            height: 740px; 
+            background: #ffffff;
+            position: relative;
+            border-radius: 48px;
+            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 12px solid #0f172a;
+        }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            z-index: 10;
+        }
+
+        #screen-offers { transform: translateX(100%); z-index: 20; background: #fafafa; }
+
+        .status-banner {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            color: #2563eb;
+            padding: 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .shop-visual {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shop-node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #4f46e5, #0ea5e9);
+            transform-origin: left center;
+            opacity: 0;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .offer-card {
+            background: white;
+            border-radius: 20px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .best-offer { 
+            border: 2px solid #10b981; 
+            background: #f0fdf4;
+        }
+
+        .price-badge {
+            font-size: 16px;
+            font-weight: 900;
+            color: #1e293b;
+        }
+
+        #happy-overlay {
+            position: absolute;
+            inset: 0;
+            background: #1e1b4b;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            padding: 32px;
+        }
+
+        .bubble { padding: 12px 18px; border-radius: 20px; font-size: 14px; margin-bottom: 12px; opacity: 0; max-width: 85%; }
+        .user-b { background: #4f46e5; color: white; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500; }
+        .sys-b { background: #f1f5f9; color: #334155; align-self: flex-start; border-bottom-left-radius: 4px; }
+
+        #replay-btn {
+            background: white;
+            color: #1e1b4b;
+            padding: 16px 40px;
+            border-radius: 40px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 30px;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="animation-container">
+        <!-- SCREEN 1: BROADCASTING -->
+        <div class="screen" id="screen-main">
+            <div class="flex justify-between items-center mb-8">
+                <span class="font-black text-2xl text-indigo-600 italic">Tringo biz</span>
+                <div class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold border border-green-200">🛡️ PRIVACY SHIELD</div>
+            </div>
+
+            <div class="status-banner" id="status-1">
+                Broadcasting to 50+ Specialized Dealers nearby...
+            </div>
+            
+            <div class="flex flex-col mb-4">
+                <div class="bubble sys-b" id="b1">What can I find for you today?</div>
+                <div class="bubble user-b" id="b2">I'm looking for a basic office laptop (i5/8GB). Show me the best deals!</div>
+            </div>
+
+            <div id="diagram-area" class="relative flex-1">
+                <div id="phone-center" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white rounded-[2rem] flex flex-col items-center justify-center z-20 opacity-0 shadow-2xl border-4 border-indigo-50">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-xl mb-1">👤</div>
+                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">You</span>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-slate-900 rounded-3xl text-[11px] text-white/90 font-medium leading-relaxed text-center opacity-0 mb-2 shadow-xl" id="privacy-note">
+                <span class="text-indigo-400 font-bold block text-xs mb-1">ANONYMOUS REQUEST</span>
+                Your identity is hidden. Sellers only see your specific requirements!
+            </div>
+        </div>
+
+        <!-- SCREEN 2: BIDS RECEIVED -->
+        <div class="screen" id="screen-offers">
+            <div class="flex justify-between items-center mb-6">
+                <span class="font-black text-2xl text-indigo-600 italic">Tringo biz</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-black text-slate-500 uppercase">Live Bidding</span>
+                </div>
+            </div>
+
+            <div class="status-banner" id="status-2" style="background:#f0fdf4; color:#15803d; border-color:#dcfce7;">
+                Sellers are offering standard prices for your request!
+            </div>
+
+            <div class="flex-1 overflow-y-auto pr-1" id="offer-list">
+                <div class="offer-card" id="oc1">
+                    <div class="flex items-center gap-3">
+                        <div class="shop-visual !w-10 !h-10">
+                            <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M20,18H4V6h16V18z M4,4C2.9,4,2,4.9,2,6v12c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V6c0-1.1-0.9-2-2-2H4z"/></svg>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-800 text-xs">V-Tech Computers</div>
+                            <div class="text-[9px] text-slate-400">1.2 km away</div>
+                        </div>
+                    </div>
+                    <div class="price-badge">₹42,500</div>
+                </div>
+
+                <div class="offer-card best-offer" id="oc-best">
+                    <div class="flex items-center gap-3">
+                        <div class="shop-visual !w-10 !h-10 !bg-green-100 !border-green-200">
+                             <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>
+                        </div>
+                        <div>
+                            <div class="font-black text-slate-900 text-xs">Apex Gadget Hub</div>
+                            <div class="text-[9px] font-black text-green-600 uppercase">Best Local Price</div>
+                        </div>
+                    </div>
+                    <div class="price-badge !text-green-600">₹38,900</div>
+                </div>
+
+                <div class="offer-card" id="oc2">
+                    <div class="flex items-center gap-3">
+                        <div class="shop-visual !w-10 !h-10">
+                             <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M4,4H20V20H4V4Z"/></svg>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-800 text-xs">Universal Digital</div>
+                            <div class="text-[9px] text-slate-400">4.5 km away</div>
+                        </div>
+                    </div>
+                    <div class="price-badge">₹41,000</div>
+                </div>
+                
+                <div class="offer-card opacity-50">
+                    <div class="text-[10px] italic text-slate-400 w-full text-center">+ 48 more offers received</div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-[11px] text-indigo-700 font-bold text-center mb-2">
+                Click on the best offer to connect with the shop!
+            </div>
+        </div>
+
+        <!-- SCREEN 3: SUCCESS/DEAL -->
+        <div id="happy-overlay">
+            <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl mb-6">🤝</div>
+            <h2 class="text-2xl font-black mb-2 text-center uppercase">Deal Confirmed</h2>
+            <p class="text-center opacity-70 text-xs font-medium mb-8">
+                Request sent to <br><span class="text-white font-bold">Apex Gadget Hub</span>
+            </p>
+            
+            <div class="w-full bg-white p-6 rounded-3xl flex flex-col items-center shadow-2xl">
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Final Quoted Price</div>
+                <div class="text-4xl font-black text-indigo-600">₹38,900</div>
+                <div class="mt-4 text-[9px] bg-green-600 text-white px-4 py-1.5 rounded-full font-black">SECURE CONNECTION</div>
+            </div>
+
+            <div id="replay-btn">Post New Request</div>
+        </div>
+    </div>
+
+    <script>
+        const sellers = [
+            { icon: 'A', t: '5%', l: '20%', dist: 0.8 },
+            { icon: 'B', t: '15%', r: '15%', dist: 1.5 },
+            { icon: 'C', t: '40%', l: '5%', dist: 2.2 },
+            { icon: 'D', t: '35%', r: '5%', dist: 3.1 },
+            { icon: 'E', t: '65%', l: '10%', dist: 0.5 },
+            { icon: 'F', t: '70%', r: '20%', dist: 1.1 },
+            { icon: 'G', t: '88%', l: '35%', dist: 4.8 },
+            { icon: 'H', t: '85%', r: '30%', dist: 2.9 }
+        ];
+
+        function init() {
+            const area = document.getElementById('diagram-area');
+            document.querySelectorAll('.shop-node, .connection-line').forEach(e => e.remove());
+
+            sellers.forEach((s, i) => {
+                const node = document.createElement('div');
+                node.className = 'shop-node';
+                if(s.l) node.style.left = s.l; else node.style.right = s.r;
+                node.style.top = s.t;
+                node.innerHTML = `
+                    <div class="shop-visual !w-10 !h-10 !rounded-lg shadow-md bg-white">
+                        <div class="text-[10px] font-bold text-slate-400">${s.icon}</div>
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white scale-0" id="notif-${i}"></div>
+                    </div>
+                    <div class="text-[7px] font-bold mt-1 text-slate-400 uppercase">${s.dist}km</div>
+                `;
+                area.appendChild(node);
+                const line = document.createElement('div');
+                line.className = 'connection-line';
+                line.id = `line-${i}`;
+                area.appendChild(line);
+            });
+            runAnimation();
+        }
+
+        function runAnimation() {
+            const tl = gsap.timeline();
+            
+            // Initial Reset
+            gsap.set(".screen", { x: 0 });
+            gsap.set("#screen-offers", { x: "100%" });
+            gsap.set(".bubble, #phone-center, .shop-node, .offer-card, #happy-overlay, #privacy-note, .status-banner", { opacity: 0, scale: 1 });
+            
+            // 1. Request Phase
+            tl.to("#b1", { opacity: 1, y: 5, duration: 0.7 })
+              .to("#b2", { opacity: 1, y: 5, duration: 0.7, delay: 0.3 })
+              .to("#phone-center", { opacity: 1, scale: 1.1, duration: 0.7, ease: "back.out" })
+              .to("#status-1", { opacity: 1, y: 0, duration: 0.7 })
+              .to("#privacy-note", { opacity: 1, y: -5, duration: 0.7 });
+
+            tl.to(".shop-node", { opacity: 1, stagger: 0.1, duration: 0.4 });
+            // Draw "You -> sellers" connection lines AFTER layout settles (WebView needs this).
+            tl.call(() => {
+                const tryDraw = (attempt = 0) => {
+                    const centerEl = document.getElementById('phone-center');
+                    const areaEl = document.getElementById('diagram-area');
+                    if (!centerEl || !areaEl) return;
+
+                    const center = centerEl.getBoundingClientRect();
+                    const area = areaEl.getBoundingClientRect();
+
+                    // Retry if layout isn't ready (can happen in Android WebView on first paint).
+                    if ((center.width === 0 || area.width === 0) && attempt < 6) {
+                        setTimeout(() => tryDraw(attempt + 1), 60);
+                        return;
+                    }
+
+                    const x1 = center.left + center.width / 2 - area.left;
+                    const y1 = center.top + center.height / 2 - area.top;
+
+                    document.querySelectorAll('.shop-node').forEach((node, i) => {
+                        const line = document.getElementById(`line-${i}`);
+                        const visual = node.querySelector('.shop-visual');
+                        if (!line || !visual) return;
+
+                        const sRect = visual.getBoundingClientRect();
+                        const x2 = sRect.left + sRect.width / 2 - area.left;
+                        const y2 = sRect.top + sRect.height / 2 - area.top;
+                        const dist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                        gsap.set(line, {
+                            left: x1,
+                            top: y1,
+                            rotation: angle,
+                            width: 0,
+                            opacity: 1
+                        });
+
+                        const speed = 0.4 + (sellers[i].dist * 0.1);
+                        // Use absolute position in timeline (no label reliance).
+                        const baseAt = tl.time();
+                        tl.to(line, { width: dist, duration: speed, ease: "power2.out" }, baseAt);
+                        tl.to(`#notif-${i}`, { scale: 1, duration: 0.3 }, baseAt + Math.max(0.05, speed - 0.1));
+                    });
+                };
+
+                // Next-tick to allow paint.
+                setTimeout(() => tryDraw(0), 0);
+            });
+
+            // 2nd Page: Offer Comparison - Increased delay to 3s (reading time)
+            tl.to("#screen-main", { x: "-100%", duration: 0.9, ease: "power4.inOut", delay: 3 })
+              .to("#screen-offers", { x: 0, duration: 0.9, ease: "power4.inOut" }, "-=0.9")
+              .to("#status-2", { opacity: 1, y: 0, duration: 0.7 })
+              .to(".offer-card", { opacity: 1, y: 0, stagger: 0.25, duration: 0.6 });
+
+            // Final Step: Deal Confirmation - Increased delay to 5s (viewing time)
+            tl.to("#oc-best", { scale: 1.05, duration: 0.5, delay: 0.5 })
+              .to("#happy-overlay", { opacity: 1, pointerEvents: "auto", duration: 1, delay: 5 })
+              .call(() => {
+                try {
+                  if (window.SmartConnect && SmartConnect.postMessage) {
+                    SmartConnect.postMessage('ended');
+                  }
+                } catch (_) {}
+              });
+        }
+
+        window.onload = init;
+        document.getElementById('replay-btn').onclick = init;
+    </script>
+</body>
+</html>
