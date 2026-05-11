@@ -783,23 +783,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final ads = state.adsByPlacement['HOME_TOP'] ?? state.advertisementResponse;
 
     final adBanners = ads?.data ?? const <AdvertisementBanner>[];
-    final inlineAds = adBanners.take(3).toList();
-    // Keep ads unique between sections on Home:
-    // - 1 ad: Products
-    // - 2 ads: 1 Products + 1 Services
-    // - 3 ads: 2 Products + 1 Services
+    // Home screen: show only first 2 ads (one in Products, one in Services).
+    final inlineAds = adBanners.take(2).toList();
     final productInlineAds = inlineAds.isEmpty
         ? const <AdvertisementBanner>[]
-        : inlineAds.length == 1
-        ? <AdvertisementBanner>[inlineAds[0]]
-        : inlineAds.length == 2
-        ? <AdvertisementBanner>[inlineAds[0]]
-        : <AdvertisementBanner>[inlineAds[0], inlineAds[1]];
+        : <AdvertisementBanner>[inlineAds[0]];
     final serviceInlineAds = inlineAds.length <= 1
         ? const <AdvertisementBanner>[]
-        : inlineAds.length == 2
-        ? <AdvertisementBanner>[inlineAds[1]]
-        : <AdvertisementBanner>[inlineAds[2]];
+        : <AdvertisementBanner>[inlineAds[1]];
 
     // ✅ Initial loading only
     if (state.isLoading && home == null) {

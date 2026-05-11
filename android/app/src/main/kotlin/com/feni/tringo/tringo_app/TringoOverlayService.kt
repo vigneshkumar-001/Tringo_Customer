@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -66,6 +67,14 @@ class TringoOverlayService : Service() {
 
     private val TAG = "TRINGO_OVERLAY"
 
+    // Keep notification ids/channels aligned with receivers, so we don't spam duplicates.
+    private val INCOMING_NOTIF_CH = "tringo_incoming_overlay_v3"
+    private val INCOMING_NOTIF_ID = 301
+    private val POSTCALL_NOTIF_CH = "tringo_postcall_overlay_v3"
+    private val POSTCALL_NOTIF_ID = 302
+    private val OUTGOING_NOTIF_CH = "tringo_outgoing_overlay_v3"
+    private val OUTGOING_NOTIF_ID = 303
+
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
 
@@ -110,6 +119,7 @@ class TringoOverlayService : Service() {
     private var callEndedAt: Long = 0L
     private var currentCallerName: String = ""
     private var postCallFlowJob: Job? = null
+    private var hardTimeoutJob: Job? = null
 
     private var isEditSheetOpen: Boolean = false
     private var editSheetAnimToken: Int = 0
@@ -333,6 +343,10 @@ class TringoOverlayService : Service() {
 
     companion object {
         @Volatile var isRunning: Boolean = false
+        @Volatile private var lastStartAtMs: Long = 0L
+        @Volatile private var lastStartSessionAtMs: Long = 0L
+        @Volatile private var lastStartMode: String = ""
+        @Volatile private var lastStartPhone: String = ""
 
         private const val FLUTTER_PREFS = "FlutterSharedPreferences"
         private const val KEY_OVERLAY_ENABLED = "flutter.caller_id_overlay_enabled"
@@ -365,6 +379,33 @@ class TringoOverlayService : Service() {
                 Log.d("TRINGO_OVERLAY", "start() skipped (Caller ID Overlay disabled)")
                 return false
             }
+
+            // De-dupe: multiple Android components can fire for the same call (receiver + InCallService),
+            // causing the overlay to show twice. Suppress rapid duplicates for the same session/mode.
+            val now = System.currentTimeMillis()
+            val mode = when {
+                keepAlive -> "keepAlive"
+                showOnCallEnd -> "postCall"
+                outgoingOverlay -> "outgoing"
+                else -> "incoming"
+            }
+            val p = phone.trim()
+            val sessionKey = if (sessionStartedAtMs > 0L) sessionStartedAtMs else 0L
+            val sameSession = sessionKey > 0L && lastStartSessionAtMs == sessionKey
+            val sameMode = lastStartMode == mode
+            val samePhone = p.isNotBlank() && lastStartPhone == p
+
+            if ((sameSession && sameMode && (now - lastStartAtMs) < 2500L) ||
+                (sameMode && samePhone && (now - lastStartAtMs) < 900L)
+            ) {
+                Log.d("TRINGO_OVERLAY", "start() de-duped mode=$mode phone=$p session=$sessionKey")
+                return true
+            }
+
+            lastStartAtMs = now
+            lastStartSessionAtMs = sessionKey
+            lastStartMode = mode
+            lastStartPhone = p
 
             val i = Intent(ctx, TringoOverlayService::class.java).apply {
                 putExtra("phone", phone)
@@ -555,7 +596,9 @@ class TringoOverlayService : Service() {
                     if (!ok) return@launch
 
                     // Show overlay now (cache applies instantly).
-                    if (safeCallState() == TelephonyManager.CALL_STATE_IDLE) return@launch
+                    // Only trust callState when READ_PHONE_STATE is granted.
+                    // Otherwise some devices return IDLE and we would incorrectly skip showing.
+                    if (hasReadPhoneState() && safeCallState() == TelephonyManager.CALL_STATE_IDLE) return@launch
                     pendingPhone = phoneForApi
                     safeShowOverlay(phoneForApi, pendingContact, preferCache = true)
                     scheduleIncomingAutoHide()
@@ -913,6 +956,161 @@ class TringoOverlayService : Service() {
         showOverlay(phone, contactName, preferCache)
     }
 
+    private fun showIncomingNotificationFallback(phone: String) {
+        try {
+            if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
+            val nm = getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val ch = NotificationChannel(
+                    INCOMING_NOTIF_CH,
+                    "Tringo Incoming",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                nm.createNotificationChannel(ch)
+            }
+
+            val openAppIntent = Intent(this, MainActivity::class.java).apply {
+                putExtra("overlay_action", "incoming_call")
+                putExtra("phone", phone)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
+
+            val pi = android.app.PendingIntent.getActivity(
+                this,
+                INCOMING_NOTIF_ID,
+                openAppIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val n = NotificationCompat.Builder(this, INCOMING_NOTIF_CH)
+                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setContentTitle("Incoming call")
+                .setContentText("Tap to view Tringo details")
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setColor(0xFF070A2A.toInt())
+                .setColorized(true)
+                .setAutoCancel(true)
+                .setContentIntent(pi)
+                .build()
+
+            NotificationManagerCompat.from(this).notify(INCOMING_NOTIF_ID, n)
+        } catch (t: Throwable) {
+            Log.e(TAG, "incoming notification fallback failed: ${t.message}", t)
+        }
+    }
+
+    private fun showPostCallNotificationFallback(phone: String, sessionStartAt: Long) {
+        try {
+            if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
+            val nm = getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val ch = NotificationChannel(
+                    POSTCALL_NOTIF_CH,
+                    "Tringo Post-call",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                nm.createNotificationChannel(ch)
+            }
+
+            val openAppIntent = Intent(this, MainActivity::class.java).apply {
+                putExtra("overlay_action", "post_call")
+                putExtra("phone", phone)
+                putExtra("showOnCallEnd", true)
+                putExtra("sessionStartAt", sessionStartAt)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
+
+            val pi = android.app.PendingIntent.getActivity(
+                this,
+                POSTCALL_NOTIF_ID,
+                openAppIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val n = NotificationCompat.Builder(this, POSTCALL_NOTIF_CH)
+                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setContentTitle("Call ended")
+                .setContentText("Tap to view Tringo details")
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setColor(0xFF070A2A.toInt())
+                .setColorized(true)
+                .setAutoCancel(true)
+                .setContentIntent(pi)
+                .build()
+
+            NotificationManagerCompat.from(this).notify(POSTCALL_NOTIF_ID, n)
+        } catch (t: Throwable) {
+            Log.e(TAG, "post-call notification fallback failed: ${t.message}", t)
+        }
+    }
+
+    private fun showOutgoingNotificationFallback(phone: String) {
+        try {
+            if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
+            val nm = getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val ch = NotificationChannel(
+                    OUTGOING_NOTIF_CH,
+                    "Tringo Outgoing",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                nm.createNotificationChannel(ch)
+            }
+
+            val openAppIntent = Intent(this, MainActivity::class.java).apply {
+                putExtra("overlay_action", "outgoing_call")
+                putExtra("phone", phone)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
+
+            val pi = android.app.PendingIntent.getActivity(
+                this,
+                OUTGOING_NOTIF_ID,
+                openAppIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val n = NotificationCompat.Builder(this, OUTGOING_NOTIF_CH)
+                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setContentTitle("Calling…")
+                .setContentText("Tap to view Tringo details")
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setColor(0xFF070A2A.toInt())
+                .setColorized(true)
+                .setAutoCancel(true)
+                .setContentIntent(pi)
+                .build()
+
+            NotificationManagerCompat.from(this).notify(OUTGOING_NOTIF_ID, n)
+        } catch (t: Throwable) {
+            Log.e(TAG, "outgoing notification fallback failed: ${t.message}", t)
+        }
+    }
+
     // ==========================================================
     // ✅ Icon size like Figma (16dp)
     // ==========================================================
@@ -1127,16 +1325,15 @@ class TringoOverlayService : Service() {
         smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
 
         // Dismiss overlay on outside tap + close button
+        val isIncomingOverlay = !postCallPopupMode && !outgoingOverlayMode
         val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
         val rootCard = v.findViewById<View>(R.id.rootCard)
+        // Requirement: anywhere tap should dismiss (safe; next taps go to the underlying app).
+        outsideLayer?.visibility = View.VISIBLE
         outsideLayer?.setOnClickListener { dismissOverlayFromUser() }
 
-        // ✅ Dismiss overlay on BACK button (post-call + outgoing overlay UX).
-        // Incoming overlay is non-touchable/non-focusable to avoid blocking answering calls.
+        // ✅ Dismiss overlay on BACK button.
         try {
-            if (!postCallPopupMode && !outgoingOverlayMode) {
-                throw Exception("skip back listener for incoming overlay")
-            }
             v.isFocusable = true
             v.isFocusableInTouchMode = true
             (v as? ViewGroup)?.descendantFocusability = ViewGroup.FOCUS_BEFORE_DESCENDANTS
@@ -1183,6 +1380,7 @@ class TringoOverlayService : Service() {
 
         // Close
         val closeBtn = v.findViewById<View>(R.id.closeBtn)
+        closeBtn?.visibility = View.VISIBLE
         closeBtn?.setOnClickListener { dismissOverlayFromUser() }
 
         setButtonIconDp(callBtnBusiness, R.drawable.ic_call_png, 16f)
@@ -1369,19 +1567,23 @@ class TringoOverlayService : Service() {
         adsAdapter = null
         adsCarouselAdapter = carouselAdapter
 
-        // Incoming overlay should never block answering the call (lock screen / dialer UI).
-        // Keep it non-focusable and non-touchable so taps go to the system call UI underneath.
-        // Outgoing overlay is allowed to be interactive (it shouldn't block a system "answer" UI).
-        val isIncomingOverlay = !postCallPopupMode && !outgoingOverlayMode
+        // Render as a full-screen overlay window so the layout measures consistently
+        // across other foreground apps (OEMs can break WRAP_CONTENT overlay measurement).
+        //
+        // Behavior:
+        // - Incoming: don't take focus (so system dialer / other apps keep BACK/nav behaviour)
+        // - Post-call/outgoing: take focus so BACK can dismiss reliably
         val flags =
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                (if (isIncomingOverlay) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0) or
-                (if (isIncomingOverlay) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0)
+                (if (isIncomingOverlay) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0)
+
+        val width = WindowManager.LayoutParams.MATCH_PARENT
+        val height = WindowManager.LayoutParams.MATCH_PARENT
 
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+            width,
+            height,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
@@ -1389,10 +1591,15 @@ class TringoOverlayService : Service() {
             flags,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            gravity =
+                (Gravity.TOP or Gravity.START)
             softInputMode =
                 WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
         }
 
         try {
@@ -1400,9 +1607,29 @@ class TringoOverlayService : Service() {
             Log.d(TAG, "addView ok postCall=$postCallPopupMode phone=$phone")
             overlayShownAtMs = System.currentTimeMillis()
 
-            // If we got here via a notification fallback, clear it so the user doesn't see extra UI.
+            // Hard safety timeout: if the overlay somehow can't be dismissed (OEM bugs / removeView failures),
+            // force-stop the service to avoid a stuck screen.
+            hardTimeoutJob?.cancel()
+            hardTimeoutJob = serviceScope.launch {
+                val ms = when {
+                    keepAliveMode -> 0L
+                    postCallPopupMode -> 30_000L
+                    outgoingOverlayMode -> 30_000L
+                    else -> 15_000L // incoming
+                }
+                if (ms <= 0L) return@launch
+                delay(ms)
+                if (overlayView !== v) return@launch
+                if (isEditSheetOpen) return@launch
+                Log.w(TAG, "hard timeout -> stopSelf() postCall=$postCallPopupMode outgoing=$outgoingOverlayMode")
+                removeOverlay()
+                if (!keepAliveMode) stopSelf()
+            }
+
+            // Keep incoming CALL notification visible as a manual "Dismiss" escape hatch,
+            // especially because the incoming overlay itself is non-touchable/non-focusable.
+            // Safe to clear the other fallbacks though.
             try {
-                NotificationManagerCompat.from(this).cancel(301) // incoming fallback
                 NotificationManagerCompat.from(this).cancel(302) // post-call fallback
                 NotificationManagerCompat.from(this).cancel(303) // outgoing fallback
             } catch (_: Exception) {}
@@ -1987,11 +2214,31 @@ class TringoOverlayService : Service() {
     private fun removeOverlay() {
         metaTickerJob?.cancel()
         metaTickerJob = null
-        overlayView?.let {
-            try { windowManager?.removeView(it) } catch (_: Exception) {}
-            Log.d(TAG, "removeOverlay()")
+        val v = overlayView
+        if (v != null) {
+            var removed = false
+            try {
+                windowManager?.removeView(v)
+                removed = true
+            } catch (_: Throwable) {
+                // Some OEMs throw if called off-thread or during layout pass; try immediate removal.
+            }
+            if (!removed) {
+                try {
+                    windowManager?.removeViewImmediate(v)
+                    removed = true
+                } catch (t2: Throwable) {
+                    Log.e(TAG, "removeOverlay failed: ${t2.message}", t2)
+                }
+            }
+            if (removed) {
+                Log.d(TAG, "removeOverlay()")
+                overlayView = null
+            } else {
+                // Keep the reference so we can retry removing later.
+                overlayView = v
+            }
         }
-        overlayView = null
     }
 
     private fun clampAdsRecyclerHeight(recycler: RecyclerView?) {
@@ -2007,6 +2254,8 @@ class TringoOverlayService : Service() {
         isRunning = false
         incomingAutoHideJob?.cancel()
         incomingAutoHideJob = null
+        hardTimeoutJob?.cancel()
+        hardTimeoutJob = null
         stopWatchingForCallEnd()
         serviceJob.cancel()
         removeOverlay()

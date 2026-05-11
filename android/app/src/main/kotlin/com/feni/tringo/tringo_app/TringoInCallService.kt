@@ -102,24 +102,9 @@ class TringoInCallService : InCallService() {
             }
 
             fun startNoDisplayTrampolineFallback() {
-                try {
-                    val i = Intent(applicationContext, TringoIncomingPopupActivity::class.java).apply {
-                        putExtra("phone", if (phone.isNotBlank()) phone else "UNKNOWN")
-                        putExtra("contactName", "")
-                        putExtra("showOnCallEnd", false)
-                        putExtra("outgoingOverlay", true)
-                        putExtra("sessionStartAt", System.currentTimeMillis())
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK or
-                                Intent.FLAG_ACTIVITY_NO_ANIMATION or
-                                Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
-                        )
-                    }
-                    applicationContext.startActivity(i)
-                } catch (t3: Throwable) {
-                    Log.e(TAG, "no-display trampoline failed: ${t3.message}", t3)
-                    showOutgoingNotificationFallback()
-                }
+                // Never auto-open an Activity on calls.
+                // Use a heads-up CALL notification as fallback; user can tap if needed.
+                showOutgoingNotificationFallback()
             }
 
             if (started) {

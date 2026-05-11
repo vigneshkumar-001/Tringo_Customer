@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Contacts%20Sync/contacts_consent_gate.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Screens/smart_connect_history.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
@@ -127,6 +128,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       }
     }
 
+    // If user skipped contacts sync and contacts permission is still denied,
+    // keep the toggle OFF until they allow contacts (as requested).
+    if (effectiveEnabled || enabled) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final skippedContacts = prefs.getBool('contacts_sync_skipped') ?? false;
+        final contactsGranted = await Permission.contacts.status.isGranted;
+        if (skippedContacts && !contactsGranted) {
+          effectiveEnabled = false;
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setCallerIdOverlayAutoDisabled(false);
+        }
+      } catch (_) {}
+    }
+
     if (!mounted) return;
     setState(() {
       _callerIdOverlayEnabled = effectiveEnabled;
@@ -222,6 +238,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       await CallerIdRoleHelper.stopOverlayService();
       return;
     }
+
+    // If contacts sync was skipped earlier, require contacts permission on re-enable (as requested).
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final skippedContacts = prefs.getBool('contacts_sync_skipped') ?? false;
+      final contactsGranted = await Permission.contacts.status.isGranted;
+      if (skippedContacts && !contactsGranted && mounted) {
+        await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => const ContactsConsentGate(
+              args: ContactsConsentGateArgs(
+                nextRouteName: AppRoutes.home,
+                forceShow: true,
+                popOnDone: true,
+                showTurnOffCallerIdPromptOnSkip: false,
+              ),
+            ),
+          ),
+        );
+
+        final contactsNow = await Permission.contacts.status.isGranted;
+        if (!contactsNow) {
+          // User skipped/denied again -> keep toggle OFF.
+          if (mounted) setState(() => _callerIdOverlayEnabled = false);
+          await AppPrefs.setCallerIdOverlayEnabled(false);
+          await AppPrefs.setCallerIdOverlayAutoDisabled(false);
+          return;
+        }
+      }
+    } catch (_) {}
 
     final phoneStatus = await Permission.phone.status;
     if (!phoneStatus.isGranted) {

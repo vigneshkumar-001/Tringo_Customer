@@ -37,7 +37,7 @@ class homeState {
 
   const homeState({
     this.isLoading = true,
-    this.isEnquiryLoading = false,
+    this.isEnquiryLoading = false, 
     this.isAdsLoading = false,
     this.markEnquiry,
     this.error,

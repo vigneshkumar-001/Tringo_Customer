@@ -279,25 +279,14 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         }
 
         if (!started) {
-            startNoDisplayTrampoline(
-                context = context,
-                phone = phone,
-                showOnCallEnd = true,
-                outgoingOverlay = false,
-                sessionStartAt = sessionStartAt
-            )
+            // Do NOT auto-open an Activity; rely on notification fallback only.
+            showPostCallNotificationFallback(context, phone, sessionStartAt)
             return
         }
 
         Handler(Looper.getMainLooper()).postDelayed({
             if (!TringoOverlayService.isRunning) {
-                startNoDisplayTrampoline(
-                    context = context,
-                    phone = phone,
-                    showOnCallEnd = true,
-                    outgoingOverlay = false,
-                    sessionStartAt = sessionStartAt
-                )
+                showPostCallNotificationFallback(context, phone, sessionStartAt)
             }
         }, 1000L)
     }
@@ -326,25 +315,14 @@ class TringoCallEndReceiver : BroadcastReceiver() {
         }
 
         if (!started) {
-            startNoDisplayTrampoline(
-                context = context,
-                phone = phone,
-                showOnCallEnd = false,
-                outgoingOverlay = true,
-                sessionStartAt = sessionStartAt
-            )
+            // Do NOT auto-open an Activity; rely on notification fallback only.
+            showOutgoingNotificationFallback(context, phone)
             return
         }
 
         Handler(Looper.getMainLooper()).postDelayed({
             if (!TringoOverlayService.isRunning) {
-                startNoDisplayTrampoline(
-                    context = context,
-                    phone = phone,
-                    showOnCallEnd = false,
-                    outgoingOverlay = true,
-                    sessionStartAt = sessionStartAt
-                )
+                showOutgoingNotificationFallback(context, phone)
             }
         }, 700L)
     }

@@ -205,6 +205,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name="com.feni.tringo.tringo_app.TringoOverlayDismissReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.feni.tringo.tringo_app.ACTION_DISMISS_OVERLAY" />
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

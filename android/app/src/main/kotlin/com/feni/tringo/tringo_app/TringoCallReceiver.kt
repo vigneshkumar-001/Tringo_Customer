@@ -78,30 +78,11 @@ class TringoCallReceiver : BroadcastReceiver() {
         }
 
         if (started) {
-            // Give the service a short time to attach the overlay window.
-            Handler(Looper.getMainLooper()).postDelayed({
-                if (!TringoOverlayService.isRunning) {
-                    startNoDisplayTrampoline(
-                        context,
-                        finalPhone,
-                        showOnCallEnd = false,
-                        outgoingOverlay = false,
-                        sessionStartAt = now
-                    )
-                }
-            }, 1200L)
             return
         }
 
-        // Some devices block background service starts; fall back to a heads-up CALL notification.
-        // Secondary attempt: no-UI trampoline (may still be blocked on some OEMs).
-        startNoDisplayTrampoline(
-            context,
-            finalPhone,
-            showOnCallEnd = false,
-            outgoingOverlay = false,
-            sessionStartAt = now
-        )
+        // Some devices block background service starts; rely on the heads-up CALL notification fallback.
+        // Do NOT auto-start any Activity here (it brings the app to foreground / recents).
     }
 
     private fun showIncomingNotificationFallback(context: Context, phone: String) {
@@ -135,6 +116,17 @@ class TringoCallReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            val dismissIntent = Intent(context, TringoOverlayDismissReceiver::class.java).apply {
+                action = TringoOverlayDismissReceiver.ACTION_DISMISS_OVERLAY
+            }
+
+            val dismissPi = PendingIntent.getBroadcast(
+                context,
+                INCOMING_NOTIF_ID + 1000,
+                dismissIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val b = NotificationCompat.Builder(context, INCOMING_NOTIF_CH)
                 .setSmallIcon(android.R.drawable.ic_menu_call)
                 .setContentTitle("Incoming call")
@@ -142,12 +134,16 @@ class TringoCallReceiver : BroadcastReceiver() {
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setFullScreenIntent(pi, true)
                 // Dark, ad-style look where supported (OEMs may ignore).
                 .setColor(0xFF070A2A.toInt())
                 .setColorized(true)
                 .setAutoCancel(true)
                 .setContentIntent(pi)
+                .addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Dismiss",
+                    dismissPi
+                )
 
             NotificationManagerCompat.from(context).notify(INCOMING_NOTIF_ID, b.build())
         } catch (t: Throwable) {

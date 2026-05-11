@@ -14,18 +14,36 @@ import 'package:tringo_app/Core/Contacts Sync Helper/contacts_sync_helpers.dart'
 
 class ContactsConsentGateArgs {
   final String nextRouteName;
-  const ContactsConsentGateArgs({required this.nextRouteName});
+  final bool forceShow;
+  final bool popOnDone;
+  final bool showTurnOffCallerIdPromptOnSkip;
+  const ContactsConsentGateArgs({
+    required this.nextRouteName,
+    this.forceShow = false,
+    this.popOnDone = false,
+    this.showTurnOffCallerIdPromptOnSkip = true,
+  });
 
   static ContactsConsentGateArgs? tryParse(Object? extra) {
     if (extra is ContactsConsentGateArgs) return extra;
     if (extra is Map) {
       final next = extra['nextRouteName'];
+      final force = extra['forceShow'];
+      final pop = extra['popOnDone'];
+      final prompt = extra['showTurnOffCallerIdPromptOnSkip'];
       if (next is String && next.isNotEmpty) {
-        return ContactsConsentGateArgs(nextRouteName: next);
+        return ContactsConsentGateArgs(
+          nextRouteName: nextRouteNameFrom(next),
+          forceShow: force == true,
+          popOnDone: pop == true,
+          showTurnOffCallerIdPromptOnSkip: prompt != false,
+        );
       }
     }
     return null;
   }
+
+  static String nextRouteNameFrom(String value) => value;
 }
 
 class ContactsConsentGate extends ConsumerStatefulWidget {
@@ -106,8 +124,12 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
     final inProgress = prefs.getBool(_prefContactsSyncInProgress) ?? false;
 
     if (!mounted) return;
-    if (alreadySynced || skipped || inProgress) {
-      context.goNamed(widget.args.nextRouteName);
+    if (alreadySynced || (!widget.args.forceShow && (skipped || inProgress))) {
+      if (widget.args.popOnDone) {
+        Navigator.of(context).pop(true);
+      } else {
+        context.goNamed(widget.args.nextRouteName);
+      }
     }
   }
 
@@ -116,16 +138,20 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
     await prefs.setBool(_prefContactsSyncSkipped, true);
     if (!mounted) return;
 
-    // UX requirement: when user skips contact sync, also offer to turn off Caller ID overlay
-    // using the same confirmation popup used in the Caller ID toggle screen.
-    final choice = await _confirmTurnOffCallerIdPopup();
-    if (!mounted) return;
-    // If user dismisses the popup (tap outside/back) or chooses "Not now",
-    // stay on this screen and do not proceed.
-    if (choice == null) return;
+    if (widget.args.showTurnOffCallerIdPromptOnSkip) {
+      // UX requirement: when user skips contact sync, also offer to turn off Caller ID overlay.
+      final choice = await _confirmTurnOffCallerIdPopup();
+      if (!mounted) return;
+      // If user dismisses the popup (tap outside/back) or chooses "Not now", stay here.
+      if (choice == null) return;
+    }
 
     if (!mounted) return;
-    context.goNamed(widget.args.nextRouteName);
+    if (widget.args.popOnDone) {
+      Navigator.of(context).pop(true);
+    } else {
+      context.goNamed(widget.args.nextRouteName);
+    }
   }
 
   Future<void> _requestPermissionAndSync() async {
@@ -152,7 +178,11 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
       final api = ref.read(apiDataSourceProvider);
       unawaited(ContactsSyncHelper.syncOnceInBackground(api, ignoreSkipped: true));
       if (!mounted) return;
-      context.goNamed(widget.args.nextRouteName);
+      if (widget.args.popOnDone) {
+        Navigator.of(context).pop(true);
+      } else {
+        context.goNamed(widget.args.nextRouteName);
+      }
     } catch (_) {
       setState(() => _isWorking = false);
     }
