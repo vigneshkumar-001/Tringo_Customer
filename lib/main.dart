@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +16,12 @@ import 'Core/overlay_nav_bridge.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Must initialize Firebase in background isolate too
-  await Firebase.initializeApp();
-  AppLogger.log.i('🔕 [BG] messageId=${message.messageId}');
+  try {
+    await Firebase.initializeApp();
+    AppLogger.log.i('🔕 [BG] messageId=${message.messageId}');
+  } catch (e, st) {
+    AppLogger.log.w('Firebase background init skipped: $e\n$st');
+  }
 }
 
 Future<void> main() async {
@@ -29,35 +35,43 @@ Future<void> main() async {
   // Optional: lock orientation
   // await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  await Firebase.initializeApp();
-
-  // Background handler must be registered early
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  final firebaseService = FirebaseService();
-  await firebaseService.initializeFirebase();
-  await firebaseService.fetchFCMTokenIfNeeded();
-
-  // ✅ Register listeners (no need for postFrame)
-  firebaseService.listenToMessages(
-    onMessage: (msg) async {
-      AppLogger.log.i('📩 [FG] ${msg.messageId}');
-      await firebaseService.showNotification(msg);
-    },
-    onMessageOpenedApp: (msg) {
-      AppLogger.log.i('📬 [OPENED] ${msg.messageId}');
-      PushNotificationHandler.handleData(msg.data);
-    },
-  );
-
-  // ✅ Handle "terminated -> opened by tap"
-  final initialMsg = await FirebaseMessaging.instance.getInitialMessage();
-  if (initialMsg != null) {
-    AppLogger.log.i('🚀 [TERMINATED OPEN] ${initialMsg.messageId}');
-    PushNotificationHandler.handleData(initialMsg.data);
-  }
-
   runApp(const ProviderScope(child: MyApp()));
+
+  unawaited(_initializeFirebaseServices());
+}
+
+Future<void> _initializeFirebaseServices() async {
+  try {
+    await Firebase.initializeApp();
+
+    // Background handler must be registered early after Firebase is available.
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+    final firebaseService = FirebaseService();
+    await firebaseService.initializeFirebase();
+    await firebaseService.fetchFCMTokenIfNeeded();
+
+    // ✅ Register listeners (no need for postFrame)
+    firebaseService.listenToMessages(
+      onMessage: (msg) async {
+        AppLogger.log.i('📩 [FG] ${msg.messageId}');
+        await firebaseService.showNotification(msg);
+      },
+      onMessageOpenedApp: (msg) {
+        AppLogger.log.i('📬 [OPENED] ${msg.messageId}');
+        PushNotificationHandler.handleData(msg.data);
+      },
+    );
+
+    // ✅ Handle "terminated -> opened by tap"
+    final initialMsg = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMsg != null) {
+      AppLogger.log.i('🚀 [TERMINATED OPEN] ${initialMsg.messageId}');
+      PushNotificationHandler.handleData(initialMsg.data);
+    }
+  } catch (e, st) {
+    AppLogger.log.w('Firebase startup skipped: $e\n$st');
+  }
 }
 
 class MyApp extends StatelessWidget {
