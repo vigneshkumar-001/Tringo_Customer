@@ -48,3 +48,5 @@ app.*.map.json
 tringo_customer-keystore.jks
 android/key.properties
 **/*.jks
+**/*.keystore
+**/*.pem

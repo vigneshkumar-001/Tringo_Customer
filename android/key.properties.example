@@ -1,0 +1,17 @@
+## Android release signing (DO NOT COMMIT real secrets)
+#
+# Copy this file to: android/key.properties
+# Then fill in values for your local machine / CI secrets.
+#
+# storeFile can be an absolute path OR a path relative to the android/ folder.
+#
+# Example:
+# storeFile=../keystores/my-release.jks
+# storePassword=change_me
+# keyPassword=change_me
+# keyAlias=release
+
+storeFile=
+storePassword=
+keyPassword=
+keyAlias=
