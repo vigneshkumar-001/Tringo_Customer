@@ -44,9 +44,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Keystore (do not commit)
-tringo_customer-keystore.jks
-android/key.properties
-**/*.jks
-**/*.keystore
-**/*.pem
+
