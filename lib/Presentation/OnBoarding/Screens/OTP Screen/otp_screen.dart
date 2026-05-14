@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,9 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
-import 'package:tringo_app/Core/Utility/app_prefs.dart';
-import 'package:tringo_app/Core/Utility/device_helper.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Controller/app_version_notifier.dart';
+import 'package:tringo_app/Core/Firebase_service/fcm_token_uploader.dart';
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
 import '../../../../Core/Utility/app_loader.dart';
@@ -35,7 +32,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   String? otpError;
   String verifyCode = '';
-  bool _fcmSent = false;
   Timer? _timer;
   int _secondsRemaining = 30;
   bool _canResend = false;
@@ -83,38 +79,38 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     });
   }
 
+  Future<String> _waitForFcmTokenInPrefs({
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    final sw = Stopwatch()..start();
+    while (sw.elapsed < timeout) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      final t = (prefs.getString('fcmToken') ?? '').trim();
+      if (t.isNotEmpty) return t;
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    return '';
+  }
+
   Future<void> _sendFcmAfterLogin() async {
-    if (_fcmSent) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final fcmToken = prefs.getString('fcmToken') ?? '';
+      var fcmToken = (prefs.getString('fcmToken') ?? '').trim();
+
+      if (fcmToken.isEmpty) {
+        // FirebaseService may still be fetching token on slower devices.
+        fcmToken = await _waitForFcmTokenInPrefs();
+      }
 
       if (fcmToken.isEmpty) {
         AppLogger.log.w("⚠️ FCM token empty after login");
         return;
       }
 
-      final lastSent = await AppPrefs.getLastSentFcmToken();
-      if (lastSent != null && lastSent == fcmToken) {
-        _fcmSent = true;
-        return;
-      }
-
-      final deviceId = await DeviceIdHelper.getDeviceId();
-      final platform = Platform.isAndroid ? "android" : "ios";
-
-      await ref
-          .read(appVersionNotifierProvider.notifier)
-          .fcmTokenSend(
-            fcmToken: fcmToken,
-            platform: platform,
-            deviceId: deviceId,
-          );
-
-      await AppPrefs.setLastSentFcmToken(fcmToken);
-      _fcmSent = true;
-
-      AppLogger.log.i("✅ FCM token sent after OTP login");
+      // Fire-and-forget: never block OTP success navigation / UI.
+      unawaited(FcmTokenUploader.uploadIfPossible(fcmToken: fcmToken));
+      AppLogger.log.i("✅ FCM token sync scheduled after OTP login");
     } catch (e) {
       AppLogger.log.e("❌ FCM send failed: $e");
     }
@@ -137,7 +133,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       else if (next.otpResponse != null) {
         AppSnackBar.success(context, 'OTP verified successfully!');
 
-        Future(() => _sendFcmAfterLogin());
+        unawaited(_sendFcmAfterLogin());
         // final prefs = await SharedPreferences.getInstance();
         // final alreadySynced = prefs.getBool('contacts_synced') ?? false;
         //

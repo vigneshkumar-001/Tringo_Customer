@@ -1,9 +1,11 @@
 // firebase_service.dart
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Firebase_service/fcm_token_uploader.dart';
 import 'package:tringo_app/Core/Firebase_service/push_notification_handler.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
 
@@ -69,6 +71,9 @@ class FirebaseService {
         await prefs.setString('fcmToken', t);
         await AppPrefs.setLastSentFcmToken('');
         _fcmToken = t;
+
+        // If user is already logged in, attempt sync immediately (otherwise no-op).
+        unawaited(FcmTokenUploader.uploadIfPossible(fcmToken: t));
       } catch (_) {}
     });
 
@@ -134,6 +139,9 @@ class FirebaseService {
     if (token != null && token.isNotEmpty) {
       await prefs.setString('fcmToken', token);
       AppLogger.log.i('✅ FCM Token: ${AppLogger.redact(token, showLast: 6)}');
+
+      // If user is already logged in, attempt sync immediately (otherwise no-op).
+      unawaited(FcmTokenUploader.uploadIfPossible(fcmToken: token));
     } else {
       AppLogger.log.w('⚠️ No FCM token (device/config/network). Will retry later.');
     }

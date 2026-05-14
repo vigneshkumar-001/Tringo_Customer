@@ -10,8 +10,7 @@ import 'package:tringo_app/Api/api_providers.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
-import 'package:tringo_app/Core/Utility/app_prefs.dart';
-import 'package:tringo_app/Core/Utility/device_helper.dart';
+import 'package:tringo_app/Core/Firebase_service/fcm_token_uploader.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -33,7 +32,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   String appVersion = '1.0.4';
 
   bool _navigated = false;
-  bool _tokenSent = false;
   @override
   void initState() {
     super.initState();
@@ -89,55 +87,45 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       });
     }
   }
-Future<void> _sendDeviceTokenIfNeeded() async {
-    if (_tokenSent) return;
+  Future<String> _waitForFcmTokenInPrefs({
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    final sw = Stopwatch()..start();
+    while (sw.elapsed < timeout) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      final t = (prefs.getString('fcmToken') ?? '').trim();
+      if (t.isNotEmpty) return t;
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    return '';
+  }
 
+  Future<void> _sendDeviceTokenIfNeeded() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final authToken = (prefs.getString('token') ?? '').trim();
-      final fcmToken = (prefs.getString('fcmToken') ?? '').trim();
 
       // Backend endpoint requires auth; don't attempt before login.
       if (authToken.isEmpty) return;
 
+      var fcmToken = (prefs.getString('fcmToken') ?? '').trim();
       if (fcmToken.isEmpty) {
-        AppLogger.log.w("⚠️ No fcmToken in prefs yet");
+        // FirebaseService sets this shortly after startup; wait a bit so first run
+        // doesn't miss uploading token (some devices are slower).
+        fcmToken = await _waitForFcmTokenInPrefs();
+      }
+
+      if (fcmToken.isEmpty) {
+        AppLogger.log.w("⚠️ No fcmToken available yet");
         return;
       }
 
-      final lastSent = await AppPrefs.getLastSentFcmToken();
-      if (lastSent != null && lastSent == fcmToken) {
-        _tokenSent = true;
-        return;
-      }
-
-      final deviceId = await DeviceIdHelper.getDeviceId();
-      final platform = Platform.isAndroid ? "android" : "ios";
-
-      await ref
-          .read(appVersionNotifierProvider.notifier)
-          .fcmTokenSend(
-            fcmToken: fcmToken,
-            platform: platform,
-            deviceId: deviceId,
-          );
-
-      final st2 = ref.read(appVersionNotifierProvider);
-      if (st2.deviceTokenResponse?.status == true) {
-        await AppPrefs.setLastSentFcmToken(fcmToken);
-        _tokenSent = true;
-      } else {
-        _tokenSent = false;
-      }
-
-      final st = ref.read(appVersionNotifierProvider);
-      AppLogger.log.i(
-        "✅ device-token api response: ${st.deviceTokenResponse?.status}",
-      );
+      // Fire-and-forget: never block splash navigation / UI.
+      unawaited(FcmTokenUploader.uploadIfPossible(fcmToken: fcmToken));
     } catch (e, st) {
       AppLogger.log.e("❌ sendDeviceToken failed: $e");
       AppLogger.log.e(st);
-      _tokenSent = false;
     }
   }
 
@@ -173,7 +161,7 @@ Future<void> _sendDeviceTokenIfNeeded() async {
     }
 
     // ✅ 2) Send FCM token to API here
-    await _sendDeviceTokenIfNeeded();
+    unawaited(_sendDeviceTokenIfNeeded());
 
     // 3) Splash delay
     await Future.delayed(const Duration(seconds: 3));

@@ -2273,7 +2273,7 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final url = ApiUrl.fcmToken;
 
-      dynamic response = await Request.sendRequest(
+      final response = await Request.sendRequest(
         url,
         {
           "fcmToken": fcmToken,
@@ -2284,27 +2284,29 @@ class ApiDataSource extends BaseApiDataSource {
         true,
       );
 
-      if (response is! DioException) {
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          if (response.data['status'] == true) {
-            return Right(DeviceTokenResponse.fromJson(response.data));
-          } else {
-            return Left(
-              ServerFailure(response.data['message'] ?? "Login failed"),
-            );
-          }
-        } else {
-          return Left(
-            ServerFailure(response.data['message'] ?? "Something went wrong"),
-          );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map && data['status'] == true) {
+          final map = data.map((k, v) => MapEntry(k.toString(), v));
+          return Right(DeviceTokenResponse.fromJson(map));
         }
-      } else {
-        final errorData = response.response?.data;
-        if (errorData is Map && errorData.containsKey('message')) {
-          return Left(ServerFailure(errorData['message']));
+        if (data is Map) {
+          return Left(ServerFailure(data['message'] ?? "Failed to save token"));
         }
-        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+        return Left(const ServerFailure("Failed to save token"));
       }
+
+      final data = response.data;
+      if (data is Map) {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+      return Left(const ServerFailure("Something went wrong"));
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
     } catch (e, st) {
       AppLogger.log.e(e.toString(), error: e, stackTrace: st);
       return Left(ServerFailure(e.toString()));
