@@ -81,7 +81,7 @@ class Request {
         "REQUEST \n"
         " METHOD: $httpMethod \n"
         " API   : $url \n"
-        " BODY  : $body \n"
+        " BODY  : ${_redactBody(body)} \n"
         " HEADERS: $safeHeaders",
       );
 
@@ -197,6 +197,32 @@ class Request {
       // Throw clean exception
       throw Exception(e.toString());
     }
+  }
+
+  static Map<String, dynamic> _redactBody(Map<String, dynamic> body) {
+    if (body.isEmpty) return const {};
+
+    const sensitiveKeys = <String>{
+      'token',
+      'accessToken',
+      'refreshToken',
+      'sessionToken',
+      'otp',
+      'code',
+      'password',
+      'pin',
+    };
+
+    final safe = <String, dynamic>{};
+    body.forEach((key, value) {
+      final k = key.toString();
+      if (sensitiveKeys.contains(k)) {
+        safe[k] = value is String ? AppLogger.redact(value, showLast: 4) : '***';
+      } else {
+        safe[k] = value;
+      }
+    });
+    return safe;
   }
 
   // static Future<dynamic> sendRequest(

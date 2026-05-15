@@ -96,6 +96,24 @@ class AppPrefs {
     // _cachedVerificationToken = null;
   }
 
+  /// Clears auth/session tokens + user/profile cache, but keeps user feature prefs (e.g. overlay settings).
+  static Future<void> clearAuthAndUserCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_token);
+    await prefs.remove(_refreshToken);
+    await prefs.remove(_sessionToken);
+    await prefs.remove(_role);
+    await prefs.remove(_isProfileCompleted);
+    await prefs.remove(_kPhoneVerifyToken);
+
+    // FCM sync bookkeeping should be reset so next login can re-sync token.
+    await prefs.remove(_lastSentFcmToken);
+    await prefs.remove(_lastSentFcmAtMs);
+
+    // Onboarding helper cache
+    await prefs.remove(_pendingReferralCode);
+  }
+
   // Caller ID / Overlay feature toggle
   static Future<void> setCallerIdOverlayEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();

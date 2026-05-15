@@ -14,6 +14,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Scree
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_screens.dart';
 import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Widgets/caller_id_role_helper.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Shared/logout/logout_notifier.dart';
 
 import '../../../../Core/Utility/app_Images.dart';
 import '../../../../Core/Utility/app_color.dart';
@@ -375,20 +376,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             ),
             TextButton(
               onPressed: () async {
-                // Navigator.pop(context);
-                // Navigator.pushAndRemoveUntil(
-                //   context,
-                //   MaterialPageRoute(builder: (_) => LoginMobileNumber()),
-                //   (route) => false,
-                // );
-                final prefs = await SharedPreferences.getInstance();
-                prefs.remove('token');
-                // prefs.remove('isProfileCompleted');
-                // prefs.remove('isNewOwner');
-                await prefs.clear();
-
-                // Then navigate
-                context.goNamed(AppRoutes.login);
+                Navigator.pop(context);
+                await ref.read(logoutNotifierProvider.notifier).logoutNow(context);
               },
               child: Text(
                 "Logout",

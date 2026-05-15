@@ -16,6 +16,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/n
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/login_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/otp_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/whatsapp_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Login Screen/Model/logout_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/device_token_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Login%20Screen/Model/referral_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Products/Model/product_detail_response.dart';
@@ -2307,6 +2308,48 @@ class ApiDataSource extends BaseApiDataSource {
         return Left(ServerFailure(errorData['message']));
       }
       return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e, st) {
+      AppLogger.log.e(e.toString(), error: e, stackTrace: st);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Either<Failure, LogoutResponse>> logout({
+    required LogoutRequest request,
+  }) async {
+    try {
+      final response = await Request.sendRequest(
+        ApiUrl.logout,
+        request.toJson(),
+        'POST',
+        false, // No bearer required
+        sendBearerToken: false,
+        sendSessionToken: false,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map && data['status'] == true) {
+          final map = data.map((k, v) => MapEntry(k.toString(), v));
+          return Right(LogoutResponse.fromJson(map));
+        }
+        if (data is Map) {
+          return Left(ServerFailure(data['message'] ?? 'Logout failed'));
+        }
+        return Left(const ServerFailure('Logout failed'));
+      }
+
+      final data = response.data;
+      if (data is Map) {
+        return Left(ServerFailure(data['message'] ?? 'Logout failed'));
+      }
+      return Left(const ServerFailure('Logout failed'));
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? 'Logout failed'));
     } catch (e, st) {
       AppLogger.log.e(e.toString(), error: e, stackTrace: st);
       return Left(ServerFailure(e.toString()));

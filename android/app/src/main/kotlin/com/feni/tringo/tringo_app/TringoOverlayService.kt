@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.app.ActivityManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -590,10 +591,18 @@ class TringoOverlayService : Service() {
                     }
 
                     // Still unknown -> don't show overlay at all.
-                    if (isUnknownPhone(phoneForApi) || phoneForApi.isBlank()) return@launch
+                    if (isUnknownPhone(phoneForApi) || phoneForApi.isBlank()) {
+                        Log.w(TAG, "incoming overlay skipped (unknown phone) -> stopSelf()")
+                        stopSelf()
+                        return@launch
+                    }
 
                     val ok = fetchAndCachePhoneInfo(phoneForApi)
-                    if (!ok) return@launch
+                    if (!ok) {
+                        Log.w(TAG, "incoming overlay skipped (fetch failed) -> stopSelf()")
+                        stopSelf()
+                        return@launch
+                    }
 
                     // Show overlay now (cache applies instantly).
                     // Only trust callState when READ_PHONE_STATE is granted.
@@ -722,6 +731,16 @@ class TringoOverlayService : Service() {
                 )
             }
 
+            val dismissIntent = Intent(this, TringoOverlayDismissReceiver::class.java).apply {
+                action = TringoOverlayDismissReceiver.ACTION_DISMISS_OVERLAY
+            }
+            val dismissPi = PendingIntent.getBroadcast(
+                this,
+                1101,
+                dismissIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val notif = NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(android.R.drawable.ic_menu_call)
                 .setContentTitle("Tringo Caller ID")
@@ -729,6 +748,12 @@ class TringoOverlayService : Service() {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+                // Escape hatch: let user stop a stuck foreground service notification.
+                .addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Stop",
+                    dismissPi
+                )
                 .build()
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -2258,6 +2283,14 @@ class TringoOverlayService : Service() {
         hardTimeoutJob = null
         stopWatchingForCallEnd()
         serviceJob.cancel()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        } catch (_: Throwable) {}
         removeOverlay()
         super.onDestroy()
     }
