@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tringo_app/Api/api_providers.dart';
+import 'package:tringo_app/Core/Moderation/review_moderation.dart';
 import 'package:tringo_app/Core/app_go_routes.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
@@ -27,6 +29,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Control
 import '../../Products/Screens/product_details.dart';
 import '../../Services Screen/Controller/service_notifier.dart';
 import '../../Services Screen/Screens/search_service_data.dart';
+import '../../Support/Screens/support_screen.dart';
 import '../../Surprise_Screens/Screens/surprise_screens.dart';
 
 class ShopsDetails extends ConsumerStatefulWidget {
@@ -58,6 +61,8 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   int selectedWeight = 0; // default
 
   bool _enquiryDisabled = false;
+  Set<String> _hiddenReviewIds = <String>{};
+  Set<String> _blockedReviewAuthors = <String>{};
 
   Future<void> _showUpiIdDialog(String upiId) async {
     final v = upiId.trim();
@@ -196,6 +201,157 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     );
   }
 
+  Future<void> _loadReviewModerationPrefs() async {
+    final hiddenIds = await ReviewModeration.hiddenReviewIds();
+    final blockedAuthors = await ReviewModeration.blockedAuthorKeys();
+    if (!mounted) return;
+    setState(() {
+      _hiddenReviewIds = hiddenIds;
+      _blockedReviewAuthors = blockedAuthors;
+    });
+  }
+
+  Future<void> _hideReviewFromFeed(String reviewId) async {
+    await ReviewModeration.hideReview(reviewId);
+    if (!mounted) return;
+    setState(() => _hiddenReviewIds = {..._hiddenReviewIds, reviewId});
+    AppSnackBar.success(context, 'Review removed from your feed');
+  }
+
+  Future<void> _blockReviewAuthor({
+    required String authorUserId,
+    required String authorName,
+  }) async {
+    final key = ReviewModeration.authorKey(
+      authorUserId: authorUserId,
+      authorName: authorName,
+    );
+    if (key.isEmpty) {
+      AppSnackBar.error(context, 'Unable to block this user');
+      return;
+    }
+
+    await ReviewModeration.blockAuthor(
+      authorUserId: authorUserId,
+      authorName: authorName,
+    );
+    if (!mounted) return;
+    setState(() => _blockedReviewAuthors = {..._blockedReviewAuthors, key});
+    AppSnackBar.success(context, 'User blocked and reviews hidden');
+  }
+
+  Future<String?> _pickReviewReportReason() {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColor.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) {
+        Widget item(String value, IconData icon) {
+          return ListTile(
+            leading: Icon(icon, color: AppColor.darkBlue),
+            title: Text(value, style: GoogleFont.Mulish()),
+            onTap: () => Navigator.pop(context, value),
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 4,
+                  width: 44,
+                  decoration: BoxDecoration(
+                    color: AppColor.borderGray,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Report review',
+                  style: GoogleFont.Mulish(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColor.darkBlue,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    ReviewModeration.moderationResponseText,
+                    textAlign: TextAlign.center,
+                    style: GoogleFont.Mulish(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColor.lightGray3,
+                    ),
+                  ),
+                ),
+                item('Objectionable content', Icons.report_gmailerrorred),
+                item('Abusive or harassing user', Icons.person_off_outlined),
+                item('Spam or fake review', Icons.block_outlined),
+                item('Other inappropriate activity', Icons.flag_outlined),
+                const SizedBox(height: 6),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _reportReview({
+    required String reviewId,
+    required String shopId,
+    required String shopName,
+    required String authorUserId,
+    required String authorName,
+    required String heading,
+    required String comment,
+  }) async {
+    final reason = await _pickReviewReportReason();
+    if (reason == null || reason.trim().isEmpty) return;
+
+    await ReviewModeration.hideReview(reviewId);
+    if (mounted) {
+      setState(() => _hiddenReviewIds = {..._hiddenReviewIds, reviewId});
+    }
+
+    final ok = await ReviewModeration.submitReviewReport(
+      api: ref.read(apiDataSourceProvider),
+      reviewId: reviewId,
+      shopId: shopId,
+      shopName: shopName,
+      authorUserId: authorUserId,
+      authorName: authorName,
+      reason: reason,
+      heading: heading,
+      comment: comment,
+    );
+
+    if (!mounted) return;
+    if (ok) {
+      AppSnackBar.success(context, 'Report sent and review hidden');
+    } else {
+      AppSnackBar.info(
+        context,
+        'Review hidden. Contact Support to finish the report.',
+      );
+    }
+  }
+
+  void _openModerationContact() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SupportScreen()),
+    );
+  }
+
   late final AnimationController _ac;
 
   late final Animation<double> aHeader; // back + chip
@@ -219,6 +375,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
   @override
   void initState() {
     super.initState();
+    _loadReviewModerationPrefs();
 
     _ac = AnimationController(
       vsync: this,
@@ -1513,24 +1670,28 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemCount:
-                                      filteredServices.length + meta.adsAdded + 1,
+                                      filteredServices.length +
+                                      meta.adsAdded +
+                                      1,
                                   itemBuilder: (context, index) {
                                     if (index ==
-                                        filteredServices.length + meta.adsAdded) {
+                                        filteredServices.length +
+                                            meta.adsAdded) {
                                       return const SizedBox(height: 100);
                                     }
 
                                     if (meta.adPositions.contains(index)) {
-                                      final adIndex =
-                                          meta.adPositions.indexOf(index);
+                                      final adIndex = meta.adPositions.indexOf(
+                                        index,
+                                      );
                                       final banner = bannersToShow[adIndex];
                                       return Padding(
                                         padding: const EdgeInsets.only(top: 6),
                                         child: DismissibleAdBanner(
                                           imageUrl: banner.imageUrl,
                                           onTap: () {
-                                            final shopId =
-                                                (banner.shopId ?? '').trim();
+                                            final shopId = (banner.shopId ?? '')
+                                                .trim();
                                             if (shopId.isEmpty) {
                                               AppSnackBar.error(
                                                 context,
@@ -2071,19 +2232,21 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                 ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: filteredProducts.length + meta.adsAdded,
+                                  itemCount:
+                                      filteredProducts.length + meta.adsAdded,
                                   itemBuilder: (context, index) {
                                     if (meta.adPositions.contains(index)) {
-                                      final adIndex =
-                                          meta.adPositions.indexOf(index);
+                                      final adIndex = meta.adPositions.indexOf(
+                                        index,
+                                      );
                                       final banner = bannersToShow[adIndex];
                                       return Padding(
                                         padding: const EdgeInsets.only(top: 6),
                                         child: DismissibleAdBanner(
                                           imageUrl: banner.imageUrl,
                                           onTap: () {
-                                            final shopId =
-                                                (banner.shopId ?? '').trim();
+                                            final shopId = (banner.shopId ?? '')
+                                                .trim();
                                             if (shopId.isEmpty) {
                                               AppSnackBar.error(
                                                 context,
@@ -2256,7 +2419,18 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                       child: Builder(
                         builder: (context) {
                           final reviewUi = shopsData.data?.reviewUi;
-                          final reviews = shopsData.data?.reviews ?? [];
+                          final allReviews = shopsData.data?.reviews ?? [];
+                          final reviews = allReviews.where((r) {
+                            return !ReviewModeration.shouldHideReview(
+                              reviewId: r.id,
+                              authorUserId: r.authorUserId,
+                              authorName: r.authorName,
+                              heading: r.heading,
+                              comment: r.comment,
+                              hiddenReviewIds: _hiddenReviewIds,
+                              blockedAuthorKeys: _blockedReviewAuthors,
+                            );
+                          }).toList();
 
                           final hasReviews = reviews.isNotEmpty;
 
@@ -2489,6 +2663,89 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                                             FontWeight.w800,
                                                         color: AppColor.green,
                                                       ),
+                                                    ),
+                                                    PopupMenuButton<String>(
+                                                      icon: Icon(
+                                                        Icons.more_vert,
+                                                        color:
+                                                            AppColor.lightGray3,
+                                                      ),
+                                                      onSelected: (value) {
+                                                        final shop =
+                                                            shopsData.data;
+                                                        final shopName =
+                                                            (shop?.englishName
+                                                                    .trim()
+                                                                    .isNotEmpty ??
+                                                                false)
+                                                            ? shop!.englishName
+                                                            : (shop?.tamilName ??
+                                                                  '');
+
+                                                        if (value == 'report') {
+                                                          _reportReview(
+                                                            reviewId: r.id,
+                                                            shopId: r.shopId,
+                                                            shopName: shopName,
+                                                            authorUserId:
+                                                                r.authorUserId,
+                                                            authorName:
+                                                                r.authorName,
+                                                            heading: r.heading,
+                                                            comment: r.comment,
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        if (value == 'hide') {
+                                                          _hideReviewFromFeed(
+                                                            r.id,
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        if (value == 'block') {
+                                                          _blockReviewAuthor(
+                                                            authorUserId:
+                                                                r.authorUserId,
+                                                            authorName:
+                                                                r.authorName,
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        if (value ==
+                                                            'contact') {
+                                                          _openModerationContact();
+                                                        }
+                                                      },
+                                                      itemBuilder: (context) =>
+                                                          const [
+                                                            PopupMenuItem(
+                                                              value: 'report',
+                                                              child: Text(
+                                                                'Report review',
+                                                              ),
+                                                            ),
+                                                            PopupMenuItem(
+                                                              value: 'hide',
+                                                              child: Text(
+                                                                'Remove from feed',
+                                                              ),
+                                                            ),
+                                                            PopupMenuItem(
+                                                              value: 'block',
+                                                              child: Text(
+                                                                'Block user',
+                                                              ),
+                                                            ),
+                                                            PopupMenuItem(
+                                                              value: 'contact',
+                                                              child: Text(
+                                                                'Contact support',
+                                                              ),
+                                                            ),
+                                                          ],
                                                     ),
                                                   ],
                                                 ),

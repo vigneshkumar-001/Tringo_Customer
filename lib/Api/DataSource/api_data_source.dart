@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Model/edit_profile_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
@@ -77,6 +78,8 @@ abstract class BaseApiDataSource {
 }
 
 class ApiDataSource extends BaseApiDataSource {
+  static const _prefContactsUploadConsent = 'contacts_upload_consent_v1';
+
   @override
   Future<Either<Failure, LoginResponse>> mobileNumberLogin(
     String phone,
@@ -325,7 +328,7 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final url = ApiUrl.home(lat: lat, lng: lng);
 
-      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+      final response = await Request.sendGetRequest(url, {}, 'GET', false);
 
       AppLogger.log.i(response);
 
@@ -947,6 +950,16 @@ class ApiDataSource extends BaseApiDataSource {
     required List<Map<String, dynamic>> items,
   }) async {
     try {
+      if (Platform.isIOS) {
+        final prefs = await SharedPreferences.getInstance();
+        final uploadConsent =
+            prefs.getBool(_prefContactsUploadConsent) ?? false;
+        if (!uploadConsent) {
+          AppLogger.log.w('contacts sync blocked: missing upload consent');
+          return Left(ServerFailure('Contacts upload consent is required.'));
+        }
+      }
+
       final url = ApiUrl.contactInfo; // same endpoint
 
       final payload = {"items": items};

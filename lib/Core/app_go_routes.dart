@@ -1,4 +1,6 @@
 // lib/Core/Routing/app_go_routes.dart
+import 'dart:io';
+
 import 'package:go_router/go_router.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/service_and_shops_details.dart';
 import 'package:tringo_app/Core/Widgets/Common%20Bottom%20Navigation%20bar/search_screen_bottombar.dart';
@@ -166,6 +168,8 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/wallet',
       builder: (context, state) {
+        if (Platform.isIOS) return const HomeScreen();
+
         final extra = state.extra;
         String? type;
         String? toast;

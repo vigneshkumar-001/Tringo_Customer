@@ -60,56 +60,7 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
   static const _prefContactsSynced = 'contacts_synced';
   static const _prefContactsSyncSkipped = 'contacts_sync_skipped';
   static const _prefContactsSyncInProgress = 'contacts_sync_in_progress';
-
-  Future<bool?> _confirmTurnOffCallerIdPopup() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColor.white,
-          surfaceTintColor: AppColor.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: Text(
-            'You’ll miss deals & Free TCoins.',
-            style: GoogleFont.Mulish(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColor.lightGray2,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                'Continue',
-                style: GoogleFont.Mulish(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColor.darkBlue,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, null),
-              child: Text(
-                'Not now',
-                style: GoogleFont.Mulish(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColor.darkGrey,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    return confirm;
-  }
+  static const _prefContactsUploadConsent = 'contacts_upload_consent_v1';
 
   @override
   void initState() {
@@ -133,27 +84,6 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
     }
   }
 
-  Future<void> _skip() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefContactsSyncSkipped, true);
-    if (!mounted) return;
-
-    if (widget.args.showTurnOffCallerIdPromptOnSkip) {
-      // UX requirement: when user skips contact sync, also offer to turn off Caller ID overlay.
-      final choice = await _confirmTurnOffCallerIdPopup();
-      if (!mounted) return;
-      // If user dismisses the popup (tap outside/back) or chooses "Not now", stay here.
-      if (choice == null) return;
-    }
-
-    if (!mounted) return;
-    if (widget.args.popOnDone) {
-      Navigator.of(context).pop(true);
-    } else {
-      context.goNamed(widget.args.nextRouteName);
-    }
-  }
-
   Future<void> _requestPermissionAndSync() async {
     if (_isWorking) return;
     setState(() {
@@ -167,12 +97,20 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
       }
 
       if (!status.isGranted) {
-        // If user denies, treat it like "skip" and continue (smooth UX).
-        setState(() => _isWorking = false);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_prefContactsSyncSkipped, true);
+        await prefs.setBool(_prefContactsUploadConsent, false);
         if (!mounted) return;
-        await _skip();
+        if (widget.args.popOnDone) {
+          Navigator.of(context).pop(false);
+        } else {
+          context.goNamed(widget.args.nextRouteName);
+        }
         return;
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefContactsUploadConsent, true);
 
       // Allow -> fire-and-forget background sync -> go next screen immediately.
       final api = ref.read(apiDataSourceProvider);
@@ -216,10 +154,10 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'We will upload your phone contacts to help you find and connect faster.\n\n'
-                    '- We only use contacts for app features\n'
-                    '- You can skip now and sync later\n'
-                    '- We never message anyone without your action',
+                    'If you continue and allow access, TringoBiz will upload your phone contacts to the TringoBiz server.\n\n'
+                    '- Contacts are used only to help you find and connect with people you already know in TringoBiz\n'
+                    '- Contacts are not sold, shared with third parties, or messaged without your action\n'
+                    '- You can manage this permission in iOS Settings',
                     style: GoogleFont.Mulish(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -228,35 +166,11 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
                   ),
                   const SizedBox(height: 16),
                   const Spacer(),
-                                 Align(
-                    alignment: Alignment.center,
-                    child: TextButton(
-                      onPressed: _isWorking ? null : _skip,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColor.darkGrey.withValues(alpha: 0.55),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Skip',
-                        style: GoogleFont.Mulish(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColor.darkGrey.withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
                   CommonContainer.button(
                     buttonColor: AppColor.skyBlue,
                     onTap: _isWorking ? null : _requestPermissionAndSync,
                     text: Text(
-                      'Allow & Sync',
+                      'Continue',
                       style: GoogleFont.Mulish(
                         fontWeight: FontWeight.w800,
                         color: Colors.white,

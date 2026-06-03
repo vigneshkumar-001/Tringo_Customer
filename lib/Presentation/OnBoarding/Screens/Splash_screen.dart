@@ -172,7 +172,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _navigated = true;
 
     if (token == null) {
-      context.go(AppRoutes.loginPath);
+      context.go(AppRoutes.homePath);
     } else if (!isProfileCompleted) {
       context.go(AppRoutes.fillProfilePath);
     } else {

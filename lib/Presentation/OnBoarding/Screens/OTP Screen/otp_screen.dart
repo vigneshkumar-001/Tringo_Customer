@@ -14,8 +14,6 @@ import '../../../../Core/Utility/app_snackbar.dart';
 import '../../../../Core/Utility/google_font.dart';
 import '../../../../Core/Widgets/common_container.dart';
 import '../../../../Core/app_go_routes.dart';
-import '../../../../Core/contacts/contacts_service.dart';
-import '../Contacts Sync/contacts_consent_gate.dart';
 import '../Login Screen/Controller/login_notifier.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -160,10 +158,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ? AppRoutes.privacyPolicy
                 : AppRoutes.referralScreen;
 
-        context.goNamed(
-          AppRoutes.contactsConsentGate,
-          extra: ContactsConsentGateArgs(nextRouteName: nextRoute),
-        );
+        context.goNamed(nextRoute);
 
         notifier.resetState();
       }

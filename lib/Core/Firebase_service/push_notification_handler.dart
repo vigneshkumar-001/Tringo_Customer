@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
@@ -199,6 +200,11 @@ class PushNotificationHandler {
   }
 
   static void _openWallet({required String type, String? toast}) {
+    if (Platform.isIOS) {
+      _go(AppRoutes.homePath);
+      return;
+    }
+
     _push(
       '/wallet',
       extra: {
