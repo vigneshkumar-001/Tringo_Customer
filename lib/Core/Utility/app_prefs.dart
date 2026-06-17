@@ -67,6 +67,23 @@ class AppPrefs {
     return prefs.getString(_token);
   }
 
+  /// Returns true if a non-empty auth token is present, after forcing a reload
+  /// of the on-disk prefs.
+  ///
+  /// The default SharedPreferences in-memory cache can go stale because this app
+  /// also writes prefs from native (overlay) code. Reloading avoids a valid
+  /// session being misread as "logged out" (which previously bounced logged-in
+  /// users to the Login screen when opening Profile/Wallet).
+  static Future<bool> hasAuthTokenFresh() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      return (prefs.getString(_token) ?? '').trim().isNotEmpty;
+    } catch (_) {
+      return ((await getToken()) ?? '').trim().isNotEmpty;
+    }
+  }
+
   static Future<bool?> getIsProfileComplete() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_isProfileCompleted);

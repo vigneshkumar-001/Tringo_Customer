@@ -79,9 +79,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _askedOnce = false;
   bool _awaitingOverlaySettings = false;
 
+  /// The home response only carries a real user id/phone when the session is
+  /// authenticated (both are empty for guests). This is the same data shown in
+  /// the header avatar/name, so trusting it keeps the Profile/Wallet taps in
+  /// sync with what the user actually sees on screen.
+  bool _hasAuthenticatedHomeUser() {
+    final user = ref.read(homeNotifierProvider).homeResponse?.data.user;
+    final id = (user?.id ?? '').trim();
+    final phone = (user?.phoneNumber ?? '').trim();
+    return id.isNotEmpty || phone.isNotEmpty;
+  }
+
   Future<bool> _isLoggedIn() async {
-    final token = (await AppPrefs.getToken() ?? '').trim();
-    return token.isNotEmpty;
+    // Trust the already-loaded authenticated user first. This fixes logged-in
+    // users being wrongly sent to Login when the SharedPreferences in-memory
+    // cache is stale (this app also writes prefs from native overlay code).
+    if (_hasAuthenticatedHomeUser()) return true;
+    // Fall back to a fresh token read (forces a prefs reload).
+    return AppPrefs.hasAuthTokenFresh();
   }
 
   Future<bool> _requireLoginForAccountFeature() async {

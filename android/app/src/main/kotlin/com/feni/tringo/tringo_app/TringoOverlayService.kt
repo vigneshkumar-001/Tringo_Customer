@@ -597,11 +597,34 @@ class TringoOverlayService : Service() {
                         return@launch
                     }
 
-                    val ok = fetchAndCachePhoneInfo(phoneForApi)
-                    if (!ok) {
-                        Log.w(TAG, "incoming overlay skipped (fetch failed) -> stopSelf()")
-                        stopSelf()
-                        return@launch
+                    // Prefer a still-valid cache; otherwise fetch once. On a slow/failed
+                    // network we MUST still show the popup (mirrors the post-call flow) instead
+                    // of leaving only the notification — that silent drop was the reason the
+                    // overlay "sometimes" never appeared on poor connectivity.
+                    var ready = isCacheValidFor(phoneForApi)
+                    if (!ready) ready = loadPersistedCacheIfValid(phoneForApi) && isCacheValidFor(phoneForApi)
+                    if (!ready) {
+                        val ok = fetchAndCachePhoneInfo(phoneForApi)
+                        ready = ok && isCacheValidFor(phoneForApi)
+                    }
+                    if (!ready) {
+                        Log.w(TAG, "incoming fetch failed; showing overlay with minimal info")
+                        // Seed a short-lived per-phone cache so showOverlay() renders immediately
+                        // without firing another network call, and without poisoning later calls.
+                        saveCache(
+                            phone = phoneForApi,
+                            isShop = false,
+                            title = pendingContact.trim(),
+                            cardSubtitle = "",
+                            subtitleLine = "",
+                            imageUrl = "",
+                            canEditName = false,
+                            showEditIcon = false,
+                            requiresAuthToEdit = true,
+                            adsTitle = "Advertisements",
+                            adsCards = emptyList()
+                        )
+                        cacheAt = System.currentTimeMillis() - (CACHE_VALID_MS - 5_000L)
                     }
 
                     // Show overlay now (cache applies instantly).
@@ -1350,7 +1373,6 @@ class TringoOverlayService : Service() {
         smallTop.text = if (postCallPopupMode) "Tringo Call Ended" else "Tringo Identifies"
 
         // Dismiss overlay on outside tap + close button
-        val isIncomingOverlay = !postCallPopupMode && !outgoingOverlayMode
         val outsideLayer = v.findViewById<View>(R.id.outsideCloseLayer)
         val rootCard = v.findViewById<View>(R.id.rootCard)
         // Requirement: anywhere tap should dismiss (safe; next taps go to the underlying app).
@@ -1595,13 +1617,16 @@ class TringoOverlayService : Service() {
         // Render as a full-screen overlay window so the layout measures consistently
         // across other foreground apps (OEMs can break WRAP_CONTENT overlay measurement).
         //
-        // Behavior:
-        // - Incoming: don't take focus (so system dialer / other apps keep BACK/nav behaviour)
-        // - Post-call/outgoing: take focus so BACK can dismiss reliably
+        // Behavior (all modes — incoming, post-call, outgoing):
+        // - Take focus so the BACK button reliably dismisses the overlay (Truecaller-style),
+        //   and so card taps are delivered reliably even when shown over other apps
+        //   (WhatsApp/YouTube/games). A non-focusable window can drop the BACK key and,
+        //   on several OEMs, drop touches when it sits on top of a fullscreen app.
+        // - FLAG_NOT_TOUCH_MODAL keeps taps outside the window bounds flowing to apps behind;
+        //   the full-screen scrim itself still captures the dismiss tap.
         val flags =
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                (if (isIncomingOverlay) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0)
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 
         val width = WindowManager.LayoutParams.MATCH_PARENT
         val height = WindowManager.LayoutParams.MATCH_PARENT
@@ -1651,9 +1676,8 @@ class TringoOverlayService : Service() {
                 if (!keepAliveMode) stopSelf()
             }
 
-            // Keep incoming CALL notification visible as a manual "Dismiss" escape hatch,
-            // especially because the incoming overlay itself is non-touchable/non-focusable.
-            // Safe to clear the other fallbacks though.
+            // Keep the incoming CALL notification visible as a manual escape hatch in case the
+            // overlay window ever fails to render on a given OEM. Safe to clear the others.
             try {
                 NotificationManagerCompat.from(this).cancel(302) // post-call fallback
                 NotificationManagerCompat.from(this).cancel(303) // outgoing fallback

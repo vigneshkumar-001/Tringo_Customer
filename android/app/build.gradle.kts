@@ -76,7 +76,12 @@ android {
             create("release") {
                 keyAlias = signingKeyAlias
                 keyPassword = signingKeyPassword
-                storeFile = file(signingStoreFilePath)
+                // Resolve the keystore against the android/ (rootProject) dir where it lives,
+                // falling back to the app module dir. rootProject.file() also passes through
+                // absolute paths (e.g. ANDROID_STORE_FILE in CI) unchanged.
+                storeFile = rootProject.file(signingStoreFilePath).let {
+                    if (it.exists()) it else file(signingStoreFilePath)
+                }
                 storePassword = signingStorePassword
             }
         }
