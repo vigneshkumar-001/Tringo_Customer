@@ -61,7 +61,7 @@ dependencies:
   skeletonizer: ^2.1.0+1
   country_picker: ^2.0.25
   permission_handler: ^11.3.1
-  flutter_contacts: ^2.2.0
+  flutter_contacts: ^2.1.0
   connectivity_plus: ^7.0.0
   mobile_scanner: ^7.2.0
   share_plus: ^10.0.2
