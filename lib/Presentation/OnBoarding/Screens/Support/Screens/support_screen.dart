@@ -240,18 +240,21 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                         padding: const EdgeInsets.all(8.0),
                         child: CommonContainer.supportBox(
                           imageTextColor: imageTextColor,
-                          onTap: () async {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    SupportChatScreen(id: ticket.id),
-                              ),
-                            );
-                            await ref
-                                .read(supportNotifier.notifier)
-                                .supportList(context: context);
-                          },
+                          onTap:
+                              ticket.status == SupportStatus.closed
+                                  ? null
+                                  : () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SupportChatScreen(id: ticket.id),
+                                        ),
+                                      );
+                                      await ref
+                                          .read(supportNotifier.notifier)
+                                          .supportList(context: context);
+                                    },
                           containerColor: containerColor,
                           image: imageAsset,
                           imageText: statusText,

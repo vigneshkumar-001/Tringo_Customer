@@ -474,8 +474,8 @@ class TringoOverlayService : Service() {
         showOnlyAfterEnd = intent?.getBooleanExtra("showOnCallEnd", false) ?: false
         outgoingOverlayMode = intent?.getBooleanExtra("outgoingOverlay", false) ?: false
         callSessionStartedAt = intent?.getLongExtra("sessionStartAt", 0L) ?: 0L
-        keepAliveMode = intent?.getBooleanExtra("keepAlive", false) ?: keepAliveMode
-        val keepAliveMode = intent?.getBooleanExtra("keepAlive", false) ?: false
+        // Always reset keepAliveMode based on the latest intent (avoid getting stuck true across sessions).
+        keepAliveMode = intent?.getBooleanExtra("keepAlive", false) ?: false
 
         Log.d(TAG, "onStartCommand phone=$pendingPhone showOnlyAfterEnd=$showOnlyAfterEnd")
 
