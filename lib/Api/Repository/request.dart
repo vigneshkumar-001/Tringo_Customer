@@ -13,6 +13,10 @@ class Request {
     {bool sendBearerToken = true, bool sendSessionToken = true}
   ) async {
     final prefs = await SharedPreferences.getInstance();
+    // Token-gated requests: reload first so a stale in-memory prefs cache (seen
+    // on iOS after login) can't drop the auth header and make the backend
+    // return "no data" for endpoints that require auth.
+    if (isTokenRequired) await prefs.reload();
     final String? token = prefs.getString('token');
     final String? sessionToken = prefs.getString('sessionToken');
 
@@ -323,6 +327,8 @@ class Request {
     bool isTokenRequired,
   ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Reload for token-gated requests to avoid a stale iOS prefs cache.
+    if (isTokenRequired) await prefs.reload();
     String? token = prefs.getString('token');
 
     // AuthController authController = getx.Get.find();
@@ -400,6 +406,9 @@ class Request {
     String? appPlatForm,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Reload for token-gated requests to avoid a stale iOS prefs cache that would
+    // otherwise drop the auth header and make list endpoints return no data.
+    if (isTokenRequired) await prefs.reload();
     String? token = prefs.getString('token');
     String? sessionToken = prefs.getString('sessionToken');
 
