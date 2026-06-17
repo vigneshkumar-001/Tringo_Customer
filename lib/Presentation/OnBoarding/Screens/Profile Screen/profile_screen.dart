@@ -184,7 +184,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               ),
             ),
             content: Text(
-              'You’ll miss deals & Free TCoins if Caller ID is OFF',
+              'Caller ID updates are off.',
               style: GoogleFont.Mulish(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -766,33 +766,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   ),
                 ),
                 SizedBox(height: 27),
-                CommonContainer.profileList(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => WalletScreens()),
-                    );
-                  },
-                  label: 'Earnings',
-                  iconPath: AppImages.earnings,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
-                SizedBox(height: 15),
-                CommonContainer.profileList(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ReferralScreen()),
-                    );
-                  },
-                  label: 'My Referrals',
-                  iconPath: AppImages.myReferrals,
-                  iconHeight: 25,
-                  iconWidth: 19,
-                ),
-
-                SizedBox(height: 15),
+                if (!Platform.isIOS) ...[
+                  CommonContainer.profileList(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => WalletScreens()),
+                      );
+                    },
+                    label: 'Earnings',
+                    iconPath: AppImages.earnings,
+                    iconHeight: 25,
+                    iconWidth: 19,
+                  ),
+                  SizedBox(height: 15),
+                  CommonContainer.profileList(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ReferralScreen()),
+                      );
+                    },
+                    label: 'My Referrals',
+                    iconPath: AppImages.myReferrals,
+                    iconHeight: 25,
+                    iconWidth: 19,
+                  ),
+                  SizedBox(height: 15),
+                ],
                 CommonContainer.profileList(
                   onTap: () {
                     Navigator.push(

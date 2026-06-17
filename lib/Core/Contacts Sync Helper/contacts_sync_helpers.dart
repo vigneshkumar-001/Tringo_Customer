@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Api/DataSource/api_data_source.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
@@ -7,6 +9,7 @@ class ContactsSyncHelper {
   static const _prefContactsSynced = 'contacts_synced';
   static const _prefContactsSyncSkipped = 'contacts_sync_skipped';
   static const _prefContactsSyncInProgress = 'contacts_sync_in_progress';
+  static const _prefContactsUploadConsent = 'contacts_upload_consent_v1';
 
   // Full sync (can be large, e.g., 10k+ contacts). We send in chunks to avoid huge payloads.
   static const int _chunkSize = 200;
@@ -32,7 +35,9 @@ class ContactsSyncHelper {
     final alreadySynced = prefs.getBool(_prefContactsSynced) ?? false;
     final skipped = prefs.getBool(_prefContactsSyncSkipped) ?? false;
     final inProgress = prefs.getBool(_prefContactsSyncInProgress) ?? false;
+    final uploadConsent = prefs.getBool(_prefContactsUploadConsent) ?? false;
 
+    if (Platform.isIOS && !uploadConsent) return;
     if (alreadySynced || inProgress || (skipped && !ignoreSkipped)) return;
 
     await prefs.setBool(_prefContactsSyncInProgress, true);

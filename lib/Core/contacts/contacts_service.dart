@@ -10,13 +10,15 @@ class SimpleContact {
 
 class ContactsService {
   static Future<List<SimpleContact>> _fetchContacts() async {
-    final contacts = await FlutterContacts.getContacts(withProperties: true);
+    final contacts = await FlutterContacts.getAll(
+      properties: {ContactProperty.phone},
+    );
     debugPrint("Contacts raw count=${contacts.length}");
 
     final out = <SimpleContact>[];
 
     for (final contact in contacts) {
-      final name = contact.displayName.trim();
+      final name = (contact.displayName ?? '').trim();
       for (final phoneEntry in contact.phones) {
         final phone = normalizePhone(phoneEntry.number);
         if (phone.isNotEmpty) {
@@ -80,4 +82,3 @@ class ContactsService {
     return cleaned;
   }
 }
-

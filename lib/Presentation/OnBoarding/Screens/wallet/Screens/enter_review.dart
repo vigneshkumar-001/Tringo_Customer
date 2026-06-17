@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../Core/Moderation/review_moderation.dart';
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_loader.dart';
@@ -68,6 +69,77 @@ class _EnterReviewState extends ConsumerState<EnterReview>
     _headingController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<bool> _ensureReviewTermsAccepted() async {
+    if (await ReviewModeration.hasAcceptedTerms()) return true;
+    if (!mounted) return false;
+
+    var checked = false;
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Review Terms'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'You must be 18+ to post reviews. TringoBiz does not tolerate objectionable content or abusive users.',
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Do not post abusive, hateful, threatening, sexually explicit, spam, fraudulent, illegal, or harassing content.',
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Users can report, hide, and block review authors. Reports are reviewed within 24 hours and offending content or users may be removed.',
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Report inappropriate activity from ${ReviewModeration.supportContactLabel}.',
+                    ),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: checked,
+                      onChanged: (value) {
+                        setDialogState(() => checked = value ?? false);
+                      },
+                      title: const Text('I agree to these review terms'),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: checked
+                      ? () => Navigator.pop(dialogContext, true)
+                      : null,
+                  child: const Text('Agree'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (accepted == true) {
+      await ReviewModeration.acceptTerms();
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -253,15 +325,16 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                                 CommonContainer.greenStarRating(
                                                   ratingStar:
                                                       shop?.averageRating
-                                                              ?.toString() ??
-                                                          "0",
+                                                          ?.toString() ??
+                                                      "0",
                                                   ratingCount:
                                                       shop?.reviewCount
-                                                              ?.toString() ??
-                                                          "0",
+                                                          ?.toString() ??
+                                                      "0",
                                                 ),
                                                 Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Text(
                                                       'Opens Upto ',
@@ -599,6 +672,21 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                                 AppSnackBar.error(context, "Enter description");
                                 return;
                               }
+
+                              if (ReviewModeration.containsObjectionableText(
+                                '$heading $comment',
+                              )) {
+                                AppSnackBar.error(
+                                  context,
+                                  "Review contains objectionable or abusive content",
+                                );
+                                return;
+                              }
+
+                              final accepted =
+                                  await _ensureReviewTermsAccepted();
+                              if (!accepted) return;
+                              if (!context.mounted) return;
 
                               await ref
                                   .read(walletNotifier.notifier)

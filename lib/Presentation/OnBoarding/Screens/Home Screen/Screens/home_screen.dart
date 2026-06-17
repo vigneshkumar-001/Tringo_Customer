@@ -24,6 +24,7 @@ import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Utility/share_helper.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
+import 'package:tringo_app/Core/app_go_routes.dart';
 
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
@@ -77,6 +78,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _openingSystemRole = false;
   bool _askedOnce = false;
   bool _awaitingOverlaySettings = false;
+
+  Future<bool> _isLoggedIn() async {
+    final token = (await AppPrefs.getToken() ?? '').trim();
+    return token.isNotEmpty;
+  }
+
+  Future<bool> _requireLoginForAccountFeature() async {
+    if (await _isLoggedIn()) return true;
+    if (!mounted) return false;
+    context.pushNamed(AppRoutes.login);
+    return false;
+  }
 
   String shopHeroTag(int index, String name, {String section = 'shops'}) {
     final safe = name.replaceAll(RegExp(r'\s+'), '_').toLowerCase();
@@ -195,7 +208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
             content: Text(
-              'You’ll miss deals & Free TCoins.\nAllow notifications to get Caller ID offers and updates.',
+              'Allow notifications to receive Caller ID updates and important app alerts.',
               style: GoogleFont.Mulish(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -939,60 +952,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ),
                             const SizedBox(width: 20),
 
-                            // Wallet dotted box
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8.0,
-                              ),
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => WalletScreens(),
+                            if (!Platform.isIOS) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8.0,
+                                ),
+                                child: InkWell(
+                                  onTap: () async {
+                                    if (!await _requireLoginForAccountFeature()) {
+                                      return;
+                                    }
+                                    if (!mounted) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => WalletScreens(),
+                                      ),
+                                    );
+                                  },
+                                  child: dotted.DottedBorder(
+                                    color: AppColor.lightBlueBorder,
+                                    dashPattern: const [4.0, 2.0],
+                                    borderType: dotted.BorderType.RRect,
+                                    padding: const EdgeInsets.all(10),
+                                    radius: const Radius.circular(18),
+                                    child: Row(
+                                      children: [
+                                        Image.asset(
+                                          AppImages.coinImage,
+                                          height: 16,
+                                          width: 17.33,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          (home.data.tcoin?.balance ?? 0)
+                                              .toString(),
+                                          style: GoogleFont.Mulish(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 12,
+                                            color: AppColor.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          ' Tcoins',
+                                          style: GoogleFont.Mulish(
+                                            fontSize: 12,
+                                            color: AppColor.white,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                                child: dotted.DottedBorder(
-                                  color: AppColor.lightBlueBorder,
-                                  dashPattern: const [4.0, 2.0],
-                                  borderType: dotted.BorderType.RRect,
-                                  padding: const EdgeInsets.all(10),
-                                  radius: const Radius.circular(18),
-                                  child: Row(
-                                    children: [
-                                      Image.asset(
-                                        AppImages.coinImage,
-                                        height: 16,
-                                        width: 17.33,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        (home.data.tcoin?.balance ?? 0)
-                                            .toString(),
-                                        style: GoogleFont.Mulish(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 12,
-                                          color: AppColor.white,
-                                        ),
-                                      ),
-                                      Text(
-                                        ' Tcoins',
-                                        style: GoogleFont.Mulish(
-                                          fontSize: 12,
-                                          color: AppColor.white,
-                                        ),
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
+                              const SizedBox(width: 10),
+                            ],
 
                             // Avatar
                             InkWell(
-                              onTap: () {
+                              onTap: () async {
+                                if (!await _requireLoginForAccountFeature()) {
+                                  return;
+                                }
+                                if (!mounted) return;
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -1254,6 +1276,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                             QrScanFlow.openQrAndAskAction(
                                               context: context,
                                               ref: ref,
+                                              mode: Platform.isIOS
+                                                  ? QrScanFlowMode.reviewOnly
+                                                  : QrScanFlowMode.payOrReview,
                                             ),
                                         borderRadius: BorderRadius.circular(18),
                                         child: ConstrainedBox(
@@ -1475,6 +1500,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                              onTap: () => QrScanFlow.openQrAndAskAction(
                                context: context,
                                ref: ref,
+                               mode: Platform.isIOS
+                                   ? QrScanFlowMode.reviewOnly
+                                   : QrScanFlowMode.payOrReview,
                              ),
                              child: Container(
                                padding: const EdgeInsets.symmetric(

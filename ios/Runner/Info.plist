@@ -40,7 +40,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>TringoBiz uses the camera to scan QR codes and capture profile or support images.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>TringoBiz uses your contacts only when you choose to find, invite, or connect with people from your address book.</string>
+	<string>If you allow access, TringoBiz will upload your contacts to our server to help you find and connect with people you already know in TringoBiz.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>TringoBiz uses your location to show nearby shops, services, offers, and map results.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
