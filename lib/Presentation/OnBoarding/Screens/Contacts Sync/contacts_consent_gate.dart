@@ -126,6 +126,79 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
     }
   }
 
+  Future<bool?> _confirmTurnOffCallerIdPopup() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColor.white,
+          surfaceTintColor: AppColor.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Text(
+            'You’ll miss deals & Free TCoins.',
+            style: GoogleFont.Mulish(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColor.lightGray2,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Continue',
+                style: GoogleFont.Mulish(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.darkBlue,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: Text(
+                'Not now',
+                style: GoogleFont.Mulish(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.darkGrey,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirm;
+  }
+
+  Future<void> _skip() async {
+    if (_isWorking) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefContactsSyncSkipped, true);
+    await prefs.setBool(_prefContactsUploadConsent, false);
+    if (!mounted) return;
+
+    if (widget.args.showTurnOffCallerIdPromptOnSkip) {
+      // UX: skipping contact sync shows a retention popup.
+      final choice = await _confirmTurnOffCallerIdPopup();
+      if (!mounted) return;
+      // "Not now" / dismissed (null) -> stay on this screen.
+      if (choice == null) return;
+    }
+
+    if (!mounted) return;
+    if (widget.args.popOnDone) {
+      Navigator.of(context).pop(true);
+    } else {
+      context.goNamed(widget.args.nextRouteName);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,6 +251,16 @@ class _ContactsConsentGateState extends ConsumerState<ContactsConsentGate> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _isWorking ? null : _skip,
+                    child: Text(
+                      'Skip',
+                      style: GoogleFont.Mulish(
+                        fontWeight: FontWeight.w800,
+                        color: AppColor.darkBlue,
+                      ),
+                    ),
+                  ),
    
                 ],
               ),
