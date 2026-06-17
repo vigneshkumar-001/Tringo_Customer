@@ -172,7 +172,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _navigated = true;
 
     if (token == null) {
-      context.go(AppRoutes.homePath);
+      // No token => not logged in. Force the login flow:
+      // Login -> OTP -> Referral -> Privacy -> Home.
+      context.go(AppRoutes.loginPath);
     } else if (!isProfileCompleted) {
       context.go(AppRoutes.fillProfilePath);
     } else {

@@ -153,12 +153,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         //     AppLogger.log.e("❌ Contact sync failed: $e");
         //   }
         // }
-        final nextRoute =
-            next.otpResponse?.data?.isReferralApplied == true
-                ? AppRoutes.privacyPolicy
-                : AppRoutes.referralScreen;
-
-        context.goNamed(nextRoute);
+        // Always run the first-time onboarding in order:
+        // OTP -> Referral -> Privacy -> Home.
+        // The Referral screen has its own "Skip" button (which goes to Privacy),
+        // so we no longer jump past it when a referral was already applied.
+        context.goNamed(AppRoutes.referralScreen);
 
         notifier.resetState();
       }

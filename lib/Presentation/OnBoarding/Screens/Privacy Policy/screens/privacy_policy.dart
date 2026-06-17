@@ -356,7 +356,11 @@ class _PrivacyPolicyState extends ConsumerState<PrivacyPolicy> {
                                   );
                                   return;
                                 }
-                                context.go(AppRoutes.homePath);
+                                // Onboarding order:
+                                // ... -> Privacy -> Sync Contacts -> Home.
+                                // The consent gate forwards to Home (its default
+                                // nextRoute) after Allow/Skip.
+                                context.goNamed(AppRoutes.contactsConsentGate);
                               },
                               child: Container(
                                 decoration: BoxDecoration(

@@ -328,7 +328,12 @@ class ApiDataSource extends BaseApiDataSource {
     try {
       final url = ApiUrl.home(lat: lat, lng: lng);
 
-      final response = await Request.sendGetRequest(url, {}, 'GET', false);
+      // Send the auth token so the backend returns the authenticated user
+      // (id/phone/name/avatar/Tcoins). Guests have no token, so the header is
+      // simply omitted and they still get guest home data. Without this, the
+      // home response was always "guest", so the header avatar/profile/wallet
+      // never reflected the logged-in session.
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
 
       AppLogger.log.i(response);
 
