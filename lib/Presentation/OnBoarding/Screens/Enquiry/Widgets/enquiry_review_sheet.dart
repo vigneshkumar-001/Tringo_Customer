@@ -6,11 +6,12 @@ import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
+import '../../../../../Core/Utility/whatsapp_file_sender.dart';
 import '../../Login Screen/Controller/login_notifier.dart';
 import '../Controller/enquiry_selection_notifier.dart';
 import '../Controller/shop_contact_provider.dart';
 import '../Model/enquiry_models.dart';
-import '../Model/enquiry_submit_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Enquiry/Model/enquiry_submit_response.dart';
 import '../Service/enquiry_sender.dart';
 
 /// Opens the enquiry review + send bottom sheet for a given bucket.
@@ -288,12 +289,6 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
   }
 
   Widget _summaryAndActions(EnquirySelection selection) {
-    final contactAsync = ref.watch(shopContactProvider(widget.shopId));
-    final hasPhone = contactAsync.maybeWhen(
-      data: (c) => c.hasPhone,
-      orElse: () => false,
-    );
-
     return Container(
       decoration: BoxDecoration(
         color: AppColor.white,
@@ -336,7 +331,7 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
           const SizedBox(height: 12),
           _sendButton(selection),
           const SizedBox(height: 8),
-          _secondaryAction(contactAsync, hasPhone, selection),
+          _secondaryAction(),
         ],
       ),
     );
@@ -420,29 +415,13 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
     );
   }
 
-  Widget _secondaryAction(
-    AsyncValue<ShopContact> contactAsync,
-    bool hasPhone,
-    EnquirySelection selection,
-  ) {
-    // Direct text-only chat to the shop number (fallback / quick option).
-    if (!hasPhone) {
-      return Text(
-        'A PDF + message will open in your share sheet — pick WhatsApp to send.',
-        textAlign: TextAlign.center,
-        style: GoogleFont.Mulish(fontSize: 11, color: AppColor.lightGray2),
-      );
-    }
-    return TextButton(
-      onPressed: _sending ? null : () => _onDirectChat(selection),
-      child: Text(
-        'Send text-only to ${_shopName()}',
-        style: GoogleFont.Mulish(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: AppColor.blue,
-        ),
-      ),
+  Widget _secondaryAction() {
+    // Enquiries are sent as a PDF only. Guide the user to pick WhatsApp + the
+    // shop in the share sheet that opens after tapping the primary button.
+    return Text(
+      'A PDF enquiry will open in your share sheet — pick WhatsApp and ${_shopName()} to send.',
+      textAlign: TextAlign.center,
+      style: GoogleFont.Mulish(fontSize: 11, color: AppColor.lightGray2),
     );
   }
 
@@ -460,14 +439,14 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
         items: items,
       );
 
-      // 1) Preferred path: backend records the enquiry, then opens WhatsApp
-      //    directly to this shop's WhatsApp number with the message.
+      // 1) Preferred path: share the backend-generated PDF as a real WhatsApp
+      //    attachment (the enquiry is delivered as a PDF, not plain text).
       final delivered = await _trySendViaBackend(items, message);
 
-      // 2) Fallback: open cached shop WhatsApp directly, or share if no number
-      //    is available.
+      // 2) Fallback: if the backend gave no PDF (e.g. offline), generate the
+      //    PDF on-device and share it. We never fall back to a text-only send.
       if (!delivered) {
-        await _directChatFallback(items, message);
+        await _onDeviceFallback(items);
       }
     } catch (_) {
       if (mounted) {
@@ -478,8 +457,12 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
     }
   }
 
-  /// Returns true when the enquiry was recorded and WhatsApp was opened to the
-  /// exact shop number returned by the backend.
+  /// Submits to the backend and shares the server-generated PDF.
+  ///
+  /// Returns true only when a PDF was actually delivered (shared as a file, or
+  /// — for a legacy hosted-link backend — sent to the shop as a link). Returns
+  /// false so the caller can fall back to an on-device PDF. It never sends a
+  /// plain-text-only enquiry from here.
   Future<bool> _trySendViaBackend(
     List<EnquiryLineItem> items,
     String message,
@@ -499,40 +482,41 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
 
       final caption = res.message.isNotEmpty ? res.message : message;
 
-      // Prefer the number the server routes to; else the cached shop contact.
-      final contact =
-          ref.read(shopContactProvider(widget.shopId)).asData?.value;
-      final number = res.whatsappNumber.isNotEmpty
-          ? res.whatsappNumber
-          : (contact?.whatsappPhone ?? '');
-      if (number.isEmpty) {
-        if (res.hasPdfBytes) {
-          await _shareServerPdfFallback(res, caption);
+      // Primary: share the backend-generated PDF as a real attachment.
+      if (res.hasPdfBytes) {
+        await _shareServerPdf(res, caption);
+        return true;
+      }
+
+      // Legacy hosted-link backend: send the link to the shop's number.
+      if (res.hasPdfLink) {
+        final contact =
+            ref.read(shopContactProvider(widget.shopId)).asData?.value;
+        final number = res.whatsappNumber.isNotEmpty
+            ? res.whatsappNumber
+            : (contact?.whatsappPhone ?? '');
+        if (number.isNotEmpty) {
+          if (!mounted) return false;
+          await EnquirySender.openShopChat(
+            context: context,
+            phone: number,
+            message: EnquirySender.appendPdfLink(caption, res.pdfUrl),
+          );
+          if (mounted) {
+            AppSnackBar.success(context, 'Opening WhatsApp with your enquiry…');
+          }
           return true;
         }
-        return false;
       }
 
-      final fullMessage = res.hasPdfLink
-          ? EnquirySender.appendPdfLink(caption, res.pdfUrl)
-          : caption;
-
-      if (!mounted) return false;
-      await EnquirySender.openShopChat(
-        context: context,
-        phone: number,
-        message: fullMessage,
-      );
-      if (mounted) {
-        AppSnackBar.success(context, 'Opening WhatsApp with your enquiry…');
-      }
-      return true;
+      // Backend returned no usable PDF → caller falls back to on-device PDF.
+      return false;
     } catch (_) {
       return false;
     }
   }
 
-  Future<void> _shareServerPdfFallback(
+  Future<void> _shareServerPdf(
     EnquirySubmitResponse res,
     String caption,
   ) async {
@@ -542,51 +526,39 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
       fileName: res.pdfFileName,
     );
     if (!mounted) return;
-
-    final box = context.findRenderObject() as RenderBox?;
-    final origin =
-        box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
-
-    final ok = await EnquirySender.shareWithPdf(
-      artifacts: artifacts,
-      shopName: _shopName(),
-      sharePositionOrigin: origin,
-    );
-
-    if (mounted && ok) {
-      AppSnackBar.success(
-        context,
-        'PDF ready - choose the shop chat in WhatsApp',
-      );
-    }
+    await _deliverPdf(artifacts, serverNumber: res.whatsappNumber);
   }
 
-  Future<void> _directChatFallback(
-    List<EnquiryLineItem> items,
-    String message,
-  ) async {
+  /// Delivers the PDF: first tries to open the shop's exact WhatsApp chat with
+  /// the PDF attached (Android intent), then falls back to the system share
+  /// sheet so the enquiry still goes out as a PDF on any platform.
+  Future<void> _deliverPdf(
+    EnquiryArtifacts artifacts, {
+    String serverNumber = '',
+  }) async {
     final contact = ref.read(shopContactProvider(widget.shopId)).asData?.value;
-    if (contact != null && contact.hasPhone) {
-      await EnquirySender.openShopChat(
-        context: context,
-        phone: contact.whatsappPhone,
-        message: message,
+    final number = serverNumber.trim().isNotEmpty
+        ? serverNumber
+        : (contact?.whatsappPhone ?? '');
+
+    // 1) Open the specific shop chat with the PDF attached.
+    if (number.isNotEmpty) {
+      final opened = await WhatsappFileSender.sharePdfToNumber(
+        filePath: artifacts.pdfFile.path,
+        phone: number,
+        caption: artifacts.message,
       );
-      return;
+      if (opened) {
+        if (mounted) {
+          AppSnackBar.success(context, 'Opening WhatsApp with your enquiry…');
+        }
+        return;
+      }
     }
 
-    await _onDeviceFallback(items);
-  }
-
-  Future<void> _onDeviceFallback(List<EnquiryLineItem> items) async {
-    final artifacts = await EnquirySender.prepare(
-      shopName: _shopName(),
-      customer: _customer,
-      items: items,
-    );
     if (!mounted) return;
 
-    // iPad share popover anchor.
+    // 2) Fallback: system share sheet (user picks WhatsApp + the shop).
     final box = context.findRenderObject() as RenderBox?;
     final origin =
         box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
@@ -603,6 +575,16 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
     } else {
       await _fallbackToChat(artifacts.message);
     }
+  }
+
+  Future<void> _onDeviceFallback(List<EnquiryLineItem> items) async {
+    final artifacts = await EnquirySender.prepare(
+      shopName: _shopName(),
+      customer: _customer,
+      items: items,
+    );
+    if (!mounted) return;
+    await _deliverPdf(artifacts);
   }
 
   Future<void> _fallbackToChat(
@@ -628,36 +610,6 @@ class _EnquiryReviewSheetState extends ConsumerState<EnquiryReviewSheet> {
       );
     } else if (mounted) {
       AppSnackBar.error(context, 'Sharing is unavailable on this device');
-    }
-  }
-
-  Future<void> _onDirectChat(EnquirySelection selection) async {
-    final items = selection.items;
-    if (items.isEmpty) return;
-    final contact = ref.read(shopContactProvider(widget.shopId)).asData?.value;
-    if (contact == null || !contact.hasPhone) {
-      AppSnackBar.info(context, 'Shop WhatsApp number not available');
-      return;
-    }
-    setState(() => _sending = true);
-    try {
-      final message = await EnquirySender.prepare(
-        shopName: _shopName(),
-        customer: _customer,
-        items: items,
-      ).then((a) => a.message);
-      if (!mounted) return;
-      await EnquirySender.openShopChat(
-        context: context,
-        phone: contact.whatsappPhone,
-        message: message,
-      );
-    } catch (_) {
-      if (mounted) {
-        AppSnackBar.error(context, 'Could not open WhatsApp');
-      }
-    } finally {
-      if (mounted) setState(() => _sending = false);
     }
   }
 }

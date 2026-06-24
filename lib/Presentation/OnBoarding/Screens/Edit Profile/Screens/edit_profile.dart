@@ -272,6 +272,9 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                   hint: 'Enter Phone Number',
                   rightLabel: 'Phone Number',
                   maxLength: 10,
+                  // Phone number is the account identity and cannot be edited
+                  // from Edit Profile.
+                  readOnly: true,
                 ),
                 const SizedBox(height: 20),
 
