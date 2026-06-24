@@ -16,9 +16,9 @@ import 'package:tringo_app/Core/Utility/app_prefs.dart';
 import 'package:tringo_app/Core/Utility/app_snackbar.dart';
 import 'package:tringo_app/Core/Utility/google_font.dart';
 import 'package:tringo_app/Core/Widgets/common_container.dart';
-import 'package:tringo_app/Core/Widgets/owner_verify_feild.dart';
 
 import '../Controller/edit_profile_notifier.dart';
+import '../Controller/profile_refresh_provider.dart';
 
 class EditProfile extends ConsumerStatefulWidget {
   final String? name;
@@ -266,34 +266,12 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                 ),
                 const SizedBox(height: 20),
 
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: OwnerVerifyField(
-                    controller: mobileController,
-                    isLoading: state.isSendingOtp,
-                    isOtpVerifying: state.isVerifyingOtp,
-                    onSendOtp: (mobile) {
-                      final phone10 = _normalizeIndianPhone10(mobile);
-                      return ref
-                          .read(editProfileNotifierProvider.notifier)
-                          .changeNumberRequest(
-                            type: "CUSTOMER_PHONE_CHANGE",
-                            phoneNumber: phone10,
-                          );
-                    },
-                    onVerifyOtp: (mobile, otp) {
-                      final phone10 = _normalizeIndianPhone10(mobile);
-                      return ref
-                          .read(editProfileNotifierProvider.notifier)
-                          .changeOtpRequest(
-                            phoneNumber: phone10,
-                            type: "CUSTOMER_PHONE_CHANGE",
-                            code: otp,
-                          );
-                    },
-                  ),
+                CommonContainer.fillProfileContainer(
+                  keyboardType: TextInputType.phone,
+                  controller: mobileController,
+                  hint: 'Enter Phone Number',
+                  rightLabel: 'Phone Number',
+                  maxLength: 10,
                 ),
                 const SizedBox(height: 20),
 
@@ -530,8 +508,11 @@ class _EditProfileState extends ConsumerState<EditProfile> {
                                 if (!context.mounted) return;
 
                                  if (err == null) {
+                                   ref
+                                       .read(profileRefreshProvider.notifier)
+                                       .bump();
                                    await AppPrefs.setIsProfileCompleted(true);
-                                   AppPrefs.clearVerificationToken();
+                                   await AppPrefs.clearVerificationToken();
 
                                    if (!context.mounted) return;
 

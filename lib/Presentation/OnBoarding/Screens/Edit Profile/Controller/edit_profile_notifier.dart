@@ -86,12 +86,12 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       type: type,
     );
 
-    return result.fold(
-      (failure) {
+    return result.fold<Future<String?>>(
+      (failure) async {
         state = state.copyWith(isSendingOtp: false, error: failure.message);
         return failure.message;
       },
-      (response) {
+      (response) async {
         state = state.copyWith(
           isSendingOtp: false,
           editNumberVerifyResponse: response,
@@ -118,8 +118,8 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       code: code,
     );
 
-    return result.fold(
-      (failure) {
+    return result.fold<Future<bool>>(
+      (failure) async {
         state = state.copyWith(isVerifyingOtp: false, error: failure.message);
         return false;
       },
@@ -176,12 +176,13 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       phoneNumber: phoneNumber,
     );
 
-    return result.fold(
-      (failure) {
+    return result.fold<Future<String?>>(
+      (failure) async {
         state = state.copyWith(isLoading: false, error: failure.message);
         return failure.message; // ✅ return current error
       },
-      (response) {
+      (response) async {
+        await _cacheProfile(response.data);
         state = state.copyWith(
           isLoading: false,
           editProfileResponse: response,
@@ -190,6 +191,13 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
         return null; // ✅ success
       },
     );
+  }
+
+  Future<void> _cacheProfile(ProfileData data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profileName', data.displayName);
+    await prefs.setString('profileAvatar', data.avatarUrl);
+    await prefs.setString('profilePhone', data.user.phoneNumber);
   }
 
   void resetState() {
