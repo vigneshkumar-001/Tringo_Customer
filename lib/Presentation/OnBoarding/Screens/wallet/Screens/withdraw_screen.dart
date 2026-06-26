@@ -308,7 +308,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen>
                     Row(
                       children: [
                         Text(
-                          '$leftTcoinText TCoin â†’ ',
+                          '$leftTcoinText TCoin  ',
                           style: GoogleFont.Mulish(
                             fontSize: 14,
                             color: AppColor.darkGrey,

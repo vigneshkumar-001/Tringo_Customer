@@ -26,6 +26,7 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Core/app_go_routes.dart';
 
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Controller/profile_refresh_provider.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Controller/smart_connect_notifier.dart';
@@ -805,6 +806,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(profileRefreshProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        _refreshHomeData(refreshLocation: false);
+      }
+    });
+
     final state = ref.watch(homeNotifierProvider);
     final home = state.homeResponse;
     // Use placement-specific ads so other screens don't overwrite HOME ads.

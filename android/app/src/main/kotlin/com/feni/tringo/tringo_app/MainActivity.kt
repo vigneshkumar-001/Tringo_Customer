@@ -27,6 +27,8 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "sim_info"
     private val TAG = "TRINGO_NATIVE"
 
+    private val WHATSAPP_SHARE_CHANNEL = "tringo/whatsapp_share"
+
     private val OVERLAY_NAV_CHANNEL = "tringo_overlay_nav"
     private var overlayNavChannel: MethodChannel? = null
     private var pendingOverlayShopId: String? = null
@@ -43,11 +45,78 @@ class MainActivity : FlutterActivity() {
     private val REQ_PHONE_STATE = 9101
     private var pendingPhonePermResult: MethodChannel.Result? = null
 
+    /**
+     * Opens the specific WhatsApp chat for [phone] with [filePath] attached as a
+     * PDF, using the ACTION_SEND + "jid" technique. Returns false (so Dart can
+     * fall back to the system share sheet) when WhatsApp isn't available or the
+     * intent can't be built.
+     */
+    private fun shareFileToWhatsApp(
+        filePath: String,
+        phone: String,
+        caption: String,
+        business: Boolean,
+    ): Boolean {
+        return try {
+            val file = java.io.File(filePath)
+            if (!file.exists()) return false
+
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                file,
+            )
+
+            val digits = phone.filter { it.isDigit() }
+            // 10-digit Indian numbers get the country code for the WhatsApp jid.
+            val jidDigits = if (digits.length == 10) "91$digits" else digits
+
+            val pkg = if (business) "com.whatsapp.w4b" else "com.whatsapp"
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                if (caption.isNotBlank()) putExtra(Intent.EXTRA_TEXT, caption)
+                if (jidDigits.isNotEmpty()) {
+                    putExtra("jid", "$jidDigits@s.whatsapp.net")
+                }
+                setPackage(pkg)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            // If the chosen WhatsApp variant isn't installed, let Dart fall back.
+            if (intent.resolveActivity(packageManager) == null) return false
+
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "shareFileToWhatsApp failed: ${e.message}", e)
+            false
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
         overlayNavChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OVERLAY_NAV_CHANNEL)
         deliverPendingOverlayNav()
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WHATSAPP_SHARE_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "shareFileToWhatsApp" -> {
+                        val filePath = call.argument<String>("filePath") ?: ""
+                        val phone = call.argument<String>("phone") ?: ""
+                        val caption = call.argument<String>("caption") ?: ""
+                        val business = call.argument<Boolean>("business") ?: false
+                        result.success(
+                            shareFileToWhatsApp(filePath, phone, caption, business)
+                        )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
 
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)

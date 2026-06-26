@@ -11,6 +11,12 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/full_screen_image_gallery.dart';
+import '../../Enquiry/Controller/enquiry_selection_notifier.dart';
+import '../../Enquiry/Model/enquiry_models.dart';
+import '../../Enquiry/Widgets/enquiry_fab.dart';
+import '../../Enquiry/Widgets/enquiry_review_sheet.dart';
+import '../../Enquiry/Widgets/enquiry_select_all_bar.dart';
+import '../../Enquiry/Widgets/enquiry_selectable_tile.dart';
 import '../../Products/Screens/product_details.dart';
 
 class ShopsProductList extends ConsumerStatefulWidget {
@@ -42,6 +48,30 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
   ];
   int selectedIndex = 0;
   int selectedWeight = 0;
+
+  String get _bucketKey =>
+      enquiryBucketKey(widget.shopId, EnquiryKind.product);
+
+  void _openEnquirySheet() {
+    showEnquiryReviewSheet(
+      context,
+      bucketKey: _bucketKey,
+      shopId: widget.shopId ?? '',
+      shopName: widget.englishName ?? '',
+    );
+  }
+
+  EnquiryLineItem _toProductLineItem(dynamic service) {
+    return EnquiryLineItem(
+      id: (service?.id ?? '').toString(),
+      name: (service?.englishName ?? 'Product').toString(),
+      imageUrl: service?.imageUrl?.toString(),
+      price: (service?.price as num?)?.toDouble() ?? 0,
+      offerPrice: (service?.offerPrice as num?)?.toDouble(),
+      unitLabel: service?.unitLabel?.toString(),
+      kind: EnquiryKind.product,
+    );
+  }
 
   late final AnimationController _ac;
 
@@ -179,7 +209,6 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
 
   @override
   Widget build(BuildContext context) {
-    final double w = MediaQuery.of(context).size.width;
     final asyncServices = ref.watch(shopProductsProvider(widget.shopId ?? ''));
     final state = ref.watch(shopsNotifierProvider);
 
@@ -193,6 +222,10 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
       return const Scaffold(body: Center(child: NoDataScreen()));
     }
     return Scaffold(
+      floatingActionButton: EnquiryFab(
+        bucketKey: _bucketKey,
+        onTap: _openEnquirySheet,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: BouncingScrollPhysics(),
@@ -415,6 +448,10 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                     );
                   }
 
+                  final lineItems = filteredServices
+                      .map(_toProductLineItem)
+                      .toList(growable: false);
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -460,7 +497,14 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                           ),
                         ),
 
+                      EnquirySelectAllBar(
+                        bucketKey: _bucketKey,
+                        items: lineItems,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                      ),
+
                       ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredServices.length,
@@ -475,42 +519,43 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                           final price = service.price;
                           final offerPrice = service.offerPrice;
 
-                          return CommonContainer.foodList(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProductDetails(productId: service?.id),
-                                ),
-                              );
-                            },
-                            onImageTap: () {
-                              final url = (image).toString().trim();
-                              if (url.isEmpty) return;
-                              FullScreenImageGallery.open(
-                                context,
-                                imageUrls: [url],
-                              );
-                            },
-                            imageWidth: 130,
-                            image: image,
-                            foodName: title,
-                            ratingStar: rating,
-                            ratingCount: ratingCount,
-                            offAmound: offerPrice != null ? '₹$offerPrice' : '',
-                            oldAmound: price != null ? '₹$price' : '',
-                            km: '',
-                            location: '',
-                            Verify: false,
-                            locations: false,
-                            weight: true,
-                            horizontalDivider:
-                                index != filteredServices.length - 1,
-                            // weightOptions: const ['300Gm', '500Gm'],
-                            // selectedWeightIndex: selectedWeight,
-                            // onWeightChanged: (i) =>
-                            //     setState(() => selectedWeight = i),
+                          return EnquirySelectableTile(
+                            bucketKey: _bucketKey,
+                            item: lineItems[index],
+                            child: CommonContainer.foodList(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProductDetails(productId: service?.id),
+                                  ),
+                                );
+                              },
+                              onImageTap: () {
+                                final url = (image).toString().trim();
+                                if (url.isEmpty) return;
+                                FullScreenImageGallery.open(
+                                  context,
+                                  imageUrls: [url],
+                                );
+                              },
+                              imageWidth: 130,
+                              image: image,
+                              foodName: title,
+                              ratingStar: rating,
+                              ratingCount: ratingCount,
+                              offAmound:
+                                  offerPrice != null ? '₹$offerPrice' : '',
+                              oldAmound: price != null ? '₹$price' : '',
+                              km: '',
+                              location: '',
+                              Verify: false,
+                              locations: false,
+                              weight: true,
+                              horizontalDivider:
+                                  index != filteredServices.length - 1,
+                            ),
                           );
                         },
                       ),
@@ -518,6 +563,9 @@ class _ShopsProductListState extends ConsumerState<ShopsProductList>
                   );
                 },
               ),
+              // Breathing room so the floating Enquiry button never covers the
+              // last list item.
+              const SizedBox(height: 96),
               /*Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

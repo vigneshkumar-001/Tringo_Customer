@@ -1593,6 +1593,14 @@ class TringoOverlayService : Service() {
         try {
             recycler.isNestedScrollingEnabled = false
             recycler.overScrollMode = View.OVER_SCROLL_NEVER
+            // Keep the ads list from stealing focus from rootCard. Otherwise the BACK
+            // key goes to the focused RecyclerView and rootCard's back listener never
+            // fires — that's why BACK dismissed the small overlay (ads hidden) but NOT
+            // the post-call advertisement overlay (ads visible). Cards are tapped via
+            // touch (OnClickListener), so clicks/scroll keep working.
+            recycler.isFocusable = false
+            recycler.isFocusableInTouchMode = false
+            recycler.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         } catch (_: Exception) {}
         clampAdsRecyclerHeight(recycler)
 
