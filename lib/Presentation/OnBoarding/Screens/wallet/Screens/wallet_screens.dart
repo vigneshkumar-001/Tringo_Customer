@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -723,8 +724,9 @@ class _WalletScreensState extends ConsumerState<WalletScreens>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    if (!Platform.isIOS) const SizedBox(width: 12),
+                    if (!Platform.isIOS)
+                      Expanded(
                       child: InkWell(
                         onTap: () {
                           Navigator.push(
