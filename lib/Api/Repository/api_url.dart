@@ -3,6 +3,7 @@ class ApiUrl {
   //     "https://fenizo-tringo-backend-12ebb106711d.herokuapp.com/";
 
   static const String base = "https://bknd.tringobiz.com/";
+  // static const String base = "https://2sr4hd7v-4000.inc1.devtunnels.ms/";
 
   static const String register = "${base}api/v1/auth/request-otp";
   static const String verifyOtp = "${base}api/v1/auth/verify-otp";
@@ -37,7 +38,8 @@ class ApiUrl {
   // Subscriptions
   static const String subscriptionsBase = "${base}api/v1/subscriptions";
   static const String subscriptionPlans = "$subscriptionsBase/plans";
-  static const String subscriptionCcavenueInit = "$subscriptionsBase/ccavenue/init";
+  static const String subscriptionCcavenueInit =
+      "$subscriptionsBase/ccavenue/init";
   static const String subscriptionCcavenueExtendInit =
       "$subscriptionsBase/ccavenue/extend/init";
   static const String subscriptionCcavenueConfirm =
@@ -48,7 +50,6 @@ class ApiUrl {
     if (id.isEmpty) return "$subscriptionsBase/current";
     return "$subscriptionsBase/current?businessProfileId=$id";
   }
-
 
   static String getChatMessages({required String id}) {
     return "${base}api/v1/support/tickets/$id";
@@ -78,10 +79,12 @@ class ApiUrl {
   static String markCallOrMapEnquiry({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/track";
   }
-  static String smartConnectHistory({required int page,required int limit,}) {
+
+  static String smartConnectHistory({required int page, required int limit}) {
     return "${base}api/smart-connect/history?page=$page&limit=$limit";
   }
-  static String smartConnectDetails({required String requestId, }) {
+
+  static String smartConnectDetails({required String requestId}) {
     return "${base}api/smart-connect/$requestId";
   }
 
@@ -113,9 +116,9 @@ class ApiUrl {
     return "${base}api/v1/wallet/history?type=$type";
   }
 
-   static String smartConnectSearch({required String search,  }) {
-     return "${base}api/smart-connect/search?term=$search";
-   }
+  static String smartConnectSearch({required String search}) {
+    return "${base}api/smart-connect/search?term=$search";
+  }
 
   static String shopList({required String kind, required String highlightId}) {
     return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";

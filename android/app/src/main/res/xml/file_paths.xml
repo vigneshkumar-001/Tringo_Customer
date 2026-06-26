@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- getTemporaryDirectory() -> app internal cache dir -->
+    <cache-path name="enquiry_cache" path="." />
+    <!-- Defensive coverage for other temp locations -->
+    <external-cache-path name="enquiry_ext_cache" path="." />
+    <files-path name="enquiry_files" path="." />
+    <external-files-path name="enquiry_ext_files" path="." />
+</paths>

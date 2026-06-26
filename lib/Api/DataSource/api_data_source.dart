@@ -9,6 +9,7 @@ import 'package:tringo_app/Core/Const/app_logger.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Model/edit_profile_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/advertisement_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/enquiry_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Enquiry/Model/enquiry_submit_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/home_response.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/mark_enquiry.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Model/nearby_map_response.dart';
@@ -708,6 +709,48 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
+  /// Submits a multi-item enquiry and (server-side) generates a PDF.
+  ///
+  /// [body] is built by the enquiry service layer per the documented contract
+  /// in [EnquirySubmitResponse]. Returns the parsed response (incl. PDF bytes).
+  Future<Either<Failure, EnquirySubmitResponse>> submitEnquiry({
+    required String shopId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final String url = ApiUrl.putEnquiry(shopId: shopId);
+
+      final response = await Request.sendRequest(url, body, 'POST', true);
+
+      AppLogger.log.i(response);
+
+      if (response is! DioException) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (response.data['status'] == true) {
+            return Right(EnquirySubmitResponse.fromJson(response.data));
+          } else {
+            return Left(
+              ServerFailure(response.data['message'] ?? "Enquiry failed"),
+            );
+          }
+        } else {
+          return Left(
+            ServerFailure(response.data['message'] ?? "Something went wrong"),
+          );
+        }
+      } else {
+        final errorData = response.response?.data;
+        if (errorData is Map && errorData.containsKey('message')) {
+          return Left(ServerFailure(errorData['message']));
+        }
+        return Left(ServerFailure(response.message ?? "Unknown Dio error"));
+      }
+    } catch (e) {
+      AppLogger.log.e(e.toString());
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   Future<Either<Failure, ProductDetailResponse>> viewDetailProducts({
     required String productId,
   }) async {
@@ -1169,7 +1212,6 @@ class ApiDataSource extends BaseApiDataSource {
   }) async {
     try {
       final url = ApiUrl.editProfile;
-      final verificationToken = await AppPrefs.getVerificationToken();
 
       final response = await Request.sendRequest(
         url,
@@ -1180,7 +1222,6 @@ class ApiDataSource extends BaseApiDataSource {
           "dateOfBirth": dateOfBirth,
           "avatarUrl": avatarUrl,
           "phoneNumber": phoneNumber,
-          "phoneVerificationToken": verificationToken,
         },
         'PATCH',
         true,

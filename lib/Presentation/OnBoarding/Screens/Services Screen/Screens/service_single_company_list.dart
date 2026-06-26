@@ -9,6 +9,12 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/full_screen_image_gallery.dart';
+import '../../Enquiry/Controller/enquiry_selection_notifier.dart';
+import '../../Enquiry/Model/enquiry_models.dart';
+import '../../Enquiry/Widgets/enquiry_fab.dart';
+import '../../Enquiry/Widgets/enquiry_review_sheet.dart';
+import '../../Enquiry/Widgets/enquiry_select_all_bar.dart';
+import '../../Enquiry/Widgets/enquiry_selectable_tile.dart';
 
 class ServiceSingleCompanyList extends ConsumerStatefulWidget {
   final String? shopId;
@@ -34,6 +40,29 @@ class _ServiceSingleCompanyListState
     extends ConsumerState<ServiceSingleCompanyList>
     with SingleTickerProviderStateMixin {
   int selectedIndex = 0;
+
+  String get _bucketKey =>
+      enquiryBucketKey(widget.shopId, EnquiryKind.service);
+
+  void _openEnquirySheet() {
+    showEnquiryReviewSheet(
+      context,
+      bucketKey: _bucketKey,
+      shopId: widget.shopId ?? '',
+      shopName: widget.englishName ?? '',
+    );
+  }
+
+  EnquiryLineItem _toServiceLineItem(dynamic service) {
+    return EnquiryLineItem(
+      id: (service?.id ?? '').toString(),
+      name: (service?.englishName ?? 'Service').toString(),
+      imageUrl: service?.imageUrl?.toString(),
+      price: (service?.price as num?)?.toDouble() ?? 0,
+      offerPrice: (service?.offerPrice as num?)?.toDouble(),
+      kind: EnquiryKind.service,
+    );
+  }
 
   late final AnimationController _ac;
 
@@ -169,6 +198,10 @@ class _ServiceSingleCompanyListState
     final asyncServices = ref.watch(shopServicesProvider(widget.shopId ?? ''));
 
     return Scaffold(
+      floatingActionButton: EnquiryFab(
+        bucketKey: _bucketKey,
+        onTap: _openEnquirySheet,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -347,6 +380,10 @@ class _ServiceSingleCompanyListState
                     );
                   }
 
+                  final lineItems = filteredServices
+                      .map(_toServiceLineItem)
+                      .toList(growable: false);
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -392,6 +429,12 @@ class _ServiceSingleCompanyListState
                           ),
                         ),
 
+                      EnquirySelectAllBar(
+                        bucketKey: _bucketKey,
+                        items: lineItems,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                      ),
+
                       // FILTERED SERVICES LIST
                       ListView.builder(
                         padding: EdgeInsets.symmetric(horizontal: 16),
@@ -405,35 +448,40 @@ class _ServiceSingleCompanyListState
                           final rating = service.rating ?? 'Service';
                           final ratingCount = service.ratingCount ?? 'Service';
                           final image = service.imageUrl?.toString() ?? '';
-                          final startsAt = service.price;
                           final offerPrice = service.offerPrice;
 
-                          return CommonContainer.serviceDetails(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      SearchServiceData(serviceId: service?.id),
-                                ),
-                              );
-                            },
-                            onImageTap: () {
-                              final url = (image).toString().trim();
-                              if (url.isEmpty) return;
-                              FullScreenImageGallery.open(
-                                context,
-                                imageUrls: [url],
-                              );
-                            },
-                            filedName: title,
-                            imageWidth: 130,
-                            image: image,
-                            ratingStar: rating.toString() ?? '',
-                            ratingCount: ratingCount.toString() ?? '',
-                            offAmound: offerPrice != null ? '\u20B9$offerPrice' : '',
-                            horizontalDivider:
-                                index != filteredServices.length - 1,
+                          return EnquirySelectableTile(
+                            bucketKey: _bucketKey,
+                            item: lineItems[index],
+                            child: CommonContainer.serviceDetails(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SearchServiceData(
+                                      serviceId: service?.id,
+                                    ),
+                                  ),
+                                );
+                              },
+                              onImageTap: () {
+                                final url = (image).toString().trim();
+                                if (url.isEmpty) return;
+                                FullScreenImageGallery.open(
+                                  context,
+                                  imageUrls: [url],
+                                );
+                              },
+                              filedName: title,
+                              imageWidth: 130,
+                              image: image,
+                              ratingStar: rating.toString() ?? '',
+                              ratingCount: ratingCount.toString() ?? '',
+                              offAmound:
+                                  offerPrice != null ? '\u20B9$offerPrice' : '',
+                              horizontalDivider:
+                                  index != filteredServices.length - 1,
+                            ),
                           );
                         },
                       ),
@@ -441,6 +489,9 @@ class _ServiceSingleCompanyListState
                   );
                 },
               ),
+              // Breathing room so the floating Enquiry button never covers the
+              // last list item.
+              const SizedBox(height: 96),
             ],
           ),
         ),
