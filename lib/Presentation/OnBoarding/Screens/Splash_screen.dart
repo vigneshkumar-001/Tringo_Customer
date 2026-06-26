@@ -266,8 +266,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void openPlayStore() async {
     final versionState = ref.read(appVersionNotifierProvider);
+    final store = versionState.appVersionResponse?.data?.store;
+    // Open the App Store on iOS and the Play Store on Android.
     final storeUrl =
-        versionState.appVersionResponse?.data?.store.android.toString() ?? '';
+        (Platform.isIOS ? store?.ios : store?.android)?.toString() ?? '';
 
     if (storeUrl.isEmpty) return;
 
