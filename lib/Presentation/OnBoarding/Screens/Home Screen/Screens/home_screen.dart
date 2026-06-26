@@ -974,7 +974,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ),
                             const SizedBox(width: 20),
 
-                            if (!Platform.isIOS) ...[
+                            ...[
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 8.0,
