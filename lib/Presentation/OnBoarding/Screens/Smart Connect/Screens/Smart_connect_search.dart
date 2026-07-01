@@ -28,12 +28,17 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
   final _focusNode = FocusNode();
   Timer? _debounce;
 
-  bool get typing => _controller.text.trim().isNotEmpty;
-
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(() => setState(() {}));
+    // Load the backend's dynamic default suggestions (empty term) on open.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(smartConnectNotifierProvider.notifier)
+          .fetchSmartConnectSearch(search: '');
+    });
   }
 
   @override
@@ -47,8 +52,9 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
   void _onChanged(String q) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 180), () async {
+      // Empty term is intentionally allowed: the backend returns dynamic
+      // default suggestions for `?term=`, shown before/after the user types.
       final query = q.trim();
-      if (query.isEmpty) return;
 
       await ref
           .read(smartConnectNotifierProvider.notifier)
@@ -155,10 +161,9 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
                                     icon: const Icon(Icons.clear, size: 18),
                                     onPressed: () {
                                       _controller.clear();
-
-                                      // Optional: Clear results by triggering empty search
-                                      // or just refresh UI
                                       setState(() {});
+                                      // Re-show the dynamic default suggestions.
+                                      _onChanged('');
                                     },
                                   )
                                 : null,
@@ -176,66 +181,65 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
 
                 const SizedBox(height: 24),
 
-                // ✅ Suggestions from API
-                if (typing) ...[
-                  if (state.isSearchLoading)
-                    Skeletonizer(
-                      enabled: true,
-                      child: Column(
-                        children: List.generate(6, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: CommonContainer.sortbyPopup(
-                              text1: 'Loading item $index',
-                              text2: 'Type',
-                              connector: ' in ',
-                              image: AppImages.rightArrow,
-                              iconColor: AppColor.blue,
-                              horizontalDivider: true,
-                              onTap: () {},
-                            ),
-                          );
-                        }),
+                // ✅ Suggestions from API: dynamic defaults (empty term) when idle,
+                // live matches when typing.
+                if (state.isSearchLoading)
+                  Skeletonizer(
+                    enabled: true,
+                    child: Column(
+                      children: List.generate(6, (index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: CommonContainer.sortbyPopup(
+                            text1: 'Loading item $index',
+                            text2: 'Type',
+                            connector: ' in ',
+                            image: AppImages.rightArrow,
+                            iconColor: AppColor.blue,
+                            horizontalDivider: true,
+                            onTap: () {},
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+
+                if (!state.isSearchLoading && state.error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      state.error!,
+                      style: GoogleFont.Mulish(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
 
-                  if (!state.isSearchLoading && state.error != null)
+                if (!state.isSearchLoading && state.error == null) ...[
+                  if (items.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.only(top: 10, bottom: 4),
                       child: Text(
-                        state.error!,
+                        'No results',
                         style: GoogleFont.Mulish(
-                          color: Colors.red,
+                          color: AppColor.lightGray2,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-
-                  if (!state.isSearchLoading && state.error == null) ...[
-                    if (items.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 4),
-                        child: Text(
-                          'No results',
-                          style: GoogleFont.Mulish(
-                            color: AppColor.lightGray2,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    )
+                  else
+                    for (int i = 0; i < items.take(10).length; i++) ...[
+                      _SuggestionRowItem(
+                        item: items[i],
+                        onTap: () => _openSuggestionItem(items[i]),
+                      ),
+                      if (i != items.take(10).length - 1)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          child: CommonContainer.horizonalDivider(),
                         ),
-                      )
-                    else
-                      for (int i = 0; i < items.take(10).length; i++) ...[
-                        _SuggestionRowItem(
-                          item: items[i],
-                          onTap: () => _openSuggestionItem(items[i]),
-                        ),
-                        if (i != items.take(10).length - 1)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            child: CommonContainer.horizonalDivider(),
-                          ),
-                      ],
-                  ],
+                    ],
                 ],
               ],
             ),

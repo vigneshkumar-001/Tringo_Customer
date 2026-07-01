@@ -12,6 +12,7 @@ import 'package:tringo_app/Core/Firebase_service/push_notification_handler.dart'
 import 'Core/Utility/app_color.dart';
 import 'Core/app_go_routes.dart';
 import 'Core/overlay_nav_bridge.dart';
+import 'Core/Session/session_manager.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -35,9 +36,45 @@ Future<void> main() async {
   // Optional: lock orientation
   // await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(const AppRoot());
 
   unawaited(_initializeFirebaseServices());
+}
+
+/// Hosts the root [ProviderScope] and rebuilds it (fresh Riverpod state) when
+/// [SessionManager.forceLogout] fires, so no previous-user data survives a
+/// logout / account deletion.
+class AppRoot extends StatefulWidget {
+  const AppRoot({super.key});
+
+  @override
+  State<AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends State<AppRoot> {
+  final ValueNotifier<int> _scopeSeed = ValueNotifier<int>(0);
+
+  @override
+  void initState() {
+    super.initState();
+    SessionManager.bindProviderScopeResetSignal(_scopeSeed);
+  }
+
+  @override
+  void dispose() {
+    _scopeSeed.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: _scopeSeed,
+      builder: (context, seed, _) {
+        return ProviderScope(key: ValueKey(seed), child: const MyApp());
+      },
+    );
+  }
 }
 
 Future<void> _initializeFirebaseServices() async {

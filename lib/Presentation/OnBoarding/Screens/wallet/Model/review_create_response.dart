@@ -32,11 +32,18 @@ class ReviewUpsertData {
   final RewardedCoins rewarded;
   final String note;
 
+  // Reward outcome for this submit, from the backend.
+  // REWARDED | CAPACITY_REACHED | ALREADY_REWARDED | DISABLED | NONE
+  final String rewardStatus;
+  final String message;
+
   ReviewUpsertData({
     required this.review,
     required this.updated,
     required this.rewarded,
     required this.note,
+    required this.rewardStatus,
+    required this.message,
   });
 
   factory ReviewUpsertData.fromJson(Map<String, dynamic> json) {
@@ -49,6 +56,8 @@ class ReviewUpsertData {
         (json['rewarded'] as Map?)?.cast<String, dynamic>() ?? const {},
       ),
       note: (json['note'] ?? "").toString(),
+      rewardStatus: (json['rewardStatus'] ?? "").toString(),
+      message: (json['message'] ?? "").toString(),
     );
   }
 
@@ -57,6 +66,8 @@ class ReviewUpsertData {
     "updated": updated,
     "rewarded": rewarded.toJson(),
     "note": note,
+    "rewardStatus": rewardStatus,
+    "message": message,
   };
 }
 

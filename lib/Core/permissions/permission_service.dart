@@ -94,10 +94,24 @@ class PermissionService {
         } else {
           await AppPrefs.setCallerIdOverlayAutoDisabled(false);
 
-          // Start the overlay service while the app is in foreground.
-          // This avoids Android 12+ background restrictions on starting foreground services
-          // from call receivers (common on Realme/Oppo/OnePlus).
-          await CallerIdRoleHelper.startOverlayServiceKeepAlive();
+          // NOTE (Caller-ID foreground notification):
+          // We intentionally DO NOT start the persistent keep-alive foreground
+          // service here. On Android 8+ a running foreground service must show a
+          // notification ("Tringo Caller ID – Running…"), which cannot be fully
+          // hidden by the OS. Keeping it alive at all times made that notification
+          // sit permanently in the shade right after install.
+          //
+          // Caller-ID still works during calls: TringoCallReceiver /
+          // TringoCallEndReceiver are statically registered for PHONE_STATE in the
+          // manifest and start the overlay service transiently for the duration of
+          // a call, then stop it — so the notification (if shown at all) appears
+          // only briefly during an active call, never permanently while idle.
+          //
+          // Trade-off: on very aggressive OEMs (MIUI/Realme/Oppo/OnePlus) where the
+          // app is force-stopped or autostart is disabled, the transient start from
+          // the receiver can be slightly less reliable than a kept-alive service.
+          // To restore the previous always-on behaviour, re-enable the line below.
+          // await CallerIdRoleHelper.startOverlayServiceKeepAlive();
         }
         return openedOverlaySettings;
       }

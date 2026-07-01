@@ -47,6 +47,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _isFocused = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Load the backend's dynamic default suggestions (empty query) on open.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(searchNotifierProvider.notifier).loadDefault();
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -168,7 +178,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       onPressed: () {
                                         _controller.clear();
                                         setState(() {});
-                                        notifier.clearResults();
+                                        // Re-show the dynamic default suggestions.
+                                        notifier.loadDefault();
                                       },
                                     )
                                   : null,
@@ -201,6 +212,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 const SizedBox(height: 14),
 
                 // ==== CONTENT AREA ====
+                // Recent searches: shown only before the user starts typing.
                 if (!typing) ...[
                   Text(
                     'Recent Searches',
@@ -228,7 +240,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       const SizedBox(height: 8),
                     ],
-                ] else if (state.isLoading) ...[
+                  const SizedBox(height: 16),
+                ],
+
+                // Suggestions / results: dynamic defaults (empty query) when idle,
+                // live matches when typing. Backed by the same search API.
+                if (state.isLoading) ...[
                   Skeletonizer(
                     enabled: true,
                     child: Column(
@@ -248,31 +265,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       }),
                     ),
                   ),
-                ] else ...[
-                  if (apiItems.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        'No results',
-                        style: GoogleFont.Mulish(color: AppColor.lightGray2),
-                      ),
-                    )
-                  else
-                    for (final item in apiItems) ...[
-                      CommonContainer.sortbyPopup(
-                        text1: item.label,
-                        text2: item.inLabel,
-                        connector: ' in ',
-                        image: AppImages.rightArrow,
-                        iconColor: AppColor.blue,
-                        horizontalDivider: true,
-                        onTap: () {
-                          notifier.addRecentItem(item);
-                          _handleSuggestionTap(context, item);
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+                ] else if (apiItems.isNotEmpty) ...[
+                  for (final item in apiItems) ...[
+                    CommonContainer.sortbyPopup(
+                      text1: item.label,
+                      text2: item.inLabel,
+                      connector: ' in ',
+                      image: AppImages.rightArrow,
+                      iconColor: AppColor.blue,
+                      horizontalDivider: true,
+                      onTap: () {
+                        notifier.addRecentItem(item);
+                        _handleSuggestionTap(context, item);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ] else if (typing) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      'No results',
+                      style: GoogleFont.Mulish(color: AppColor.lightGray2),
+                    ),
+                  ),
                 ],
               ],
             ),

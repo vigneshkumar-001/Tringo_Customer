@@ -745,13 +745,30 @@ class TringoOverlayService : Service() {
     // Foreground
     // ==========================================================
     private fun startForegroundDataSyncSafe() {
-        val channelId = "tringo_overlay_service"
+        // New channel id: a channel's importance is immutable once created, so a
+        // fresh id is required for the lower MIN importance to actually apply on
+        // devices that already created the old LOW channel. MIN = no status-bar
+        // icon, collapsed at the bottom of the shade, no sound/badge — the least
+        // intrusive a (mandatory) foreground-service notification can be.
+        val channelId = "tringo_overlay_service_min"
         try {
             val nm = getSystemService(NotificationManager::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                nm.createNotificationChannel(
-                    NotificationChannel(channelId, "Tringo Overlay", NotificationManager.IMPORTANCE_LOW)
+                val ch = NotificationChannel(
+                    channelId,
+                    "Tringo Caller ID",
+                    NotificationManager.IMPORTANCE_MIN
                 )
+                ch.setShowBadge(false)
+                ch.setSound(null, null)
+                ch.enableVibration(false)
+                ch.lockscreenVisibility = NotificationCompat.VISIBILITY_SECRET
+                nm.createNotificationChannel(ch)
+                // Tidy up the old, more-prominent channel so it no longer lingers.
+                try {
+                    nm.deleteNotificationChannel("tringo_overlay_service")
+                } catch (_: Throwable) {
+                }
             }
 
             val dismissIntent = Intent(this, TringoOverlayDismissReceiver::class.java).apply {
@@ -770,7 +787,9 @@ class TringoOverlayService : Service() {
                 .setContentText("Running...")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setShowWhen(false)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
                 // Escape hatch: let user stop a stuck foreground service notification.
                 .addAction(
                     android.R.drawable.ic_menu_close_clear_cancel,

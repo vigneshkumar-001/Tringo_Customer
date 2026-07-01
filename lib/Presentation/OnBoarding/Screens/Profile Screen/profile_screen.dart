@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'package:tringo_app/Core/Session/session_manager.dart';
 import 'package:dotted_border/dotted_border.dart' as dotted;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Screens/home_screen.dart';
@@ -554,11 +554,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     if (!mounted) return;
 
     if (success) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
       AppSnackBar.success(context, "Account deleted successfully");
-
-      context.goNamed(AppRoutes.login);
+      // Full reset (prefs + Riverpod ProviderScope) so the deleted user's cached
+      // data does not leak into the freshly created account on re-login.
+      await SessionManager.forceLogout();
     } else {
       AppSnackBar.error(context, st.error ?? "Delete failed");
     }

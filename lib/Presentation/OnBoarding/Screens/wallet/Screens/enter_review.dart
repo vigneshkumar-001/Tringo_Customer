@@ -11,6 +11,8 @@ import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../Shop Screen/Controller/shops_notifier.dart';
 import '../Controller/wallet_notifier.dart';
+import '../Model/review_create_response.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/Edit%20Profile/Controller/profile_refresh_provider.dart';
 
 class EnterReview extends ConsumerStatefulWidget {
   final String? shopId;
@@ -37,30 +39,73 @@ class _EnterReviewState extends ConsumerState<EnterReview>
       ref
           .read(shopsNotifierProvider.notifier)
           .showSpecificShopDetails(shopId: widget.shopId ?? '');
-
-      ref.listen<WalletState>(walletNotifier, (prev, next) {
-        final res = next.reviewCreateResponse;
-
-        if (res != null && res.status == true) {
-          AppSnackBar.success(
-            context,
-            res.data.note == "ALREADY_REVIEWED_UPDATED_ONLY"
-                ? "Review updated "
-                : "Review submitted ",
-          );
-
-          _headingController.clear();
-          _descriptionController.clear();
-          setState(() => _rating = 0);
-
-          Navigator.pop(context);
-        }
-
-        if (next.error != null && next.error!.isNotEmpty) {
-          AppSnackBar.error(context, next.error!);
-        }
-      });
     });
+  }
+
+  // Reacts to review-create result. Riverpod requires ref.listen to run inside
+  // build(); registering it in initState silently never fired, so the success
+  // message and back-navigation never happened.
+  // Builds the on-screen message from the backend reward outcome.
+  String _reviewResultMessage(ReviewUpsertData data) {
+    final coins = data.rewarded.reviewerCoins;
+    switch (data.rewardStatus.toUpperCase()) {
+      // Case 1: reward granted.
+      case 'REWARDED':
+        return "🎉 Review Submitted Successfully!\n"
+            "🪙 You Earned $coins TCoins.\n"
+            "Thank you for supporting this Business.";
+      // Case 2: shop's daily reward capacity is used up.
+      case 'CAPACITY_REACHED':
+        return "⭐ Review Submitted Successfully!\n"
+            "Today's TCoin Rewards for this Business have already been claimed.\n"
+            "Review another nearby Business to continue earning TCoins.";
+      case 'ALREADY_REWARDED':
+        return data.note == "ALREADY_REVIEWED_UPDATED_ONLY"
+            ? "✅ Review Updated Successfully!"
+            : "🎉 Review Submitted Successfully!";
+      // DISABLED / NONE / unknown: plain success (prefer backend message if any).
+      default:
+        return data.message.isNotEmpty
+            ? data.message
+            : "🎉 Review Submitted Successfully!";
+    }
+  }
+
+  void _handleReviewResult(WalletState? prev, WalletState next) {
+    if (!mounted) return;
+
+    final res = next.reviewCreateResponse;
+    if (res != null &&
+        res.status == true &&
+        prev?.reviewCreateResponse != res) {
+      AppSnackBar.success(
+        context,
+        _reviewResultMessage(res.data),
+        maxLines: 5,
+        duration: const Duration(seconds: 4),
+      );
+
+      _headingController.clear();
+      _descriptionController.clear();
+      setState(() => _rating = 0);
+
+      // Coins credited → refresh the home screen so its TCoin balance updates
+      // automatically (Home listens to profileRefreshProvider). Avoids needing a
+      // manual pull-to-refresh.
+      if (res.data.rewarded.reviewerCoins > 0) {
+        ref.read(profileRefreshProvider.notifier).bump();
+      }
+
+      // Leave the write-review screen after a successful submit.
+      Navigator.pop(context);
+      return;
+    }
+
+    if (next.error != null &&
+        next.error!.isNotEmpty &&
+        prev?.error != next.error) {
+      AppSnackBar.error(context, next.error!);
+    }
   }
 
   @override
@@ -71,79 +116,18 @@ class _EnterReviewState extends ConsumerState<EnterReview>
     super.dispose();
   }
 
+  // Review Terms popup intentionally disabled — reviews submit directly without
+  // the agreement dialog. Objectionable-content filtering still runs at submit
+  // time (see ReviewModeration.containsObjectionableText in the submit handler).
   Future<bool> _ensureReviewTermsAccepted() async {
-    if (await ReviewModeration.hasAcceptedTerms()) return true;
-    if (!mounted) return false;
-
-    var checked = false;
-    final accepted = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Review Terms'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'You must be 18+ to post reviews. TringoBiz does not tolerate objectionable content or abusive users.',
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Do not post abusive, hateful, threatening, sexually explicit, spam, fraudulent, illegal, or harassing content.',
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Users can report, hide, and block review authors. Reports are reviewed within 24 hours and offending content or users may be removed.',
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Report inappropriate activity from ${ReviewModeration.supportContactLabel}.',
-                    ),
-                    const SizedBox(height: 12),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: checked,
-                      onChanged: (value) {
-                        setDialogState(() => checked = value ?? false);
-                      },
-                      title: const Text('I agree to these review terms'),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: checked
-                      ? () => Navigator.pop(dialogContext, true)
-                      : null,
-                  child: const Text('Agree'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (accepted == true) {
-      await ReviewModeration.acceptTerms();
-      return true;
-    }
-    return false;
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Riverpod listeners must be registered during build.
+    ref.listen<WalletState>(walletNotifier, _handleReviewResult);
+
     final walletState = ref.watch(walletNotifier);
 
     final state = ref.watch(shopsNotifierProvider);

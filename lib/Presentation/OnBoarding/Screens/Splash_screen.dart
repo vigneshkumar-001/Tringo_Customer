@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tringo_app/Api/api_providers.dart';
 import 'package:tringo_app/Core/Const/app_logger.dart';
@@ -29,7 +30,21 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with WidgetsBindingObserver {
-  String appVersion = '1.0.5';
+  // Read at runtime from the platform build (iOS Info.plist / Android
+  // build.gradle), so Android and iOS each report their own real version.
+  String appVersion = '0.0.0';
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (info.version.isNotEmpty) {
+        appVersion = info.version;
+        if (mounted) setState(() {});
+      }
+    } catch (e) {
+      AppLogger.log.w('Failed to read app version: $e');
+    }
+  }
 
   bool _navigated = false;
   @override
@@ -143,7 +158,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       );
     }
 
-    // 1) Version check
+    // 1) Version check — read the real installed version first.
+    await _loadAppVersion();
     await ref
         .read(appVersionNotifierProvider.notifier)
         .getAppVersion(

@@ -10,6 +10,7 @@ class AppSnackBar {
     required String message,
     Widget? icon,
     Duration duration = const Duration(seconds: 3),
+    int maxLines = 3,
   }) {
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
@@ -57,7 +58,7 @@ class AppSnackBar {
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
-                    maxLines: 3,
+                    maxLines: maxLines,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -70,11 +71,18 @@ class AppSnackBar {
     );
   }
 
-  static void success(BuildContext context, String message) {
+  static void success(
+    BuildContext context,
+    String message, {
+    int maxLines = 3,
+    Duration duration = const Duration(seconds: 3),
+  }) {
     _show(
       context,
       background: Colors.green.shade600,
       message: message,
+      maxLines: maxLines,
+      duration: duration,
     );
   }
 

@@ -70,16 +70,16 @@ class SearchNotifier extends Notifier<SearchState> {
     });
   }
 
-  Future<void> _runSearch(String q) async {
-    if (q.isEmpty) {
-      state = state.copyWith(
-        isLoading: false,
-        error: null,
-        searchSuggestionResponse: null,
-      );
-      return;
-    }
+  // Hits the search API immediately with an empty query so the backend's
+  // dynamic default suggestions load as soon as the screen opens (no debounce).
+  void loadDefault() {
+    _debounce?.cancel();
+    _runSearch('');
+  }
 
+  Future<void> _runSearch(String q) async {
+    // NOTE: empty `q` is intentionally allowed — the backend returns dynamic
+    // default suggestions for `?q=`, shown before the user starts typing.
     final isMobileQuery = _isMobileNumber(q);
     final int mySeq = ++_requestSeq;
 
