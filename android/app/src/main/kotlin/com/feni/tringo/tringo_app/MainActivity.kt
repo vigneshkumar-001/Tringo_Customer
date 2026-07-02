@@ -3,6 +3,7 @@ package com.feni.tringo.tringo_app
 import android.Manifest
 import android.app.ActivityManager
 import android.app.role.RoleManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -26,6 +27,7 @@ class MainActivity : FlutterActivity() {
 
     private val CHANNEL = "sim_info"
     private val TAG = "TRINGO_NATIVE"
+    private val PAYMENT_CHANNEL = "tringo_customer/payment_launcher"
 
     private val WHATSAPP_SHARE_CHANNEL = "tringo/whatsapp_share"
 
@@ -113,6 +115,21 @@ class MainActivity : FlutterActivity() {
                         result.success(
                             shareFileToWhatsApp(filePath, phone, caption, business)
                         )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PAYMENT_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "launchExternalPaymentUrl" -> {
+                        val url = call.argument<String>("url")?.trim().orEmpty()
+                        if (url.isEmpty()) {
+                            result.success(false)
+                        } else {
+                            result.success(launchExternalPaymentUrl(url))
+                        }
                     }
                     else -> result.notImplemented()
                 }
@@ -256,6 +273,76 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun launchExternalPaymentUrl(url: String): Boolean {
+        return try {
+            if (url.startsWith("intent://", ignoreCase = true)) {
+                launchIntentSchemeUrl(url)
+            } else {
+                launchBrowsableUri(Uri.parse(url))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "launchExternalPaymentUrl failed for $url: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun launchIntentSchemeUrl(url: String): Boolean {
+        return try {
+            val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME).apply {
+                addCategory(Intent.CATEGORY_BROWSABLE)
+                component = null
+                selector = null
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            try {
+                startActivity(intent)
+                true
+            } catch (_: ActivityNotFoundException) {
+                val fallbackUrl = intent.getStringExtra("browser_fallback_url")?.trim()
+                if (!fallbackUrl.isNullOrEmpty() && launchBrowsableUri(Uri.parse(fallbackUrl))) {
+                    return true
+                }
+
+                val packageName = intent.`package`?.trim()
+                if (!packageName.isNullOrEmpty() && launchPlayStore(packageName)) {
+                    return true
+                }
+
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "launchIntentSchemeUrl failed for $url: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun launchBrowsableUri(uri: Uri): Boolean {
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        return try {
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "launchBrowsableUri failed for $uri: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun launchPlayStore(packageName: String): Boolean {
+        val marketUri = Uri.parse("market://details?id=$packageName")
+        if (launchBrowsableUri(marketUri)) {
+            return true
+        }
+
+        return launchBrowsableUri(
+            Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+        )
     }
 
     private fun requestReadPhoneStateNative(result: MethodChannel.Result) {
