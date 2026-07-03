@@ -96,8 +96,10 @@ class _EnterReviewState extends ConsumerState<EnterReview>
         ref.read(profileRefreshProvider.notifier).bump();
       }
 
-      // Leave the write-review screen after a successful submit.
-      Navigator.pop(context);
+      // Leave the write-review screen after a successful submit. Pop with `true`
+      // so the caller (e.g. shop details) can refresh its reviews list without a
+      // manual pull-to-refresh.
+      Navigator.pop(context, true);
       return;
     }
 

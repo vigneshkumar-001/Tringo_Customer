@@ -22,7 +22,7 @@ import 'package:tringo_app/Core/Widgets/common_container.dart';
 import 'package:tringo_app/Core/Widgets/enquiry_bottom_sheet.dart';
 import 'package:tringo_app/Core/Widgets/full_screen_image_gallery.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Home%20Screen/Controller/home_notifier.dart';
-import 'package:tringo_app/Presentation/OnBoarding/Shared/qr_scan_flow.dart';
+import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/enter_review.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
 
@@ -2447,12 +2447,6 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                               ? "${reviews.length} Reviews"
                               : (reviewUi?.countLabel ?? "No Reviews");
 
-                          // âœ… button text from API
-                          final buttonLabel =
-                              (reviewUi?.buttonText.trim().isNotEmpty ?? false)
-                              ? reviewUi!.buttonText.trim()
-                              : "Scan QR Code";
-
                           // If API says reviews already present, hide the CTA button.
                           final hideReviewButton = reviewUi?.hasReviews == true;
 
@@ -2528,15 +2522,30 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                 CommonContainer.button(
                                   imagePath: AppImages.rightSideArrow,
                                   buttonColor: AppColor.darkBlue,
-                                  onTap: () {
-                                    QrScanFlow.openQrAndAskAction(
-                                      context: context,
-                                      ref: ref,
-                                      title: 'Scan QR for Review',
-                                      mode: QrScanFlowMode.reviewOnly,
+                                  onTap: () async {
+                                    // No QR scan needed on the shop's own detail
+                                    // page — go straight to writing a review for
+                                    // THIS shop.
+                                    final reviewShopId =
+                                        (widget.shopId?.isNotEmpty ?? false)
+                                        ? widget.shopId!
+                                        : (shopsData.data?.id?.toString() ?? '');
+                                    if (reviewShopId.isEmpty) return;
+                                    final submitted = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            EnterReview(shopId: reviewShopId),
+                                      ),
                                     );
+                                    // On a successful submit, reload the shop
+                                    // details so the new review shows instantly
+                                    // (no manual pull-to-refresh needed).
+                                    if (submitted == true && mounted) {
+                                      await _onRefresh();
+                                    }
                                   },
-                                  text: Text(buttonLabel),
+                                  text: const Text('Review & earn rewards'),
                                 ),
 
                               const SizedBox(height: 20),
