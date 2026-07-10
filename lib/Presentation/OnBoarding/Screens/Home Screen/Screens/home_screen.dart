@@ -2051,7 +2051,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     ),
                                                   if (alreadyClaimed)
                                                     const SizedBox(width: 8),
-                                                  InkWell(
+                                                  Builder(
+                                                    builder: (shareBtnContext) => InkWell(
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           30,
@@ -2081,6 +2082,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                               .bannerUrl
                                                               .toString(),
                                                           cardTitle: data.title,
+                                                          sharePositionOrigin:
+                                                              ShareHelper
+                                                                  .originFromContext(
+                                                                    shareBtnContext,
+                                                                  ),
                                                         );
                                                       }
                                                     },
@@ -2103,6 +2109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                         color: Colors.white,
                                                       ),
                                                     ),
+                                                  ),
                                                   ),
                                                 ],
                                               ),

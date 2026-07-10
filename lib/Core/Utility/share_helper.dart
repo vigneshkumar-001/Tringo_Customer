@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ShareHelper {
@@ -80,10 +80,20 @@ class ShareHelper {
     return parts.join('\n').trim();
   }
 
-  static Future<void> shareText(String text) async {
+  /// Builds the anchor rect required by the iOS share sheet (share_plus needs a
+  /// non-null [sharePositionOrigin] on iOS/iPad, otherwise the sheet silently
+  /// fails to appear). Android ignores it. Returns null if the context has no
+  /// laid-out render box yet.
+  static Rect? originFromContext(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  static Future<void> shareText(String text, {Rect? sharePositionOrigin}) async {
     final t = text.trim();
     if (t.isEmpty) return;
-    await Share.share(t);
+    await Share.share(t, sharePositionOrigin: sharePositionOrigin);
   }
 
   static Future<void> shareTextWithImage({
@@ -96,13 +106,14 @@ class ShareHelper {
     double? ratingValue,
     int? ratingCount,
     bool useDesignCard = false,
+    Rect? sharePositionOrigin,
   }) async {
     final t = text.trim();
     if (t.isEmpty) return;
 
     final url = (imageUrl ?? '').trim();
     if (url.isEmpty) {
-      await Share.share(t);
+      await Share.share(t, sharePositionOrigin: sharePositionOrigin);
       return;
     }
 
@@ -125,7 +136,7 @@ class ShareHelper {
 
       final bytes = resp.data;
       if (bytes == null || bytes.isEmpty) {
-        await Share.share(t);
+        await Share.share(t, sharePositionOrigin: sharePositionOrigin);
         return;
       }
 
@@ -179,9 +190,13 @@ class ShareHelper {
       );
       await file.writeAsBytes(finalBytes, flush: true);
 
-      await Share.shareXFiles([XFile(file.path, mimeType: mime)], text: t);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: mime)],
+        text: t,
+        sharePositionOrigin: sharePositionOrigin,
+      );
     } catch (_) {
-      await Share.share(t);
+      await Share.share(t, sharePositionOrigin: sharePositionOrigin);
     }
   }
 

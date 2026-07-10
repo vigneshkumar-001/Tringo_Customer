@@ -182,6 +182,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
     String? imageUrl,
     String? title,
     List<String> metaLines = const [],
+    Rect? sharePositionOrigin,
   }) async {
     final text = (shareText != null && shareText.trim().isNotEmpty)
         ? shareText
@@ -198,6 +199,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
       imageUrl: imageUrl,
       cardTitle: title,
       cardMetaLines: metaLines,
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
@@ -732,7 +734,8 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                     },
                                   ),
                                   Spacer(),
-                                  InkWell(
+                                  Builder(
+                                    builder: (shareBtnContext) => InkWell(
                                     borderRadius: BorderRadius.circular(30),
                                     onTap: () {
                                       final shopId =
@@ -740,6 +743,11 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                           ? widget.shopId!
                                           : (shopsData.data?.id ?? '');
                                       if (shopId.isEmpty) return;
+
+                                      final shareOrigin =
+                                          ShareHelper.originFromContext(
+                                            shareBtnContext,
+                                          );
 
                                       final wImg = (widget.image ?? '')
                                           .toString()
@@ -781,6 +789,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                               .toString()
                                               .trim(),
                                         ],
+                                        sharePositionOrigin: shareOrigin,
                                       );
                                     },
                                     child: Container(
@@ -798,6 +807,7 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                         color: AppColor.darkBlue,
                                       ),
                                     ),
+                                  ),
                                   ),
                                   const SizedBox(width: 10),
                                   CommonContainer.gradientContainer(

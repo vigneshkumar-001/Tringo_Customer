@@ -43,6 +43,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
     String? badgeText,
     double? ratingValue,
     int? ratingCount,
+    Rect? sharePositionOrigin,
   }) async {
     final text =
         (shareText != null && shareText.trim().isNotEmpty)
@@ -57,6 +58,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
       badgeText: badgeText,
       ratingValue: ratingValue,
       ratingCount: ratingCount,
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
@@ -166,9 +168,12 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                               }
                             },
                           ),
-                          InkWell(
+                          Builder(
+                            builder: (shareBtnContext) => InkWell(
                             borderRadius: BorderRadius.circular(30),
                             onTap: () {
+                              final shareOrigin =
+                                  ShareHelper.originFromContext(shareBtnContext);
                               final productId =
                                   (widget.productId?.isNotEmpty ?? false)
                                       ? widget.productId!
@@ -239,6 +244,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                                         .toDouble(),
                                 ratingCount:
                                     productDetailData.data.product.ratingCount,
+                                sharePositionOrigin: shareOrigin,
                               );
                             },
                             child: Container(
@@ -254,6 +260,7 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                                 color: AppColor.darkBlue,
                               ),
                             ),
+                          ),
                           ),
                         ],
                       ),

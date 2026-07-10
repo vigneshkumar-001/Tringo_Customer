@@ -169,7 +169,8 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      InkWell(
+                      Builder(
+                        builder: (shareBtnContext) => InkWell(
                         borderRadius: BorderRadius.circular(30),
                         onTap: () {
                           final shopId =
@@ -187,6 +188,8 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                             cardMetaLines: [
                               (shop?.city ?? '').toString().trim(),
                             ],
+                            sharePositionOrigin:
+                                ShareHelper.originFromContext(shareBtnContext),
                           );
                         },
                         child: Container(
@@ -202,6 +205,7 @@ class OpenedSurpriseOfferScreen extends StatelessWidget {
                             color: AppColor.darkBlue,
                           ),
                         ),
+                      ),
                       ),
                     ],
                   ),

@@ -52,6 +52,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
     String? badgeText,
     double? ratingValue,
     int? ratingCount,
+    Rect? sharePositionOrigin,
   }) async {
     final text =
         (shareText != null && shareText.trim().isNotEmpty)
@@ -66,6 +67,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
       badgeText: badgeText,
       ratingValue: ratingValue,
       ratingCount: ratingCount,
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
@@ -277,7 +279,8 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                   onTap: () => Navigator.pop(context),
                                 ),
                                 Spacer(),
-                                InkWell(
+                                Builder(
+                                  builder: (shareBtnContext) => InkWell(
                                   borderRadius: BorderRadius.circular(30),
                                   onTap: () {
                                     final serviceId =
@@ -285,6 +288,10 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                             ? widget.serviceID!
                                             : (serviceRawData?.id ?? '');
                                     if (serviceId.trim().isEmpty) return;
+                                    final shareOrigin =
+                                        ShareHelper.originFromContext(
+                                          shareBtnContext,
+                                        );
                                     final img =
                                         (serviceRawData?.media?.isNotEmpty ??
                                                 false)
@@ -330,6 +337,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                           ) ??
                                           0,
                                       ratingCount: serviceRawData?.reviewCount,
+                                      sharePositionOrigin: shareOrigin,
                                     );
                                   },
                                   child: Container(
@@ -344,6 +352,7 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                       size: 18,
                                       color: AppColor.darkBlue,
                                     ),
+                                  ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
