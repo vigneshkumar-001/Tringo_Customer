@@ -72,6 +72,9 @@ class ProductItem {
   final num? offerPrice;
   final String? offerLabel;
   final String? offerValue;
+  // 'EXACT' for a fixed price, 'STARTING_AT' for a from-price. Drives
+  // whether the UI shows "₹199" or "From ₹199".
+  final String priceType;
   final String? description;
   final bool? doorDelivery;
   final int? rating;
@@ -91,6 +94,7 @@ class ProductItem {
     this.offerPrice,
     this.offerLabel,
     this.offerValue,
+    this.priceType = 'EXACT',
     this.description,
     this.doorDelivery,
     this.rating,
@@ -112,6 +116,7 @@ class ProductItem {
       offerPrice: json['offerPrice'],
       offerLabel: json['offerLabel'],
       offerValue: json['offerValue'],
+      priceType: json['priceType'] ?? 'EXACT',
       description: json['description'],
       doorDelivery: json['doorDelivery'],
       rating: json['rating'],
@@ -133,6 +138,7 @@ class ProductItem {
     'offerPrice': offerPrice,
     'offerLabel': offerLabel,
     'offerValue': offerValue,
+    'priceType': priceType,
     'description': description,
     'doorDelivery': doorDelivery,
     'rating': rating,

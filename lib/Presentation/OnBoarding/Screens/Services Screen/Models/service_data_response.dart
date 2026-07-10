@@ -111,6 +111,9 @@ class Service {
   final int durationMinutes;
   final String? offerLabel;
   final String? offerValue;
+  // 'EXACT' for a fixed price, 'STARTING_AT' for a from-price. Drives
+  // whether the UI shows "₹199" or "Starting at ₹199".
+  final String priceType;
   final String description;
   final String status;
   final List<String> keywords;
@@ -129,6 +132,7 @@ class Service {
     required this.durationMinutes,
     this.offerLabel,
     this.offerValue,
+    this.priceType = 'STARTING_AT',
     required this.description,
     required this.status,
     required this.keywords,
@@ -156,6 +160,7 @@ class Service {
 
       offerLabel: json['offerLabel']?.toString(),
       offerValue: json['offerValue']?.toString(),
+      priceType: (json['priceType'] ?? 'STARTING_AT').toString(),
       description: (json['description'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
 
@@ -201,6 +206,7 @@ class Service {
       'durationMinutes': durationMinutes,
       'offerLabel': offerLabel,
       'offerValue': offerValue,
+      'priceType': priceType,
       'description': description,
       'status': status,
       'keywords': keywords,
@@ -450,6 +456,7 @@ class SimilarServiceItem {
   final int durationMinutes;
   final String? offerLabel;
   final String? offerValue;
+  final String priceType;
   final String description;
   final String status;
   final String primaryImageUrl; // from imageUrl
@@ -469,6 +476,7 @@ class SimilarServiceItem {
     required this.durationMinutes,
     this.offerLabel,
     this.offerValue,
+    this.priceType = 'STARTING_AT',
     required this.description,
     required this.status,
     required this.primaryImageUrl,
@@ -493,6 +501,7 @@ class SimilarServiceItem {
 
       offerLabel: json['offerLabel']?.toString(),
       offerValue: json['offerValue']?.toString(),
+      priceType: (json['priceType'] ?? 'STARTING_AT').toString(),
       description: (json['description'] ?? '').toString(),
       status: (json['status'] ?? 'ACTIVE').toString(),
 
@@ -523,6 +532,7 @@ class SimilarServiceItem {
       'durationMinutes': durationMinutes,
       'offerLabel': offerLabel,
       'offerValue': offerValue,
+      'priceType': priceType,
       'description': description,
       'status': status,
       'primaryImageUrl': primaryImageUrl,

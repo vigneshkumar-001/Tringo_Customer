@@ -78,6 +78,9 @@ class Product {
   final bool isFeatured;
   final String? offerLabel;
   final String? offerValue;
+  // 'EXACT' for a fixed price, 'STARTING_AT' for a from-price. Drives
+  // whether the UI shows "₹199" or "Starting at ₹199".
+  final String priceType;
   final String description;
   final List<String> keywords;
   final int? readyTimeMinutes;
@@ -110,6 +113,7 @@ class Product {
     required this.isFeatured,
     this.offerLabel,
     this.offerValue,
+    this.priceType = 'EXACT',
     required this.description,
     required this.keywords,
     this.readyTimeMinutes,
@@ -144,6 +148,7 @@ class Product {
       isFeatured: json['isFeatured'] ?? false,
       offerLabel: json['offerLabel'],
       offerValue: json['offerValue'],
+      priceType: json['priceType'] ?? 'EXACT',
       description: json['description'] ?? '',
       keywords: (json['keywords'] as List? ?? [])
           .map((e) => e.toString())
@@ -190,6 +195,7 @@ class Product {
       'isFeatured': isFeatured,
       'offerLabel': offerLabel,
       'offerValue': offerValue,
+      'priceType': priceType,
       'description': description,
       'keywords': keywords,
       'readyTimeMinutes': readyTimeMinutes,
@@ -468,6 +474,7 @@ class SimilarProduct {
   final bool isFeatured;
   final String? offerLabel;
   final String? offerValue;
+  final String priceType;
   final String description;
   final List<String> keywords;
   final int? readyTimeMinutes;
@@ -496,6 +503,7 @@ class SimilarProduct {
     required this.isFeatured,
     this.offerLabel,
     this.offerValue,
+    this.priceType = 'EXACT',
     required this.description,
     required this.keywords,
     this.readyTimeMinutes,
@@ -526,6 +534,7 @@ class SimilarProduct {
       isFeatured: json['isFeatured'] ?? false,
       offerLabel: json['offerLabel'],
       offerValue: json['offerValue'],
+      priceType: json['priceType'] ?? 'EXACT',
       description: json['description'] ?? '',
       keywords: (json['keywords'] as List? ?? [])
           .map((e) => e.toString())
@@ -561,6 +570,7 @@ class SimilarProduct {
       'isFeatured': isFeatured,
       'offerLabel': offerLabel,
       'offerValue': offerValue,
+      'priceType': priceType,
       'description': description,
       'keywords': keywords,
       'readyTimeMinutes': readyTimeMinutes,

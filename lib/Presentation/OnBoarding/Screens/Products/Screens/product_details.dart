@@ -352,7 +352,10 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                     Row(
                       children: [
                         Text(
-                          '₹${productDetailData.data.product.offerPrice}',
+                          productDetailData.data.product.priceType ==
+                                  'STARTING_AT'
+                              ? 'Starting at ₹${productDetailData.data.product.offerPrice}'
+                              : '₹${productDetailData.data.product.offerPrice}',
                           style: GoogleFont.Mulish(
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
@@ -665,7 +668,9 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                             foodName: data.englishName?.toString() ?? '',
                             ratingStar: data.rating?.toString() ?? '',
                             ratingCount: data.ratingCount?.toString() ?? '',
-                            offAmound: '₹${data.offerPrice?.toString() ?? ''}',
+                            offAmound: data.priceType == 'STARTING_AT'
+                                ? 'From ₹${data.offerPrice?.toString() ?? ''}'
+                                : '₹${data.offerPrice?.toString() ?? ''}',
                             oldAmound: '₹${data.price?.toString() ?? ''}',
                             km:
                                 data.distanceLabel ??

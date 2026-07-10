@@ -839,8 +839,9 @@ class _ServiceDetailsState extends ConsumerState<ServiceDetails>
                                       );
                                     },
                                     ratingCount: '0',
-                                    offAmound:
-                                        '\u20B9${data?.startsAt.toString() ?? ''}',
+                                    offAmound: data?.priceType == 'EXACT'
+                                        ? '\u20B9${data?.startsAt.toString() ?? ''}'
+                                        : 'From \u20B9${data?.startsAt.toString() ?? ''}',
                                     horizontalDivider: true,
                                   ),
 

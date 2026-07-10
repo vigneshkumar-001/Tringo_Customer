@@ -421,6 +421,9 @@ class Service {
   final int? durationMinutes;
   final String? offerLabel;
   final String? offerValue;
+  // 'EXACT' for a fixed price, 'STARTING_AT' for a from-price. Drives
+  // whether the UI shows "₹199" or "Starting at ₹199".
+  final String priceType;
   final String? description;
   final String? status;
   final String? primaryImageUrl;
@@ -436,6 +439,7 @@ class Service {
     this.durationMinutes,
     this.offerLabel,
     this.offerValue,
+    this.priceType = 'STARTING_AT',
     this.description,
     this.status,
     this.primaryImageUrl,
@@ -452,6 +456,7 @@ class Service {
     durationMinutes: json['durationMinutes'],
     offerLabel: json['offerLabel'],
     offerValue: json['offerValue'],
+    priceType: json['priceType'] ?? 'STARTING_AT',
     description: json['description'],
     status: json['status'],
     primaryImageUrl: json['imageUrl'],
@@ -468,6 +473,7 @@ class Service {
     'durationMinutes': durationMinutes,
     'offerLabel': offerLabel,
     'offerValue': offerValue,
+    'priceType': priceType,
     'description': description,
     'status': status,
     'primaryImageUrl': primaryImageUrl,
