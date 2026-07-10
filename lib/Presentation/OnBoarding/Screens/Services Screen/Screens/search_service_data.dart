@@ -43,6 +43,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
     String? badgeText,
     double? ratingValue,
     int? ratingCount,
+    Rect? sharePositionOrigin,
   }) async {
     final text =
         (shareText != null && shareText.trim().isNotEmpty)
@@ -57,6 +58,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
       badgeText: badgeText,
       ratingValue: ratingValue,
       ratingCount: ratingCount,
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
@@ -169,9 +171,12 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                               }
                             },
                           ),
-                          InkWell(
+                          Builder(
+                            builder: (shareBtnContext) => InkWell(
                             borderRadius: BorderRadius.circular(30),
                             onTap: () {
+                              final shareOrigin =
+                                  ShareHelper.originFromContext(shareBtnContext);
                               final serviceId =
                                   (widget.serviceId?.isNotEmpty ?? false)
                                       ? widget.serviceId!
@@ -228,6 +233,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                         .toDouble(),
                                 ratingCount:
                                     serviceDetailData.data.service.reviewCount,
+                                sharePositionOrigin: shareOrigin,
                               );
                             },
                             child: Container(
@@ -243,6 +249,7 @@ class _SearchServiceDataState extends ConsumerState<SearchServiceData> {
                                 color: AppColor.darkBlue,
                               ),
                             ),
+                          ),
                           ),
                         ],
                       ),
