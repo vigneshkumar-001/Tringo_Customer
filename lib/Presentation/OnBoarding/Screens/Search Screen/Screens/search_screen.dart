@@ -5,13 +5,16 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../../Api/api_providers.dart';
 import '../../../../../Core/Utility/app_Images.dart';
 import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/Common Bottom Navigation bar/buttom_navigatebar.dart';
 import '../../../../../Core/Widgets/common_container.dart';
 import '../../../../../Core/Widgets/current_location_widget.dart';
+import '../../../../../Core/Widgets/smart_connect_prompt_dialog.dart';
 import '../../Mobile No User/Screen/detail_mobile_no_user.dart';
+import '../../Smart Connect/Screens/create_smart_connect.dart';
 import '../Controller/search_notifier.dart';
 import '../Model/search_suggestion_response.dart';
 
@@ -298,6 +301,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  static const Set<String> _smartConnectEligibleTypes = {
+    'PRODUCT_SHOP',
+    'SERVICE_SHOP',
+    'PRODUCT',
+    'SERVICE',
+  };
+
   void _handleSuggestionTap(BuildContext context, SearchItem item) {
     const mobileTypes = {'OWNER_SHOP', 'CUSTOMER', 'VENDOR', 'EMPLOYEE'};
 
@@ -310,6 +320,109 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return;
     }
 
+    final category = item.meta?.category;
+    if (_smartConnectEligibleTypes.contains(item.type) &&
+        category != null &&
+        category.trim().isNotEmpty) {
+      _maybeShowSmartConnectPrompt(context, item, category);
+      return;
+    }
+
+    _navigateToDefaultDestination(context, item);
+  }
+
+  /// Checks how many nearby verified businesses exist in the same category
+  /// before navigating. If any are found, asks the user whether to fan out a
+  /// Smart Connect request; otherwise (no signal, no verified shops, or the
+  /// lookup fails) it silently falls back to the normal results list — this
+  /// prompt should never block or break the existing search flow.
+  Future<void> _maybeShowSmartConnectPrompt(
+    BuildContext context,
+    SearchItem item,
+    String category,
+  ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    int verifiedCount = 0;
+    try {
+      final api = ref.read(apiDataSourceProvider);
+      final result = await api
+          .getNearbyVerifiedShopsCount(category: category)
+          .timeout(const Duration(seconds: 5));
+      result.fold((_) => verifiedCount = 0, (count) => verifiedCount = count);
+    } catch (e) {
+      AppLogger.log.e('Nearby verified count lookup failed: $e');
+      verifiedCount = 0;
+    }
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // close loading spinner
+
+    if (verifiedCount <= 0) {
+      _navigateToDefaultDestination(context, item);
+      return;
+    }
+
+    final sendRequest = await showSmartConnectPromptDialog(
+      context,
+      verifiedCount: verifiedCount,
+      categoryLabel: item.meta?.categoryLabel,
+    );
+
+    if (!context.mounted) return;
+
+    if (sendRequest == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CreateSmartConnect(
+            title: item.label,
+            listingId: _resolveListingId(item),
+            listingType: _resolveListingType(item),
+            shopId: item.target.shopId ?? (_isShopType(item.type) ? item.id : null),
+          ),
+        ),
+      );
+    } else {
+      _navigateToDefaultDestination(context, item);
+    }
+  }
+
+  bool _isShopType(String type) => type == 'PRODUCT_SHOP' || type == 'SERVICE_SHOP';
+
+  String? _resolveListingId(SearchItem item) {
+    switch (item.type) {
+      case 'PRODUCT':
+        return item.target.productId ?? item.id;
+      case 'SERVICE':
+        return item.target.serviceId ?? item.id;
+      case 'PRODUCT_SHOP':
+      case 'SERVICE_SHOP':
+        return item.id;
+      default:
+        return item.id;
+    }
+  }
+
+  String? _resolveListingType(SearchItem item) {
+    switch (item.type) {
+      case 'PRODUCT':
+        return 'PRODUCT';
+      case 'SERVICE':
+        return 'SERVICE';
+      case 'PRODUCT_SHOP':
+      case 'SERVICE_SHOP':
+        return 'SHOP';
+      default:
+        return null;
+    }
+  }
+
+  void _navigateToDefaultDestination(BuildContext context, SearchItem item) {
     if (item.type == 'PRODUCT_SHOP') {
       Navigator.push(
         context,

@@ -393,6 +393,44 @@ class ApiDataSource extends BaseApiDataSource {
     }
   }
 
+  /// Count of nearby businesses in [category] — used to decide whether to
+  /// prompt the user for a Smart Connect request after tapping a search
+  /// suggestion. Reuses the same public shops-list endpoint ShopsListing
+  /// already relies on. Not filtered to isTrusted shops: the prompt is about
+  /// how many businesses can be reached in this category, not how many are
+  /// already verified — only a verified (actively subscribed) shop is
+  /// allowed to reply once a request is sent, enforced server-side.
+  Future<Either<Failure, int>> getNearbyVerifiedShopsCount({
+    required String category,
+  }) async {
+    try {
+      final url = ApiUrl.shopListByCategory(category: category);
+
+      final response = await Request.sendGetRequest(url, {}, 'GET', true);
+
+      final data = response?.data;
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        if (data['status'] == true) {
+          final shops = ShopsResponse.fromJson(data).data;
+          return Right(shops.length);
+        } else {
+          return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+        }
+      } else {
+        return Left(ServerFailure(data['message'] ?? "Something went wrong"));
+      }
+    } on DioException catch (dioError) {
+      final errorData = dioError.response?.data;
+      if (errorData is Map && errorData.containsKey('message')) {
+        return Left(ServerFailure(errorData['message']));
+      }
+      return Left(ServerFailure(dioError.message ?? "Unknown Dio error"));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   Future<Either<Failure, ShopDetailsResponse>> getSpecificDetails({
     required String shopId,
   }) async {

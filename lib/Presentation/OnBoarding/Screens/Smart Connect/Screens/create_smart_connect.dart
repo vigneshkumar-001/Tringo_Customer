@@ -12,6 +12,7 @@ import '../../../../../Core/Utility/app_color.dart';
 import '../../../../../Core/Utility/app_snackbar.dart';
 import '../../../../../Core/Utility/google_font.dart';
 import '../../../../../Core/Widgets/common_container.dart';
+import '../../../../../Core/Widgets/smart_connect_success_dialog.dart';
 
 class CreateSmartConnect extends ConsumerStatefulWidget {
   final String? title;
@@ -462,6 +463,9 @@ class _CreateSmartConnectState extends ConsumerState<CreateSmartConnect> {
 
                       if (!context.mounted) return;
                       if (err == null) {
+                        await showSmartConnectSuccessDialog(context);
+
+                        if (!context.mounted) return;
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(

@@ -124,6 +124,10 @@ class ApiUrl {
     return "${base}api/v1/public/shops?kind=$kind&highlightId=$highlightId";
   }
 
+  static String shopListByCategory({required String category}) {
+    return "${base}api/v1/public/shops?category=${Uri.encodeQueryComponent(category)}";
+  }
+
   static String viewAllProducts({required String shopId}) {
     return "${base}api/v1/public/shops/$shopId/products";
   }
