@@ -10,6 +10,7 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/Smart%20Connect/Scree
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Surprise_Screens/Screens/surprise_offer_details_from_push.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/wallet_screens.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Shared/referral_deeplink_gate.dart';
+import 'package:tringo_app/Core/public_qr_shop_resolver.dart';
 
 import '../Presentation/OnBoarding/Screens/Home Screen/Screens/home_screen.dart';
 import '../Presentation/OnBoarding/Screens/Privacy Policy/screens/privacy_policy.dart';
@@ -113,10 +114,15 @@ final goRouter = GoRouter(
             int.tryParse(state.uri.queryParameters['tab'] ?? '4') ?? 4;
         final tab = (rawTab < 0 || rawTab > 4) ? 4 : rawTab;
 
-        return ServiceAndShopsDetails(
-          shopId: shopId,
-          initialIndex: tab,
-        );
+        return ServiceAndShopsDetails(shopId: shopId, initialIndex: tab);
+      },
+    ),
+
+    GoRoute(
+      path: '/shop/:publicQrToken',
+      builder: (context, state) {
+        final token = state.pathParameters['publicQrToken'] ?? '';
+        return PublicQrShopResolver(publicQrToken: token);
       },
     ),
 
@@ -194,7 +200,6 @@ final goRouter = GoRouter(
       },
     ),
 
-
     GoRoute(
       path: AppRoutes.homePath,
       name: AppRoutes.home,
@@ -237,9 +242,7 @@ final goRouter = GoRouter(
         }
 
         if (shopId.isNotEmpty) {
-          final tab =
-              int.tryParse((qp['tab'] ?? '').trim()) ??
-              4;
+          final tab = int.tryParse((qp['tab'] ?? '').trim()) ?? 4;
           return Uri(
             path: '/shop/details',
             queryParameters: {'shopId': shopId, 'tab': '$tab'},

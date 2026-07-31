@@ -72,6 +72,10 @@ class ApiUrl {
     return "${base}api/v1/public/shops/$shopId";
   }
 
+  static String publicQrShop({required String publicQrToken}) {
+    return '${base}api/v1/public/qr-shops/${Uri.encodeComponent(publicQrToken)}';
+  }
+
   static String home({required double lng, required double lat}) {
     return "${base}api/v1/public/home?lat=$lat&lng=$lng";
   }

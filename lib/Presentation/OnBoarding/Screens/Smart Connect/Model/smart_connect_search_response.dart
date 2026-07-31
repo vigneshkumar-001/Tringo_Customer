@@ -77,6 +77,7 @@ class SmartConnectSearchItem {
   final String shopId;
   final String primaryText;   // LG
   final String secondaryText; // in Televisions
+  final String category;
 
   const SmartConnectSearchItem({
     required this.listingId,
@@ -84,7 +85,13 @@ class SmartConnectSearchItem {
     required this.shopId,
     required this.primaryText,
     required this.secondaryText,
+    this.category = '',
   });
+
+  String get categoryDisplayText {
+    final value = category.trim();
+    return value.isNotEmpty ? value : primaryText;
+  }
 
   factory SmartConnectSearchItem.fromJson(Map<String, dynamic> json) {
     return SmartConnectSearchItem(
@@ -93,6 +100,7 @@ class SmartConnectSearchItem {
       shopId: (json['shopId'] ?? '').toString(),
       primaryText: (json['primaryText'] ?? '').toString(),
       secondaryText: (json['secondaryText'] ?? '').toString(),
+      category: (json['category'] ?? '').toString().trim(),
     );
   }
 
@@ -102,5 +110,6 @@ class SmartConnectSearchItem {
     "shopId": shopId,
     "primaryText": primaryText,
     "secondaryText": secondaryText,
+    "category": category,
   };
 }
