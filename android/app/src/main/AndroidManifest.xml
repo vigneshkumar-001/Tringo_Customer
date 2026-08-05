@@ -138,6 +138,18 @@
                     android:pathPrefix="/shop/details" />
             </intent-filter>
 
+            <!-- Opaque public shop QR: app opens the existing shop details UI;
+                 browsers remain on the responsive web page when app is absent. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="tringobiz.com"
+                    android:pathPrefix="/shop/" />
+            </intent-filter>
+
             <!-- HTTPS App Link (Service details) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

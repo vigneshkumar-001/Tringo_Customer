@@ -73,7 +73,7 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
           shopId: item.shopId,
           listingId: item.listingId,
           listingType: item.listingType,
-          title: item.primaryText,
+          title: item.categoryDisplayText,
           // If you want, pass extra params in CreateSmartConnect:
           // listingId: item.listingId,
           // shopId: item.shopId,
@@ -88,7 +88,7 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
     final state = ref.watch(smartConnectNotifierProvider);
 
     // ✅ items list
-    final items =
+    final List<SmartConnectSearchItem> items =
         state.smartConnectSearchResponse?.data.items ??
         <SmartConnectSearchItem>[];
 
@@ -252,7 +252,6 @@ class _SmartConnectSearchState extends ConsumerState<SmartConnectSearch> {
 
 class _SuggestionRowItem extends StatelessWidget {
   const _SuggestionRowItem({
-    super.key,
     required this.item,
     required this.onTap,
   });
@@ -283,15 +282,15 @@ class _SuggestionRowItem extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const TextSpan(text: " "),
-                      TextSpan(
-                        text: item.secondaryText, // "in Televisions"
-                        style: GoogleFonts.mulish(
-                          fontSize: 16,
-                          color: AppColor.lightGray2,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      // const TextSpan(text: " "),
+                      // TextSpan(
+                      //   text: item.secondaryText, // "in Televisions"
+                      //   style: GoogleFonts.mulish(
+                      //     fontSize: 16,
+                      //     color: AppColor.lightGray2,
+                      //     fontWeight: FontWeight.w600,
+                      //   ),
+                      // ),
                     ],
                   ),
                   maxLines: 1,

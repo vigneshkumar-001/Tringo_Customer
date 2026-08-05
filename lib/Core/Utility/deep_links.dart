@@ -7,6 +7,15 @@ class DeepLinks {
   // WhatsApp normally linkifies only http/https links.
   // Configure this host for Android App Links + iOS Universal Links.
   static const String httpsHost = 'bknd.tringobiz.com';
+  static const String publicWebHost = 'tringobiz.com';
+
+  static Uri publicQrShop({required String publicQrToken}) {
+    return Uri(
+      scheme: 'https',
+      host: publicWebHost,
+      path: '/shop/$publicQrToken',
+    );
+  }
 
   static Uri productDetails({required String productId}) {
     return Uri(
@@ -18,19 +27,11 @@ class DeepLinks {
   }
 
   static Uri home() {
-    return Uri(
-      scheme: scheme,
-      host: host,
-      path: '/home',
-    );
+    return Uri(scheme: scheme, host: host, path: '/home');
   }
 
   static Uri homeHttps() {
-    return Uri(
-      scheme: 'https',
-      host: httpsHost,
-      path: '/home',
-    );
+    return Uri(scheme: 'https', host: httpsHost, path: '/home');
   }
 
   static String homeShareText({String? title}) {

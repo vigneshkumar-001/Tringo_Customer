@@ -859,22 +859,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 //   iconWidth: 19,
                 // ),
 
-                // SizedBox(height: 20),
-                // CommonContainer.profileList(
-                //   onTap: () {
-                //     Navigator.push(
-                //       context,
-                //       MaterialPageRoute(
-                //         builder: (context) => SmartConnectHistory(),
-                //       ),
-                //     );
-                //   },
-                //   label: 'Smart Connect History',
-                //   iconPath: AppImages.ai,
-                //   iconHeight: 25,
-                //   iconWidth: 25  ,
-                // ),
-                // SizedBox(height: 20),
+                SizedBox(height: 20),
+                CommonContainer.profileList(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SmartConnectHistory(),
+                      ),
+                    );
+                  },
+                  label: 'Smart Connect History',
+                  iconPath: AppImages.ai,
+                  iconHeight: 25,
+                  iconWidth: 25,
+                ),
+                SizedBox(height: 20),
                 CommonContainer.horizonalDivider(),
                 SizedBox(height: 20),
                 CommonContainer.profileList(
