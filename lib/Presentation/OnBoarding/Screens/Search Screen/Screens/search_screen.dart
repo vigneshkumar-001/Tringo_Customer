@@ -376,11 +376,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (!context.mounted) return;
 
     if (sendRequest == true) {
+      // `category` (the required param above) was already validated
+      // non-null/non-empty by _handleSuggestionTap before this prompt was
+      // ever shown - categoryDisplayText prefers the display-ready label
+      // when present, so this is never empty and never the item's own
+      // name/label (which is what the Product field was wrongly showing).
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => CreateSmartConnect(
-            title: item.label,
+            title: item.meta?.categoryDisplayText ?? category,
             listingId: _resolveListingId(item),
             listingType: _resolveListingType(item),
             shopId: item.target.shopId ?? (_isShopType(item.type) ? item.id : null),

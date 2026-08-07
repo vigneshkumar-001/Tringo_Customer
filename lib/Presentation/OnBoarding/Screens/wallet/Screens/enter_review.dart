@@ -641,6 +641,14 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                               final comment = _descriptionController.text
                                   .trim();
 
+                              if (shop == null) {
+                                AppSnackBar.error(
+                                  context,
+                                  "Still loading shop details, please wait a moment and try again",
+                                );
+                                return;
+                              }
+
                               if (_rating == 0) {
                                 AppSnackBar.error(
                                   context,
@@ -674,10 +682,14 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                               if (!accepted) return;
                               if (!context.mounted) return;
 
+                              // widget.shopId may be a slug (e.g. from a QR
+                              // scan) rather than the UUID this endpoint
+                              // requires - shop.id is the resolved UUID from
+                              // the shop details already loaded above.
                               await ref
                                   .read(walletNotifier.notifier)
                                   .reviewCreate(
-                                    shopId: widget.shopId ?? "",
+                                    shopId: shop.id,
                                     rating: _rating,
                                     heading: heading,
                                     comment: comment,

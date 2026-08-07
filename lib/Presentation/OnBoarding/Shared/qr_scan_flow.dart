@@ -293,6 +293,36 @@ class QrScanPayload {
       if (jsonMap != null) return _fromJsonMap(jsonMap);
     }
 
+    // Real printed shop QR codes / share links encode a plain path-based URL
+    // - https://tringobiz.com/shop/reviews/<slug> (see backend
+    // PublicQrTokenService.buildPublicUrl, what's actually embedded in a
+    // shop's QR sticker) or https://tringobiz.com/shop/<slug>
+    // (buildShopDetailsUrl) - neither has a query string, so the
+    // query-parameter branch below never matches them; that's exactly why
+    // scanning a real shop QR here used to say "Invalid QR" even though
+    // Google Lens (which just opens the URL) handled it fine.
+    // GET /api/v1/public/shops/:shopId on the backend accepts either a shop
+    // UUID or its slug interchangeably, so the slug extracted here can be
+    // used directly as shopId without an extra resolve step.
+    if (uri != null && uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'shop') {
+      final segments = uri.pathSegments;
+      String? slug;
+      if (segments.length >= 3 && segments[1] == 'reviews') {
+        slug = segments[2];
+      } else if (segments.length == 2 && segments[1] != 'details') {
+        // Not '/shop/details' (that's the existing query-param share-link
+        // shape, handled below) - any other single segment is a slug.
+        slug = segments[1];
+      }
+      final decodedSlug = slug?.trim();
+      if (decodedSlug != null && decodedSlug.isNotEmpty) {
+        return QrScanPayload(
+          shopId: Uri.decodeComponent(decodedSlug),
+          options: const ['REVIEW'],
+        );
+      }
+    }
+
     if (uri != null && uri.queryParameters.isNotEmpty) {
       final qp = uri.queryParameters;
       final toUid = _pick(qp, ['toUid', 'toUID', 'uid', 'to_uid', 'to']);
