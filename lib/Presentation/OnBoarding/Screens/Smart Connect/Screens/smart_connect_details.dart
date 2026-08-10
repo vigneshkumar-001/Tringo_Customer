@@ -412,12 +412,16 @@ class _SuccessBody extends StatelessWidget {
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
-                                        Text(
-                                          shop?.name?.toString() ?? '',
-                                          style: GoogleFont.Mulish(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColor.darkBlue,
+                                        Flexible(
+                                          child: Text(
+                                            shop?.name?.toString() ?? '',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFont.Mulish(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.darkBlue,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 4),

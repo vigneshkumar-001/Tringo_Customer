@@ -1824,6 +1824,7 @@ class ApiDataSource extends BaseApiDataSource {
     required int rating,
     required String heading,
     required String comment,
+    required bool shareContactWithBusiness,
   }) async {
     try {
       final String url = ApiUrl.reviewCreate;
@@ -1833,6 +1834,7 @@ class ApiDataSource extends BaseApiDataSource {
         "rating": rating,
         "heading": heading,
         "comment": comment,
+        "shareContactWithBusiness": shareContactWithBusiness,
       };
 
       final response = await Request.sendRequest(url, body, 'POST', true);
