@@ -518,6 +518,7 @@ class CommonContainer {
     VoidCallback? whatsAppOnTap,
     VoidCallback? mailOnTap,
     VoidCallback? upiOnTap,
+    VoidCallback? websiteOnTap,
     VoidCallback? fireOnTap,
     VoidCallback? followButtonOnTap,
 
@@ -528,6 +529,7 @@ class CommonContainer {
     bool whatsAppIcon = false,
     bool mailIcon = false,
     bool upiIcon = false,
+    bool websiteIcon = false,
     bool MessageIcon = false,
     bool FireIcon = false,
     bool order = false,
@@ -551,6 +553,7 @@ class CommonContainer {
     double? whatsAppIconSize,
     double? mailIconSize,
     double? upiIconSize,
+    double? websiteIconSize,
     double? fireIconSize,
 
     Color? callImageColor,
@@ -750,11 +753,11 @@ class CommonContainer {
               )
             : SizedBox.shrink(),
         if (messageContainer &&
-            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || FireIcon))
+            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || websiteIcon || FireIcon))
           const SizedBox(width: 9),
 
         if (messageContainer &&
-            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || FireIcon))
+            (MessageIcon || whatsAppIcon || mailIcon || upiIcon || websiteIcon || FireIcon))
           Container(
             padding:
                 iconContainerPadding ??
@@ -849,6 +852,21 @@ class CommonContainer {
                         child: Image.asset(
                           AppImages.upi,
                           height: upiIconSize ?? 26,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (websiteIcon)
+                  GestureDetector(
+                    onTap: websiteOnTap,
+                    child: SizedBox(
+                      height: websiteIconSize ?? 26,
+                      width: websiteIconSize ?? 26,
+                      child: Center(
+                        child: Icon(
+                          Icons.language_rounded,
+                          size: websiteIconSize ?? 26,
+                          color: AppColor.blue,
                         ),
                       ),
                     ),
