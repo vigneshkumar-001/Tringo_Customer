@@ -1,13 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../Controller/location_notifier.dart';
 import '../Utility/app_color.dart';
 
-class CurrentLocationWidget extends StatefulWidget {
+class CurrentLocationWidget extends ConsumerWidget {
   final VoidCallback? onTap;
   final String? locationIcon;
   final String? dropDownIcon;
@@ -24,99 +22,11 @@ class CurrentLocationWidget extends StatefulWidget {
   });
 
   @override
-  State<CurrentLocationWidget> createState() => _CurrentLocationWidgetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locationState = ref.watch(locationNotifierProvider);
 
-class _CurrentLocationWidgetState extends State<CurrentLocationWidget> {
-  String? _currentAddress;
-  bool _loading = true;
-  StreamSubscription<ServiceStatus>? _serviceSub;
-
-  @override
-  void initState() {
-    super.initState();
-    _initLocationFlow();
-    _listenServiceChanges();
-  }
-
-  @override
-  void dispose() {
-    _serviceSub?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _initLocationFlow() async {
-    setState(() => _loading = true);
-
-    try {
-      // 1) Service enabled?
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        setState(() {
-          _currentAddress = 'Location services disabled';
-          _loading = false;
-        });
-        return;
-      }
-
-      // 2) Permission check
-      LocationPermission perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied) {
-        setState(() {
-          _currentAddress = 'Permission denied';
-          _loading = false;
-        });
-        return;
-      }
-      if (perm == LocationPermission.deniedForever) {
-        setState(() {
-          _currentAddress = 'Permission permanently denied';
-          _loading = false;
-        });
-        return;
-      }
-
-      // 3) Get current position
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      // 4) Reverse geocode
-      final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-      if (marks.isNotEmpty) {
-        final p = marks.first;
-        final parts = <String>[
-          if ((p.street ?? '').trim().isNotEmpty) p.street!.trim(),
-          if ((p.locality ?? '').trim().isNotEmpty) p.locality!.trim(),
-          if ((p.administrativeArea ?? '').trim().isNotEmpty)
-            p.administrativeArea!.trim(),
-        ];
-        _currentAddress = parts.join(', ');
-      } else {
-        _currentAddress = 'Unknown location';
-      }
-    } catch (e) {
-      _currentAddress = 'Unable to fetch location';
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  void _listenServiceChanges() {
-    _serviceSub = Geolocator.getServiceStatusStream().listen((status) {
-      if (status == ServiceStatus.enabled) {
-        _initLocationFlow(); // GPS turned on → refresh
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return InkWell(
-      onTap: widget.onTap,
+      onTap: onTap,
       borderRadius: BorderRadius.circular(30),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 13),
@@ -138,8 +48,8 @@ class _CurrentLocationWidgetState extends State<CurrentLocationWidget> {
             const dropDownIconW = 11.0;
             const gapW = 6.0;
 
-            final showLocationIcon = widget.locationIcon != null;
-            final showDropDownIcon = widget.dropDownIcon != null;
+            final showLocationIcon = locationIcon != null;
+            final showDropDownIcon = dropDownIcon != null;
             final available = constraints.maxWidth;
 
             final showLocationGap =
@@ -160,20 +70,20 @@ class _CurrentLocationWidgetState extends State<CurrentLocationWidget> {
               children: [
                 if (showLocationIcon)
                   Image.asset(
-                    widget.locationIcon!,
+                    locationIcon!,
                     height: locationIconW,
-                    color: widget.iconColor ?? AppColor.blue,
+                    color: iconColor ?? AppColor.blue,
                   ),
                 if (showLocationGap) const SizedBox(width: gapW),
                 Flexible(
                   child: Text(
-                    _loading
+                    locationState.isLoading
                         ? 'Fetching location...'
-                        : (_currentAddress ?? 'Unknown location'),
+                        : (locationState.address ?? 'Unknown location'),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     style:
-                        widget.textStyle ??
+                        textStyle ??
                         GoogleFonts.mulish(
                           color: Colors.black,
                           fontWeight: FontWeight.w500,
@@ -183,7 +93,7 @@ class _CurrentLocationWidgetState extends State<CurrentLocationWidget> {
                 if (canShowDropDown) const SizedBox(width: gapW),
                 if (canShowDropDown)
                   Image.asset(
-                    widget.dropDownIcon!,
+                    dropDownIcon!,
                     height: dropDownIconW,
                     color: AppColor.darkBlue,
                   ),

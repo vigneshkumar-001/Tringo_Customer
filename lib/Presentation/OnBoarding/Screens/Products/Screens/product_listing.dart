@@ -69,8 +69,9 @@ class _ProductListingState extends ConsumerState<ProductListing> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // HEADER
+                // HEADER - TITLE ROW
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CommonContainer.leftSideArrow(
                       onTap: () {
@@ -78,30 +79,38 @@ class _ProductListingState extends ConsumerState<ProductListing> {
                       },
                     ),
                     const SizedBox(width: 15),
-                    Text(
-                      widget.title ?? '',
-                      style: GoogleFont.Mulish(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 22,
-                        color: AppColor.black,
-                      ),
-                    ),
-                    const SizedBox(width: 40),
-                    Expanded(
-                      child: CurrentLocationWidget(
-                        locationIcon: AppImages.locationImage,
-                        dropDownIcon: AppImages.drapDownImage,
-                        textStyle: GoogleFonts.mulish(
-                          color: AppColor.darkBlue,
-                          fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        widget.title ?? '',
+                        style: GoogleFont.Mulish(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
+                          color: AppColor.black,
                         ),
-                        onTap: () {
-                          // Handle location change
-                          debugPrint('Change location tapped!');
-                        },
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // LOCATION ROW
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    child: CurrentLocationWidget(
+                      locationIcon: AppImages.locationImage,
+                      dropDownIcon: null,
+                      textStyle: GoogleFonts.mulish(
+                        color: AppColor.darkBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      onTap: () {
+                        debugPrint('Change location tapped!');
+                      },
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 17),
