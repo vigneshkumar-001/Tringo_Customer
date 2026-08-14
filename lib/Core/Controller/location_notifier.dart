@@ -33,7 +33,13 @@ class LocationNotifier extends Notifier<LocationState> {
         fetchCurrentLocation(force: true);
       }
     });
-    fetchCurrentLocation();
+    // Deferred to a microtask: fetchCurrentLocation writes to `state` on its
+    // very first synchronous line (before any await), and Riverpod hasn't
+    // finished registering this provider's initial value while build() is
+    // still executing - writing state synchronously from here throws "Tried
+    // to read the state of an uninitialized provider". Scheduling it lets
+    // build() return first, so the write lands after the provider is live.
+    Future.microtask(() => fetchCurrentLocation());
     return const LocationState();
   }
 

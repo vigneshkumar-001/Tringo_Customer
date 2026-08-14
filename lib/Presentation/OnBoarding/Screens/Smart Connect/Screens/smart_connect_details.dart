@@ -228,14 +228,44 @@ class _SuccessBody extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 7),
-                                  Text(
-                                    data.description?.toString() ?? '',
-                                    softWrap: true,
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 10,
-                                      color: AppColor.lightGray3,
+                                  if ((data.description ?? '').toString().trim().isNotEmpty)
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColor.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: AppColor.darkBlue.withOpacity(0.15),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Shop's Reply",
+                                            style: GoogleFont.Mulish(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.lightGray2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            data.description.toString(),
+                                            softWrap: true,
+                                            style: GoogleFont.Mulish(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.darkBlue,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
                                   const SizedBox(height: 7),
                                   Row(
                                     children: [
