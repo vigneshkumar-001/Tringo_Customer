@@ -113,6 +113,7 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
 
               return _SuccessBody(
                 replyCountLabel: details?.replyCountLabel ?? "Replies",
+                replyBannerImageUrl: details?.replyBannerImageUrl,
                 responses: uiResponses,
                 onBack: safeBack,
               );
@@ -129,11 +130,13 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
 /// ----------------------
 class _SuccessBody extends StatelessWidget {
   final String replyCountLabel;
+  final String? replyBannerImageUrl;
   final List<dynamic> responses; // real model objects OR nulls while loading
   final VoidCallback onBack;
 
   const _SuccessBody({
     required this.replyCountLabel,
+    this.replyBannerImageUrl,
     required this.responses,
     required this.onBack,
   });
@@ -164,6 +167,21 @@ class _SuccessBody extends StatelessWidget {
               ],
             ),
           ),
+          if ((replyBannerImageUrl ?? '').trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: replyBannerImageUrl!,
+                  fit: BoxFit.cover,
+                  // Best-effort decoration only - never blocks or breaks the
+                  // reply list if the admin-configured image URL 404s.
+                  errorWidget: (context, url, error) => const SizedBox.shrink(),
+                  placeholder: (context, url) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
           const SizedBox(height: 25),
           ListView.builder(
             shrinkWrap: true,
