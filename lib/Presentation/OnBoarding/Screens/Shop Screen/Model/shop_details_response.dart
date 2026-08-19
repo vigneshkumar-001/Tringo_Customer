@@ -55,6 +55,7 @@ class ShopData {
   final String contactEmail;
   final String upiId;
   final String ownerImageUrl;
+  final String websiteUrl;
 
   final bool doorDelivery;
   final bool isTrusted;
@@ -112,6 +113,7 @@ class ShopData {
     required this.contactEmail,
     required this.upiId,
     required this.ownerImageUrl,
+    this.websiteUrl = '',
     required this.doorDelivery,
     required this.isTrusted,
     required this.city,
@@ -148,6 +150,9 @@ class ShopData {
     final upiIdRaw = (json['upiId'] ?? '').toString().trim();
     final upiId = upiIdRaw.toLowerCase() == 'null' ? '' : upiIdRaw;
 
+    final websiteUrlRaw = (json['websiteUrl'] ?? '').toString().trim();
+    final websiteUrl = websiteUrlRaw.toLowerCase() == 'null' ? '' : websiteUrlRaw;
+
     return ShopData(
       id: json['id'].toString(),
       createdAt: json['createdAt'].toString(),
@@ -175,6 +180,7 @@ class ShopData {
       contactEmail: contactEmail,
       upiId: upiId,
       ownerImageUrl: json['ownerImageUrl'].toString(),
+      websiteUrl: websiteUrl,
 
       doorDelivery: json['doorDelivery'] == true,
       isTrusted: json['isTrusted'] == true,
@@ -272,6 +278,7 @@ class ShopData {
     "contactEmail": contactEmail,
     "upiId": upiId,
     "ownerImageUrl": ownerImageUrl,
+    "websiteUrl": websiteUrl,
     "doorDelivery": doorDelivery,
     "isTrusted": isTrusted,
     "city": city,

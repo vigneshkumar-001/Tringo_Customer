@@ -29,6 +29,10 @@ class _EnterReviewState extends ConsumerState<EnterReview>
   final TextEditingController _descriptionController = TextEditingController();
 
   int _rating = 0;
+  // Explicit opt-in, default unchecked - same wording/default as the public-qr
+  // web review flow (PublicQrShopLanding.jsx). Being logged into the app
+  // proves identity, not consent to be contacted, so this is never assumed.
+  bool _shareContactWithBusiness = true;
 
   @override
   void initState() {
@@ -87,7 +91,10 @@ class _EnterReviewState extends ConsumerState<EnterReview>
 
       _headingController.clear();
       _descriptionController.clear();
-      setState(() => _rating = 0);
+      setState(() {
+        _rating = 0;
+        _shareContactWithBusiness = true;
+      });
 
       // Coins credited → refresh the home screen so its TCoin balance updates
       // automatically (Home listens to profileRefreshProvider). Avoids needing a
@@ -630,6 +637,54 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                       ),
                     ),
 
+                    SizedBox(height: 20),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: _shareContactWithBusiness,
+                          activeColor: AppColor.darkBlue,
+                          onChanged: (value) {
+                            setState(
+                              () => _shareContactWithBusiness = value ?? false,
+                            );
+                          },
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              setState(
+                                () => _shareContactWithBusiness =
+                                    !_shareContactWithBusiness,
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                "Yes, send me this shop's offers, new arrivals and updates on WhatsApp.\n"
+                                "இந்த கடையின் ஆஃபர்கள், புதிய வரவுகள் மற்றும் அப்டேட்களை WhatsApp-ல் பெற சம்மதிக்கிறேன்.",
+                                style: GoogleFont.Mulish(
+                                  fontSize: 13,
+                                  color: AppColor.gray84,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48),
+                      child: Text(
+                        "You can turn this off anytime before submitting your review.",
+                        style: GoogleFont.Mulish(
+                          fontSize: 11,
+                          color: AppColor.lightGray2,
+                        ),
+                      ),
+                    ),
+
                     SizedBox(height: 25),
 
                     CommonContainer.button(
@@ -640,6 +695,14 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                               final heading = _headingController.text.trim();
                               final comment = _descriptionController.text
                                   .trim();
+
+                              if (shop == null) {
+                                AppSnackBar.error(
+                                  context,
+                                  "Still loading shop details, please wait a moment and try again",
+                                );
+                                return;
+                              }
 
                               if (_rating == 0) {
                                 AppSnackBar.error(
@@ -674,13 +737,19 @@ class _EnterReviewState extends ConsumerState<EnterReview>
                               if (!accepted) return;
                               if (!context.mounted) return;
 
+                              // widget.shopId may be a slug (e.g. from a QR
+                              // scan) rather than the UUID this endpoint
+                              // requires - shop.id is the resolved UUID from
+                              // the shop details already loaded above.
                               await ref
                                   .read(walletNotifier.notifier)
                                   .reviewCreate(
-                                    shopId: widget.shopId ?? "",
+                                    shopId: shop.id,
                                     rating: _rating,
                                     heading: heading,
                                     comment: comment,
+                                    shareContactWithBusiness:
+                                        _shareContactWithBusiness,
                                   );
                             },
                       text: isSubmitting

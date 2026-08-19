@@ -18,6 +18,16 @@ Future<bool?> showSmartConnectPromptDialog(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) {
+      // Guards against the pop-animation window where a fast double-tap
+      // could otherwise call Navigator.pop twice for the same dialog
+      // instance (which would pop an unrelated route underneath it).
+      var resolved = false;
+      void resolve(bool value) {
+        if (resolved) return;
+        resolved = true;
+        Navigator.of(dialogContext).pop(value);
+      }
+
       return Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 0,
@@ -98,7 +108,7 @@ Future<bool?> showSmartConnectPromptDialog(
                     child: SizedBox(
                       height: 52,
                       child: OutlinedButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        onPressed: () => resolve(false),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                           shape: RoundedRectangleBorder(
@@ -121,7 +131,7 @@ Future<bool?> showSmartConnectPromptDialog(
                     child: SizedBox(
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        onPressed: () => resolve(true),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColor.blue,
                           foregroundColor: AppColor.white,

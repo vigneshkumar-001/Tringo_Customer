@@ -226,6 +226,7 @@ class WalletNotifier extends Notifier<WalletState> {
     required int rating,
     required String heading,
     required String comment,
+    required bool shareContactWithBusiness,
   }) async {
     state = state.copyWith(isMsgSendingLoading: true, error: null);
 
@@ -234,6 +235,7 @@ class WalletNotifier extends Notifier<WalletState> {
       rating: rating,
       heading: heading,
       comment: comment,
+      shareContactWithBusiness: shareContactWithBusiness,
     );
 
     result.fold(

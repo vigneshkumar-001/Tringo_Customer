@@ -22,8 +22,15 @@ class Request {
 
     final dio = Dio(
       BaseOptions(
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
+        // Smart Connect's create/reply endpoints do real work server-side
+        // (target-shop matching across several tables, rate-limit checks in
+        // a transaction) that can legitimately take longer than 10-15s on a
+        // slow mobile connection - this used to be 10s/15s, which combined
+        // with the now-removed 10s .timeout() wrapper below meant requests
+        // that were still genuinely in flight got killed and shown to the
+        // user as a raw "TimeoutException" error.
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 25),
       ),
     );
 
@@ -93,96 +100,61 @@ class Request {
 
       switch (httpMethod) {
         case 'GET':
-          response = await dio
-              .get(
-                url,
-                queryParameters: body.isEmpty ? null : body,
-                options: Options(
-                  headers: headers,
-                  validateStatus: (status) => status != null && status < 503,
-                ),
-              )
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException("Request timed out after 10 seconds");
-                },
-              );
+          response = await dio.get(
+            url,
+            queryParameters: body.isEmpty ? null : body,
+            options: Options(
+              headers: headers,
+              validateStatus: (status) => status != null && status < 503,
+            ),
+          );
           break;
 
         case 'PUT':
-          response = await dio
-              .put(
-                url,
-                data: body,
-                options: Options(
-                  headers: headers,
-                  validateStatus: (status) => status != null && status < 503,
-                ),
-              )
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException("Request timed out after 10 seconds");
-                },
-              );
+          response = await dio.put(
+            url,
+            data: body,
+            options: Options(
+              headers: headers,
+              validateStatus: (status) => status != null && status < 503,
+            ),
+          );
           break;
 
         case 'PATCH':
-          response = await dio
-              .patch(
-                url,
-                data: body,
-                options: Options(
-                  headers: headers,
-                  validateStatus: (status) => status != null && status < 503,
-                ),
-              )
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException("Request timed out after 10 seconds");
-                },
-              );
+          response = await dio.patch(
+            url,
+            data: body,
+            options: Options(
+              headers: headers,
+              validateStatus: (status) => status != null && status < 503,
+            ),
+          );
           break;
 
         ///  DELETE SUPPORT (THIS IS WHAT YOU NEEDED)
         case 'DELETE':
-          response = await dio
-              .delete(
-                url,
-                data: body.isEmpty ? null : body,
-                options: Options(
-                  headers: headers,
-                  validateStatus: (status) => status != null && status < 503,
-                ),
-              )
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException("Request timed out after 10 seconds");
-                },
-              );
+          response = await dio.delete(
+            url,
+            data: body.isEmpty ? null : body,
+            options: Options(
+              headers: headers,
+              validateStatus: (status) => status != null && status < 503,
+            ),
+          );
           break;
 
         /// Default → POST (for your existing usages)
         case 'POST':
         default:
-          response = await dio
-              .post(
-                url,
-                data: body,
-                options: Options(
-                  headers: headers,
-                  validateStatus: (status) => status != null && status < 503,
-                ),
-              )
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException("Request timed out after 10 seconds");
-                },
-              );
+          response = await dio.post(
+            url,
+            data: body,
+            options: Options(
+              headers: headers,
+              validateStatus: (status) => status != null && status < 503,
+            ),
+          );
           break;
       }
 
@@ -194,12 +166,21 @@ class Request {
 
       return response;
     } on DioException catch (e) {
+      AppLogger.log.e("$e");
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('Please try again after a few seconds.');
+      }
       // THROW the DioException, do not return it
       throw e;
+    } on TimeoutException catch (e) {
+      AppLogger.log.e("$e");
+      throw Exception('Please try again after a few seconds.');
     } catch (e) {
       AppLogger.log.e("$e");
       // Throw clean exception
-      throw Exception(e.toString());
+      throw Exception('Something went wrong. Please try again.');
     }
   }
 

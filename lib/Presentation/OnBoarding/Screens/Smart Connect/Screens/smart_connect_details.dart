@@ -113,6 +113,7 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
 
               return _SuccessBody(
                 replyCountLabel: details?.replyCountLabel ?? "Replies",
+                replyBannerImageUrl: details?.replyBannerImageUrl,
                 responses: uiResponses,
                 onBack: safeBack,
               );
@@ -129,11 +130,13 @@ class _SmartConnectDetailsState extends ConsumerState<SmartConnectDetails> {
 /// ----------------------
 class _SuccessBody extends StatelessWidget {
   final String replyCountLabel;
+  final String? replyBannerImageUrl;
   final List<dynamic> responses; // real model objects OR nulls while loading
   final VoidCallback onBack;
 
   const _SuccessBody({
     required this.replyCountLabel,
+    this.replyBannerImageUrl,
     required this.responses,
     required this.onBack,
   });
@@ -164,6 +167,21 @@ class _SuccessBody extends StatelessWidget {
               ],
             ),
           ),
+          if ((replyBannerImageUrl ?? '').trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: replyBannerImageUrl!,
+                  fit: BoxFit.cover,
+                  // Best-effort decoration only - never blocks or breaks the
+                  // reply list if the admin-configured image URL 404s.
+                  errorWidget: (context, url, error) => const SizedBox.shrink(),
+                  placeholder: (context, url) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
           const SizedBox(height: 25),
           ListView.builder(
             shrinkWrap: true,
@@ -228,14 +246,44 @@ class _SuccessBody extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 7),
-                                  Text(
-                                    data.description?.toString() ?? '',
-                                    softWrap: true,
-                                    style: GoogleFont.Mulish(
-                                      fontSize: 10,
-                                      color: AppColor.lightGray3,
+                                  if ((data.description ?? '').toString().trim().isNotEmpty)
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColor.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: AppColor.darkBlue.withOpacity(0.15),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Shop's Reply",
+                                            style: GoogleFont.Mulish(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.lightGray2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            data.description.toString(),
+                                            softWrap: true,
+                                            style: GoogleFont.Mulish(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.darkBlue,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
                                   const SizedBox(height: 7),
                                   Row(
                                     children: [
@@ -412,12 +460,16 @@ class _SuccessBody extends StatelessWidget {
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
-                                        Text(
-                                          shop?.name?.toString() ?? '',
-                                          style: GoogleFont.Mulish(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColor.darkBlue,
+                                        Flexible(
+                                          child: Text(
+                                            shop?.name?.toString() ?? '',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFont.Mulish(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.darkBlue,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 4),

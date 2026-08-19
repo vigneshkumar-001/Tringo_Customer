@@ -25,6 +25,7 @@ class SmartConnectDetailsData {
   final int replyCount;
   final String replyCountLabel;
   final String createdAt;
+  final String? replyBannerImageUrl;
   final List<SmartConnectShopResponse> responses;
 
   SmartConnectDetailsData({
@@ -36,6 +37,7 @@ class SmartConnectDetailsData {
     required this.replyCount,
     required this.replyCountLabel,
     required this.createdAt,
+    this.replyBannerImageUrl,
     required this.responses,
   });
 
@@ -51,6 +53,9 @@ class SmartConnectDetailsData {
           : int.tryParse((json['replyCount'] ?? '0').toString()) ?? 0,
       replyCountLabel: (json['replyCountLabel'] ?? '').toString(),
       createdAt: (json['createdAt'] ?? '').toString(),
+      replyBannerImageUrl: (json['replyBannerImageUrl'] as String?)?.trim().isNotEmpty == true
+          ? json['replyBannerImageUrl'] as String
+          : null,
       responses: ((json['responses'] as List?) ?? [])
           .map(
             (e) => SmartConnectShopResponse.fromJson(e as Map<String, dynamic>),
@@ -68,6 +73,7 @@ class SmartConnectDetailsData {
     "replyCount": replyCount,
     "replyCountLabel": replyCountLabel,
     "createdAt": createdAt,
+    "replyBannerImageUrl": replyBannerImageUrl,
     "responses": responses.map((e) => e.toJson()).toList(),
   };
 }

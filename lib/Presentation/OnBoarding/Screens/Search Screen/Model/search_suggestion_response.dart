@@ -163,6 +163,36 @@ class SearchMeta {
     this.subtitle,
   });
 
+  /// Human-readable category for display (e.g. the Smart Connect Product
+  /// field, the "Nearby Verified Businesses" popup subtitle). Prefers the
+  /// display-ready `categoryLabel`, falls back to a humanized version of the
+  /// raw `category` slug when the label wasn't sent - same fallback shape as
+  /// SmartConnectSearchItem.categoryDisplayText, just applied to this
+  /// model's own fields. Returns null (never a hardcoded string) when
+  /// neither is available, so callers can fall back to their own
+  /// already-known-non-empty value instead.
+  String? get categoryDisplayText {
+    final label = categoryLabel?.trim();
+    if (label != null && label.isNotEmpty) return label;
+    final raw = category?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    return _humanizeSlug(raw);
+  }
+
+  /// Turns a slug like "agricultural-consultants" into "Agricultural
+  /// Consultants" - purely a display transform of the live value already
+  /// present (not a guess, not a hardcoded category name), mirroring the
+  /// backend's own formatSlug() for when categoryLabel isn't present on this
+  /// particular response.
+  static String _humanizeSlug(String slug) {
+    return slug
+        .replaceAll(RegExp(r'[-_]+'), ' ')
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+  }
+
   factory SearchMeta.fromJson(Map<String, dynamic> json) {
     return SearchMeta(
       name: json['name']?.toString(), // ✅ ADD THIS

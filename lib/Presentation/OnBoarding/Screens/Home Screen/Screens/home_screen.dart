@@ -10,11 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 
 import 'package:tringo_app/Core/Const/app_logger.dart';
+import 'package:tringo_app/Core/Controller/location_notifier.dart';
 import 'package:tringo_app/Core/Utility/app_Images.dart';
 import 'package:tringo_app/Core/Utility/app_color.dart';
 import 'package:tringo_app/Core/Utility/app_loader.dart';
@@ -61,7 +61,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   final ScrollController _homeScrollCtrl = ScrollController();
 
-  String? currentAddress;
   bool _locBusy = false;
   bool _isHomeRefreshRunning = false;
   ({double lat, double lng}) _lastKnownLoc = (lat: 0.0, lng: 0.0);
@@ -312,15 +311,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _openingSystemRole = false;
   }
 
+  // Fetches fresh GPS coordinates for the home-details API call (which is
+  // genuinely location-dependent and should reflect where the user actually
+  // is right now). Deliberately does NOT drive any address-display text -
+  // that comes from the shared, app-wide locationNotifierProvider instead
+  // (see the header Text below), which is already resolved/cached by the
+  // time Home mounts, so navigating back here never re-shows "Fetching
+  // location...".
   Future<({double lat, double lng})> _initLocationFlow() async {
     if (!mounted) return (lat: 0.0, lng: 0.0);
     if (_locBusy) return _lastKnownLoc;
 
-    setState(() {
-      _locBusy = true;
-      currentAddress ??= "Fetching location...";
-      if (currentAddress!.isEmpty) currentAddress = "Fetching location...";
-    });
+    setState(() => _locBusy = true);
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -332,9 +334,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           serviceEnabled = await Geolocator.isLocationServiceEnabled();
         }
         if (!serviceEnabled) {
-          if (mounted) {
-            setState(() => currentAddress = "Location services disabled");
-          }
           return (lat: 0.0, lng: 0.0);
         }
       }
@@ -345,9 +344,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
 
       if (perm == LocationPermission.denied) {
-        if (mounted) {
-          setState(() => currentAddress = "Location permission denied");
-        }
         return (lat: 0.0, lng: 0.0);
       }
 
@@ -355,9 +351,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         final open = await _askToOpenAppSettings();
         if (open == true) {
           await Geolocator.openAppSettings();
-        }
-        if (mounted) {
-          setState(() => currentAddress = "Permission permanently denied");
         }
         return (lat: 0.0, lng: 0.0);
       }
@@ -367,43 +360,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         timeLimit: const Duration(seconds: 12),
       );
 
-      final address = await _reverseToNiceAddress(pos);
-
-      if (mounted) {
-        setState(() {
-          currentAddress =
-              address ??
-              "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
-        });
-      }
-
       _lastKnownLoc = (lat: pos.latitude, lng: pos.longitude);
       return (lat: pos.latitude, lng: pos.longitude);
     } catch (e, st) {
       AppLogger.log.e(e);
       AppLogger.log.e(st);
-      if (mounted) setState(() => currentAddress = "Unable to fetch location");
       return (lat: 0.0, lng: 0.0);
     } finally {
       if (mounted) setState(() => _locBusy = false);
-    }
-  }
-
-  Future<String?> _reverseToNiceAddress(Position pos) async {
-    try {
-      final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-      if (marks.isEmpty) return null;
-      final p = marks.first;
-
-      final parts = <String>[
-        if ((p.street ?? '').trim().isNotEmpty) p.street!.trim(),
-        if ((p.locality ?? '').trim().isNotEmpty) p.locality!.trim(),
-        if ((p.administrativeArea ?? '').trim().isNotEmpty)
-          p.administrativeArea!.trim(),
-      ];
-      return parts.isNotEmpty ? parts.join(', ') : null;
-    } catch (_) {
-      return null;
     }
   }
 
@@ -905,6 +869,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final selectedSlug = selectedCategory?.slug ?? 'all';
     final selectedServiceSlug = selectedServiceCategory?.slug ?? 'all';
+    // Shared, app-wide location cache (same source CurrentLocationWidget
+    // uses on every other screen) - already resolved by the time Home
+    // mounts, so this never flashes "Fetching location..." on navigation.
+    final locationState = ref.watch(locationNotifierProvider);
 
     final filteredShops = selectedSlug == 'all'
         ? trendingShops
@@ -939,7 +907,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           children: [
                             Expanded(
                               child: InkWell(
-                                onTap: _initLocationFlow,
+                                onTap: () {
+                                  ref
+                                      .read(locationNotifierProvider.notifier)
+                                      .fetchCurrentLocation(force: true);
+                                  _initLocationFlow();
+                                },
                                 borderRadius: BorderRadius.circular(8),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -956,10 +929,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
-                                          currentAddress ??
-                                              (_locBusy
-                                                  ? 'Fetching location...'
-                                                  : 'Tap to fetch location'),
+                                          locationState.isLoading
+                                              ? 'Fetching location...'
+                                              : (locationState.address ??
+                                                    'Tap to fetch location'),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
                                           style: GoogleFont.Mulish(

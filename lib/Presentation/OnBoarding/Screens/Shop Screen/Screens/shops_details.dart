@@ -26,6 +26,8 @@ import 'package:tringo_app/Presentation/OnBoarding/Screens/wallet/Screens/enter_
 import 'package:tringo_app/Presentation/OnBoarding/Screens/No%20Data%20Screen/Screen/no_data_screen.dart';
 import 'package:tringo_app/Presentation/OnBoarding/Screens/Shop%20Screen/Controller/shops_notifier.dart';
 
+import 'shop_website_webview.dart';
+
 import '../../Products/Screens/product_details.dart';
 import '../../Services Screen/Controller/service_notifier.dart';
 import '../../Services Screen/Screens/search_service_data.dart';
@@ -1127,6 +1129,29 @@ class _ShopsDetailsState extends ConsumerState<ShopsDetails>
                                       );
                                     },
                                     upiIconSize: 30,
+                                    websiteIcon:
+                                        (shopsData.data?.websiteUrl
+                                                    .toString()
+                                                    .trim() ??
+                                                '')
+                                            .isNotEmpty,
+                                    websiteOnTap: () {
+                                      final url = (shopsData.data?.websiteUrl
+                                              .toString() ??
+                                          '')
+                                          .trim();
+                                      if (url.isEmpty) return;
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ShopWebsiteWebView(
+                                            url: url,
+                                            title: shopsData.data?.englishName
+                                                .toString(),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    websiteIconSize: 26,
                                     messageLoading: stateS.isEnquiryLoading,
                                     messageDisabled: _enquiryDisabled,
                                     MessageIcon: true,

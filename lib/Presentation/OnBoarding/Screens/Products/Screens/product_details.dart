@@ -516,19 +516,25 @@ class _ProductDetailsState extends ConsumerState<ProductDetails> {
                                   : const SizedBox.shrink(),
                               const SizedBox(height: 6),
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    shopsData?.englishName.toString() ?? '',
-                                    style: GoogleFont.Mulish(
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColor.darkBlue,
+                                  Flexible(
+                                    child: Text(
+                                      shopsData?.englishName.toString() ?? '',
+                                      style: GoogleFont.Mulish(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColor.darkBlue,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  Image.asset(
-                                    AppImages.rightArrow,
-                                    height: 8,
-                                    color: AppColor.lightBlueCont,
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 3),
+                                    child: Image.asset(
+                                      AppImages.rightArrow,
+                                      height: 8,
+                                      color: AppColor.lightBlueCont,
+                                    ),
                                   ),
                                 ],
                               ),
